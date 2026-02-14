@@ -72,28 +72,28 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
 // ─────────────────────────────────────────────────────────────
 
 const colors = {
-  background: '#FDFBF7',
-  surface: '#F5F0E8',
-  surfaceAlt: '#EDE7DB',
-  textPrimary: '#1A1A2E',
-  textSecondary: '#6B6B80',
-  textMuted: '#9B9BAD',
-  primary: '#8B5CF6',
-  primaryDark: '#7C3AED',
-  primaryLight: '#EDE9FE',
+  background: '#1B0B38',
+  surface: '#2D1B4E',
+  surfaceAlt: '#241243',
+  textPrimary: '#F6F1FF',
+  textSecondary: '#C7B8E8',
+  textMuted: '#9C8BBE',
+  primary: '#4F46E5',
+  primaryDark: '#3C2FC2',
+  primaryLight: '#6D62F3',
   accentGold: '#D4A547',
-  accentGoldLight: '#FDF4E3',
+  accentGoldLight: '#F4E2B8',
   accentGoldDim: 'rgba(212, 165, 71, 0.3)',
   accentRose: '#E8788A',
-  cosmicPurple: '#8B5CF6',
-  cosmicPurpleDim: 'rgba(139, 92, 246, 0.25)',
+  cosmicPurple: '#4F46E5',
+  cosmicPurpleDim: 'rgba(79, 70, 229, 0.3)',
   white: '#FFFFFF',
-  overlay: 'rgba(26, 26, 46, 0.7)',
-  error: '#D4564E',
+  overlay: 'rgba(10, 7, 20, 0.75)',
+  error: '#FF7B6B',
   // Card states
-  cardBorder: 'rgba(212, 165, 71, 0.15)',
+  cardBorder: 'rgba(212, 165, 71, 0.2)',
   cardBorderSelected: '#D4A547',
-  cardBgSelected: 'rgba(212, 165, 71, 0.06)',
+  cardBgSelected: 'rgba(79, 70, 229, 0.18)',
   cardCheckmark: '#D4A547',
 } as const;
 
@@ -747,9 +747,15 @@ export default function InterestsScreen() {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
-      } else {
-        next.add(id);
+        return next;
       }
+      if (next.size >= 3) {
+        if (Platform.OS === 'ios') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        }
+        return next;
+      }
+      next.add(id);
       return next;
     });
   }, []);
@@ -825,7 +831,7 @@ export default function InterestsScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
       {/* ── Background gradient ── */}
       <LinearGradient
@@ -876,7 +882,7 @@ export default function InterestsScreen() {
             style={styles.headline}
             accessibilityRole="header"
           >
-            What Matters{'\n'}Most to You?
+            What Calls{'\n'}to You?
           </Animated.Text>
 
           {/* ── Subtext ── */}
@@ -886,8 +892,7 @@ export default function InterestsScreen() {
               .easing(Easing.out(Easing.ease))}
             style={styles.subtext}
           >
-            Choose the areas where you'd like cosmic guidance.{'\n'}
-            You can always change these later.
+            Choose up to three paths the stars should illuminate for you.
           </Animated.Text>
 
           {/* ── Selection counter ── */}

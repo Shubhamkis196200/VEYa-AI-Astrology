@@ -30,6 +30,7 @@ import EnergyMeter from '@/components/home/EnergyMeter';
 import DoAndDontCard from '@/components/home/DoAndDontCard';
 import TransitHighlights from '@/components/home/TransitHighlights';
 import CosmicWeatherWidget from '@/components/home/CosmicWeatherWidget';
+import DailyAffirmation from '@/components/home/DailyAffirmation';
 import ShareableCard from '@/components/shared/ShareableCard';
 import VoiceInterface from '@/components/voice/VoiceInterface';
 import AstroStories from '@/components/stories/AstroStories';
@@ -161,6 +162,9 @@ export default function TodayScreen() {
 
         {/* Cosmic Weather Widget */}
         <CosmicWeatherWidget />
+
+        {/* Daily Affirmation */}
+        <DailyAffirmation sunSign={sunSign} />
 
         {readingLoading && !r && (
           <View style={styles.loadingCard}>

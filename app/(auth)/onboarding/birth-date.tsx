@@ -798,6 +798,7 @@ function ZodiacRevealBadge({ sign }: { sign: ZodiacSign }) {
 
       {/* Badge content */}
       <Animated.View style={[styles.zodiacBadge, badgeStyle]}>
+        <Text style={styles.zodiacCaption}>Your sun was in</Text>
         <Text style={styles.zodiacSymbol}>{sign.symbol}</Text>
         <Text style={styles.zodiacName}>{sign.name}</Text>
         <View style={[styles.elementDot, { backgroundColor: elementColor }]} />
@@ -1363,6 +1364,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
+  },
+
+  zodiacCaption: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.tiny,
+    color: colors.textMuted,
+    letterSpacing: 0.6,
+    marginBottom: 6,
   },
 
   zodiacSymbol: {

@@ -65,26 +65,26 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
 // ─────────────────────────────────────────────────────────────
 
 const colors = {
-  background: '#FDFBF7',
-  surface: '#F5F0E8',
-  surfaceAlt: '#EDE7DB',
-  textPrimary: '#1A1A2E',
-  textSecondary: '#6B6B80',
-  textMuted: '#9B9BAD',
-  primary: '#8B5CF6',
-  primaryDark: '#7C3AED',
-  primaryLight: '#EDE9FE',
+  background: '#1B0B38',
+  surface: '#2D1B4E',
+  surfaceAlt: '#241243',
+  textPrimary: '#F6F1FF',
+  textSecondary: '#C7B8E8',
+  textMuted: '#9C8BBE',
+  primary: '#4F46E5',
+  primaryDark: '#3C2FC2',
+  primaryLight: '#6D62F3',
   accentGold: '#D4A547',
-  accentGoldLight: '#FDF4E3',
+  accentGoldLight: '#F4E2B8',
   accentRose: '#E8788A',
-  overlay: 'rgba(26, 26, 46, 0.7)',
-  error: '#D4564E',
-  inputBorder: '#DDD8CE',
+  overlay: 'rgba(10, 7, 20, 0.75)',
+  error: '#FF7B6B',
+  inputBorder: 'rgba(212, 165, 71, 0.25)',
   inputBorderFocused: '#D4A547',
-  disabled: '#C5C0B6',
-  border: '#E5DFD5',
-  pickerHighlight: 'rgba(212, 165, 71, 0.08)',
-  pickerBorder: 'rgba(212, 165, 71, 0.25)',
+  disabled: 'rgba(246, 241, 255, 0.4)',
+  border: 'rgba(212, 165, 71, 0.2)',
+  pickerHighlight: 'rgba(79, 70, 229, 0.18)',
+  pickerBorder: 'rgba(212, 165, 71, 0.4)',
 } as const;
 
 const typography = {
@@ -949,11 +949,11 @@ export default function BirthTimeScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
       {/* ── Background gradient ── */}
       <LinearGradient
-        colors={['#FDFBF7', '#F8F4EC', '#F5F0E8']}
+        colors={['#1B0B38', '#241243', '#2D1B4E']}
         locations={[0, 0.6, 1]}
         style={StyleSheet.absoluteFillObject}
       />
@@ -1002,7 +1002,7 @@ export default function BirthTimeScreen() {
             style={styles.headline}
             accessibilityRole="header"
           >
-            Do you know your{'\n'}birth time?
+            The Exact Moment{'\n'}You Arrived
           </Animated.Text>
 
           {/* ── Subtext ── */}
@@ -1010,7 +1010,7 @@ export default function BirthTimeScreen() {
             entering={FadeInDown.duration(600).delay(250).easing(Easing.out(Easing.ease))}
             style={styles.subtext}
           >
-            Your birth time reveals your Rising sign —{'\n'}the face you show the world
+            Birth time maps your Rising sign — the doorway through which the world meets you
           </Animated.Text>
 
           {/* ── Three option cards ── */}
@@ -1035,7 +1035,7 @@ export default function BirthTimeScreen() {
 
             <OptionCard
               icon={<QuestionIcon color={selectedOption === 'unknown' ? colors.primary : colors.textSecondary} />}
-              title="I'm not sure"
+              title="I don't know (yet)"
               subtitle="That's completely okay"
               isSelected={selectedOption === 'unknown'}
               onPress={() => handleOptionSelect('unknown')}
