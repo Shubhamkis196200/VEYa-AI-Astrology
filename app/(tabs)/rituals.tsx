@@ -44,6 +44,8 @@ async function hapticImpact(style: 'Light' | 'Medium' = 'Light') {
 }
 import AnimatedPressable from '@/components/ui/AnimatedPressable';
 import { supabase } from '@/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getMoonPhase, getCurrentTransits } from '@/services/astroEngine';
 import { colors as themeColors } from '@/theme/colors';
 
 // ─────────────────────────────────────────────────────────────
@@ -119,6 +121,62 @@ const CONTENT_PADDING = spacing.lg;
 // MOCK DATA
 // ─────────────────────────────────────────────────────────────
 
+function getRealRitualContent() {
+  try {
+    const moon = getMoonPhase();
+    const transits = getCurrentTransits();
+    const retrogrades = transits.filter(p => p.retrograde);
+
+    const moonIntentions: Record<string, string> = {
+      'New Moon': `New Moon in ${moon.moonSign} — set a powerful intention for this fresh cycle`,
+      'Waxing Crescent': `Waxing Moon in ${moon.moonSign} — nurture the seeds you've planted`,
+      'First Quarter': `First Quarter in ${moon.moonSign} — take action on your intentions`,
+      'Waxing Gibbous': `Waxing Gibbous in ${moon.moonSign} — refine and adjust your approach`,
+      'Full Moon': `Full Moon in ${moon.moonSign} — illuminate what needs to be released`,
+      'Waning Gibbous': `Waning Gibbous in ${moon.moonSign} — share your wisdom with others`,
+      'Last Quarter': `Last Quarter in ${moon.moonSign} — reflect and forgive`,
+      'Waning Crescent': `Waning Crescent in ${moon.moonSign} — rest and restore before the new cycle`,
+    };
+    const intention = moonIntentions[moon.phaseName] || `Moon in ${moon.moonSign} — align with cosmic energy`;
+
+    const moonAffirmations: Record<string, string> = {
+      Aries: '"I trust my courage to lead me where I need to go."',
+      Taurus: '"I am grounded, abundant, and worthy of comfort."',
+      Gemini: '"I embrace curiosity and let my mind explore freely."',
+      Cancer: '"I honor my emotions as my greatest compass."',
+      Leo: '"I shine my light boldly and inspire those around me."',
+      Virgo: '"I find beauty in the details and trust the process."',
+      Libra: '"I attract harmony and create beauty wherever I go."',
+      Scorpio: '"I transform through honesty and welcome deep truth."',
+      Sagittarius: '"I expand my horizons and trust the adventure ahead."',
+      Capricorn: '"I build with patience and my discipline serves my dreams."',
+      Aquarius: '"I honor my uniqueness and contribute to something greater."',
+      Pisces: '"I trust my intuition to guide me toward beauty and truth."',
+    };
+    const affirmation = moonAffirmations[moon.moonSign] || '"I trust the cosmos to guide my path."';
+
+    const retroStr = retrogrades.length > 0
+      ? `${retrogrades.map(r => r.name).join(' & ')} retrograde`
+      : 'No retrogrades — clear forward energy';
+    const energyForecast = `${moon.emoji} ${moon.phaseName} energy. ${retroStr}`;
+
+    const mercurySign = transits.find(p => p.name === 'Mercury')?.sign || 'Pisces';
+    const sunSign = transits.find(p => p.name === 'Sun')?.sign || 'Aquarius';
+    const journalPrompt = `Mercury in ${mercurySign}, Sun in ${sunSign} — what truth is asking to be spoken?`;
+
+    return { intention, affirmation, energyForecast, journalPrompt };
+  } catch {
+    return {
+      intention: 'Set an intention aligned with your cosmic energy',
+      affirmation: '"I trust the cosmos to guide my path."',
+      energyForecast: 'Tune into your energy today',
+      journalPrompt: 'What is the universe trying to tell you right now?',
+    };
+  }
+}
+
+const REAL_RITUAL = getRealRitualContent();
+
 const MOCK = {
   userName: 'Aria',
   streakCount: 7,
@@ -127,9 +185,9 @@ const MOCK = {
 
   morningRitual: {
     status: 'ready' as const,
-    intention: 'Venus trines your Neptune — set an intention around creative expression',
-    affirmation: 'I trust my intuition to guide me toward beauty and truth.',
-    energyForecast: 'High creative energy today — lean into inspiration',
+    intention: REAL_RITUAL.intention,
+    affirmation: REAL_RITUAL.affirmation,
+    energyForecast: REAL_RITUAL.energyForecast,
     estimatedTime: '~2 min',
   },
 
@@ -141,7 +199,7 @@ const MOCK = {
   },
 
   journal: {
-    todaysPrompt: 'Mercury enters your 3rd house — what conversations are you avoiding?',
+    todaysPrompt: REAL_RITUAL.journalPrompt,
     recentEntries: [
       { id: '1', date: 'Feb 12', preview: 'Felt a deep pull toward journaling today. The Pisces energy is...', mood: '✨' },
       { id: '2', date: 'Feb 11', preview: 'Had the most intense dream about water and old friends...', mood: '🌊' },
@@ -211,47 +269,33 @@ function MorningRitualFlow() {
   useEffect(() => {
     const loadRitual = async () => {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('rituals')
-        .select('*')
-        .eq('user_id', DEMO_USER_ID)
-        .eq('ritual_type', MORNING_RITUAL_TYPE)
-        .maybeSingle();
+      try {
+        const raw = await AsyncStorage.getItem('veya-morning-ritual');
+        const data = raw ? JSON.parse(raw) : null;
 
-      if (error) {
-        console.error('[Rituals] load morning ritual error:', error.message);
-        setIsLoading(false);
-        return;
-      }
+        const today = getTodayDateString();
+        const lastDate = data?.last_completed_at?.split('T')[0] || null;
+        const isToday = lastDate === today;
 
-      const today = getTodayDateString();
-      const lastDate = data?.last_completed_at?.split('T')[0] || null;
-      const isToday = lastDate === today;
-      const steps = (data?.steps as Record<string, unknown>) || {};
-
-      if (isToday) {
-        setBreathsDone(Boolean(steps.breathsDone));
-        setIntentionSaved(Boolean(steps.intentionSaved));
-        setIntention((steps.intention as string) || '');
-        setReadingDone(Boolean(steps.readingDone));
-        setCompletedToday(Boolean(data?.completed_today));
-        setLastCompletedAt(data?.last_completed_at || null);
-      } else {
-        setBreathsDone(false);
-        setIntentionSaved(false);
-        setIntention('');
-        setReadingDone(false);
-        setCompletedToday(false);
-        setLastCompletedAt(data?.last_completed_at || null);
-
-        if (data?.id && data?.completed_today) {
-          await supabase
-            .from('rituals')
-            .update({ completed_today: false })
-            .eq('id', data.id);
+        if (isToday && data) {
+          const steps = data.steps || {};
+          setBreathsDone(Boolean(steps.breathsDone));
+          setIntentionSaved(Boolean(steps.intentionSaved));
+          setIntention((steps.intention as string) || '');
+          setReadingDone(Boolean(steps.readingDone));
+          setCompletedToday(Boolean(data.completed_today));
+          setLastCompletedAt(data.last_completed_at || null);
+        } else {
+          setBreathsDone(false);
+          setIntentionSaved(false);
+          setIntention('');
+          setReadingDone(false);
+          setCompletedToday(false);
+          setLastCompletedAt(data?.last_completed_at || null);
         }
+      } catch (err) {
+        console.warn('[Rituals] load error:', err);
       }
-
       setIsLoading(false);
     };
 
@@ -271,40 +315,23 @@ function MorningRitualFlow() {
     const completed = nextBreaths && nextIntentionSaved && nextReading;
     const nextLastCompleted = completed ? new Date().toISOString() : lastCompletedAt;
 
-    setIsLoading(true);
-
-    const { data, error } = await supabase
-      .from('rituals')
-      .upsert(
-        {
-          user_id: DEMO_USER_ID,
-          ritual_type: MORNING_RITUAL_TYPE,
-          title: 'Morning Ritual',
-          description: 'A gentle 3-step morning flow',
-          duration_minutes: 2,
-          is_active: true,
-          completed_today: completed,
-          last_completed_at: nextLastCompleted,
-          steps: {
-            breathsDone: nextBreaths,
-            intentionSaved: nextIntentionSaved,
-            intention: nextIntentionSaved ? nextIntention : '',
-            readingDone: nextReading,
-          },
+    try {
+      const ritualData = {
+        completed_today: completed,
+        last_completed_at: nextLastCompleted,
+        steps: {
+          breathsDone: nextBreaths,
+          intentionSaved: nextIntentionSaved,
+          intention: nextIntentionSaved ? nextIntention : '',
+          readingDone: nextReading,
         },
-        { onConflict: 'user_id,ritual_type' }
-      )
-      .select()
-      .single();
-
-    if (error) {
-      console.error('[Rituals] persist morning ritual error:', error.message);
-    } else {
-      setCompletedToday(Boolean(data?.completed_today));
-      setLastCompletedAt(data?.last_completed_at || nextLastCompleted || null);
+      };
+      await AsyncStorage.setItem('veya-morning-ritual', JSON.stringify(ritualData));
+      setCompletedToday(completed);
+      setLastCompletedAt(nextLastCompleted);
+    } catch (err) {
+      console.warn('[Rituals] persist error:', err);
     }
-
-    setIsLoading(false);
   };
 
   const onBreathsComplete = () => {

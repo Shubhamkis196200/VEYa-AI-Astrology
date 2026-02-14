@@ -46,6 +46,7 @@ import Animated, {
   FadeInUp,
   FadeInRight,
   SlideInRight,
+  type SharedValue,
 } from 'react-native-reanimated';
 import Svg, {
   Circle,
@@ -79,6 +80,7 @@ import NatalChart, {
 } from '@/components/shared/NatalChart';
 import MoonPhaseViz from '@/components/shared/MoonPhase';
 import TarotCardBack from '@/components/shared/TarotCard';
+import { getDailyCard, getSpreadCards, isCardReversed, type TarotCard } from '@/data/tarotDeck';
 import {
   getMoonPhase,
   getCurrentTransits,
@@ -597,10 +599,6 @@ function CompatibilitySection() {
 // SECTION 4: TAROT 🃏
 // ═══════════════════════════════════════════════════════════════
 
-function TarotCardBackSection() {
-  return <TarotCardBack onPress={() => hapticMedium()} />;
-}
-
 interface SpreadOption { name: string; cardCount: string; locked: boolean; }
 
 const SPREADS: SpreadOption[] = [
@@ -609,21 +607,208 @@ const SPREADS: SpreadOption[] = [
   { name: 'Celtic Cross', cardCount: '10 cards', locked: false },
 ];
 
+const SPREAD_LABELS = ['Past', 'Present', 'Future'];
+
+function TarotFlipCard({
+  card,
+  revealProgress,
+  onPress,
+  width = 150,
+  height = 230,
+  showMeaning = false,
+  reversed = false,
+}: {
+  card: TarotCard | null;
+  revealProgress: SharedValue<number>;
+  onPress?: () => void;
+  width?: number;
+  height?: number;
+  showMeaning?: boolean;
+  reversed?: boolean;
+}) {
+  const backStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 900 },
+      { rotateY: `${interpolate(revealProgress.value, [0, 1], [0, 180])}deg` },
+    ],
+    opacity: interpolate(revealProgress.value, [0, 0.4, 1], [1, 0.7, 0]),
+  }));
+
+  const frontStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 900 },
+      { rotateY: `${interpolate(revealProgress.value, [0, 1], [180, 360])}deg` },
+    ],
+    opacity: interpolate(revealProgress.value, [0, 0.5, 1], [0, 0.4, 1]),
+  }));
+
+  return (
+    <View style={[styles.tarotFlipContainer, { width, height }]}>
+      <Animated.View style={[styles.tarotFlipSide, backStyle]}>
+        <TarotCardBack width={width} height={height} onPress={onPress} />
+      </Animated.View>
+      <Animated.View style={[styles.tarotFlipSide, frontStyle]} pointerEvents="none">
+        {card && (
+          <View style={[
+            styles.tarotRevealedCard,
+            showMeaning ? styles.tarotRevealedCardFull : styles.tarotRevealedCardCompact,
+            { width, height },
+          ]}
+          >
+            <View style={styles.tarotRevealedHeader}>
+              <Text style={styles.tarotCardEmoji}>{card.emoji}</Text>
+              {reversed && <Text style={styles.tarotReversedLabel}>Reversed</Text>}
+            </View>
+            <Text style={styles.tarotCardName}>{card.name}</Text>
+            {showMeaning && (
+              <>
+                <Text style={styles.tarotCardMeaning}>{card.upright}</Text>
+                <View style={styles.tarotKeywordRow}>
+                  {card.keywords.map((keyword) => (
+                    <View key={keyword} style={styles.tarotKeywordTag}>
+                      <Text style={styles.tarotKeywordText}>{keyword}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+          </View>
+        )}
+      </Animated.View>
+    </View>
+  );
+}
+
 function TarotSection() {
+  const [selectedSpread, setSelectedSpread] = useState(SPREADS[0].name);
+  const [revealedCard, setRevealedCard] = useState<TarotCard | null>(null);
+  const [isCardRevealed, setIsCardRevealed] = useState(false);
+  const [aiReading, setAiReading] = useState<string | null>(null);
+  const [spreadCards, setSpreadCards] = useState<TarotCard[]>([]);
+
+  const dailyFlip = useSharedValue(0);
+  const spreadFlip1 = useSharedValue(0);
+  const spreadFlip2 = useSharedValue(0);
+  const spreadFlip3 = useSharedValue(0);
+
+  const revealDailyCard = () => {
+    hapticMedium();
+    const card = getDailyCard();
+    setRevealedCard(card);
+    setIsCardRevealed(true);
+    setAiReading(null);
+    dailyFlip.value = 0;
+    dailyFlip.value = withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) });
+  };
+
+  const handleGetAIReading = () => {
+    if (!revealedCard) return;
+    const reversed = isCardReversed(revealedCard.id, 0);
+    const orientation = reversed ? 'reversed' : 'upright';
+    const keywords = revealedCard.keywords.slice(0, 3).join(', ');
+    setAiReading(
+      `Your ${revealedCard.name} (${orientation}) highlights ${keywords}. Let this guide your next step with intention and calm.`
+    );
+  };
+
+  const dealSpread = () => {
+    const cards = getSpreadCards(3);
+    setSpreadCards(cards);
+    spreadFlip1.value = 0;
+    spreadFlip2.value = 0;
+    spreadFlip3.value = 0;
+    spreadFlip1.value = withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) });
+    spreadFlip2.value = withDelay(180, withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) }));
+    spreadFlip3.value = withDelay(360, withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) }));
+  };
+
+  const handleSpreadSelect = (spreadName: string) => {
+    hapticLight();
+    setSelectedSpread(spreadName);
+    if (spreadName === '3-Card Spread') {
+      dealSpread();
+    }
+  };
+
+  const dailyIsReversed = revealedCard ? isCardReversed(revealedCard.id, 0) : false;
+
   return (
     <Animated.View entering={FadeInDown.duration(600).delay(600)} style={styles.sectionContainer}>
       <Text style={styles.sectionLabel}>TAROT</Text>
       <Text style={styles.sectionTitle}>Daily Card Pull</Text>
       <View style={styles.tarotCardContainer}>
-        <View style={styles.tarotCardArea}>
-          <TarotCardBackSection />
-          <Text style={styles.tarotRevealHint}>Tap to reveal today's card</Text>
-        </View>
+        {selectedSpread === 'Daily Pull' && (
+          <View style={styles.tarotCardArea}>
+            <TarotFlipCard
+              card={isCardRevealed ? revealedCard : null}
+              revealProgress={dailyFlip}
+              onPress={revealDailyCard}
+              width={170}
+              height={250}
+              showMeaning={true}
+              reversed={dailyIsReversed}
+            />
+            {!isCardRevealed && (
+              <Text style={styles.tarotRevealHint}>Tap to reveal today's card</Text>
+            )}
+            {isCardRevealed && (
+              <View style={styles.tarotReadingArea}>
+                <Pressable onPress={handleGetAIReading} style={styles.tarotAiButton}>
+                  <LinearGradient
+                    colors={[colors.primary, colors.primaryDark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.tarotAiGradient}
+                  >
+                    <Text style={styles.tarotAiButtonText}>Get AI Reading</Text>
+                  </LinearGradient>
+                </Pressable>
+                {aiReading && (
+                  <Animated.View entering={FadeInDown.duration(400)} style={styles.tarotAiReadingCard}>
+                    <Text style={styles.tarotAiReadingText}>{aiReading}</Text>
+                  </Animated.View>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+        {selectedSpread === '3-Card Spread' && (
+          <View style={styles.tarotSpreadContainer}>
+            <View style={styles.tarotSpreadRow}>
+              {spreadCards.map((card, index) => {
+                const reversed = isCardReversed(card.id, index);
+                const flipValue = [spreadFlip1, spreadFlip2, spreadFlip3][index];
+                return (
+                  <View key={card.id} style={styles.tarotSpreadItem}>
+                    <TarotFlipCard
+                      card={card}
+                      revealProgress={flipValue}
+                      width={110}
+                      height={165}
+                      reversed={reversed}
+                    />
+                    <Text style={styles.tarotSpreadLabel}>{SPREAD_LABELS[index]}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+        {selectedSpread === 'Celtic Cross' && (
+          <View style={styles.tarotCelticContainer}>
+            <Text style={styles.tarotCelticText}>Coming in next update</Text>
+          </View>
+        )}
       </View>
       <View style={styles.spreadOptions}>
         {SPREADS.map((spread) => (
-          <Pressable key={spread.name} onPress={() => hapticLight()}
-            style={[styles.spreadOption, spread.locked && styles.spreadOptionLocked]}>
+          <Pressable key={spread.name} onPress={() => handleSpreadSelect(spread.name)}
+            style={[
+              styles.spreadOption,
+              spread.locked && styles.spreadOptionLocked,
+              selectedSpread === spread.name && styles.spreadOptionActive,
+            ]}
+          >
             <View style={styles.spreadOptionLeft}>
               <Text style={[styles.spreadOptionName, spread.locked && styles.spreadOptionNameLocked]}>{spread.name}</Text>
               <Text style={styles.spreadOptionDetail}>{spread.cardCount}</Text>
