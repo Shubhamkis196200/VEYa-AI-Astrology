@@ -1147,7 +1147,7 @@ export default function ExploreTab() {
 
         {/* Ask VEYa About Your Chart */}
         <Pressable
-          onPress={() => {}}
+          onPress={() => router.push('/(tabs)/chat')}
           style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
         >
           <LinearGradient
