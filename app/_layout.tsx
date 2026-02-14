@@ -11,6 +11,8 @@ import * as Notifications from 'expo-notifications';
 import { supabase } from '../src/lib/supabase';
 import { useUserStore } from '../src/stores/userStore';
 import { requestPermissions, scheduleMorningNotification } from '../src/services/notificationService';
+import AchievementToast from '../src/components/shared/AchievementToast';
+import MomentCaptureButton from '../src/components/shared/MomentCaptureButton';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -170,6 +172,10 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <StatusBar style="dark" />
           <Slot />
+          {/* Global Achievement Toast */}
+          <AchievementToast />
+          {/* Global Moment Capture Button */}
+          <MomentCaptureButton />
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

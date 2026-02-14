@@ -110,21 +110,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="discover"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>🔮</Text>,
+          title: 'Discover',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>🧭</Text>,
         }}
       />
       <Tabs.Screen
-        name="rituals"
-        options={{
-          title: 'Rituals',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>🌙</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
+        name="you"
         options={{
           title: 'You',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>👤</Text>,

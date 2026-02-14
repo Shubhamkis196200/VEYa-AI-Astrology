@@ -998,6 +998,27 @@ function StardustParticle({ config }: { config: ParticleConfig }) {
 // MAIN: RitualsScreen
 // ─────────────────────────────────────────────────────────────
 
+export function RitualsContentSection() {
+  const [journalVisible, setJournalVisible] = useState(false);
+
+  return (
+    <View style={styles.ritualsSection}>
+      <Text style={styles.ritualsSectionTitle}>Your Rituals</Text>
+      <MorningRitualFlow />
+      <PracticeHeader />
+      <MorningRitualCard />
+      <EveningRitualCard />
+      <CosmicJournalSection onWrite={() => setJournalVisible(true)} />
+      <InsightsCard />
+      <JournalModal 
+        visible={journalVisible} 
+        onClose={() => setJournalVisible(false)}
+        prompt={REAL_RITUAL.journalPrompt}
+      />
+    </View>
+  );
+}
+
 export default function RitualsScreen() {
   const insets = useSafeAreaInsets();
   const [journalVisible, setJournalVisible] = useState(false);
@@ -1044,6 +1065,13 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: CONTENT_PADDING, paddingBottom: spacing.lg },
+  ritualsSection: { marginTop: spacing.lg },
+  ritualsSectionTitle: {
+    fontFamily: typography.fonts.displaySemiBold,
+    fontSize: typography.sizes.heading3,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
 
   // Morning ritual flow
   flowCard: {

@@ -8,29 +8,17 @@ import {
   ScrollView,
   StyleSheet,
   Platform,
-  Pressable,
   ActivityIndicator,
-  Modal,
-  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
-import ViewShot from 'react-native-view-shot';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useReadingStore } from '@/stores/readingStore';
 import { useStreakStore } from '@/stores/streakStore';
 import type { ZodiacSign } from '@/types';
-import EnergyMeter from '@/components/home/EnergyMeter';
+import OneInsightCard from '@/components/home/OneInsightCard';
 import DailyBriefingCard from '@/components/home/DailyBriefingCard';
-import DoAndDontCard from '@/components/home/DoAndDontCard';
-import TransitHighlights from '@/components/home/TransitHighlights';
 import StreakCounter from '@/components/home/StreakCounter';
-import ShareableCard from '@/components/shared/ShareableCard';
-import { captureAndShare, shareReading } from '@/services/shareService';
-import VoiceInterface from '@/components/voice/VoiceInterface';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -149,6 +137,9 @@ export default function TodayScreen() {
 
         <Text style={styles.greeting}>{greeting}, {data?.name || 'Star Child'} ☉</Text>
         <Text style={styles.subtitle}>{dateDisplay} · {sunSign}</Text>
+
+        {/* Hero Card - The ONE daily insight */}
+        <OneInsightCard />
 
         {readingLoading && !r && (
           <View style={styles.loadingCard}>
