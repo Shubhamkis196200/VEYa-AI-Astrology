@@ -93,7 +93,8 @@ import {
   type PlanetPosition,
   type MonthEvent,
 } from '@/services/astroEngine';
-import { generateTarotReading } from '@/services/ai';
+import { generateTarotReading, chatWithVeya } from '@/services/ai';
+import { router } from 'expo-router';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
 // ─────────────────────────────────────────────────────────────
@@ -378,6 +379,31 @@ function FullChartModal({ visible, onClose }: { visible: boolean; onClose: () =>
   const { data } = useOnboardingStore();
   const userName = data.name || 'Your';
   const [selectedPlanet, setSelectedPlanet] = useState<Planet | null>(null);
+  const [isExplaining, setIsExplaining] = useState(false);
+  const [chartExplanation, setChartExplanation] = useState<string | null>(null);
+
+  const handleExplainChart = async () => {
+    hapticMedium();
+    setIsExplaining(true);
+    try {
+      const userProfile = {
+        user_id: 'user-chart',
+        name: data.name || 'Friend',
+        sun_sign: data.sunSign || 'Aries',
+        moon_sign: data.moonSign,
+        rising_sign: data.risingSign,
+      };
+      const prompt = `Please give me a comprehensive but warm interpretation of my birth chart. My Big Three: ${data.sunSign || 'Unknown'} Sun, ${data.moonSign || 'Unknown'} Moon, ${data.risingSign || 'Unknown'} Rising. Focus on my core personality, emotional nature, and how I present to the world. Keep it personal and insightful, about 3-4 paragraphs.`;
+      
+      const response = await chatWithVeya(prompt, userProfile);
+      setChartExplanation(response);
+    } catch (error) {
+      console.error('Error explaining chart:', error);
+      setChartExplanation('I\'d love to explain your chart! For now, your cosmic blueprint shows a unique combination of energies. Tap "Chat" to ask VEYa specific questions about your placements.');
+    } finally {
+      setIsExplaining(false);
+    }
+  };
 
   const planetInterpretations: Record<string, string> = {
     'Sun': 'Your Scorpio Sun reveals an intense, magnetic soul that feels everything at full depth.',
@@ -507,12 +533,22 @@ function FullChartModal({ visible, onClose }: { visible: boolean; onClose: () =>
           {!selectedPlanet && (
             <Text style={styles.chartHintText}>Tap any planet to see its placement</Text>
           )}
-          <Pressable onPress={() => hapticMedium()} style={styles.explainChartButton}>
-            <LinearGradient colors={[colors.primary, colors.primaryDark]}
+          <Pressable onPress={handleExplainChart} disabled={isExplaining} style={styles.explainChartButton}>
+            <LinearGradient colors={isExplaining ? [colors.textMuted, colors.textMuted] : [colors.primary, colors.primaryDark]}
               style={styles.explainChartGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-              <Text style={styles.explainChartText}>✨ Explain My Chart</Text>
+              <Text style={styles.explainChartText}>{isExplaining ? '✨ Analyzing...' : '✨ Explain My Chart'}</Text>
             </LinearGradient>
           </Pressable>
+          {chartExplanation && (
+            <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 20, marginBottom: 16 }}>
+              <Text style={{ fontFamily: 'PlayfairDisplay-SemiBold', fontSize: 18, color: colors.textPrimary, marginBottom: 12 }}>
+                Your Chart Reading ✨
+              </Text>
+              <Text style={{ fontFamily: 'Inter-Regular', fontSize: 15, color: colors.textSecondary, lineHeight: 24 }}>
+                {chartExplanation}
+              </Text>
+            </View>
+          )}
           <View style={{ height: 40 }} />
         </ScrollView>
       </View>
