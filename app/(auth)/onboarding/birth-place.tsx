@@ -748,7 +748,7 @@ function SelectedLocationChip({ result, onClear }: SelectedChipProps) {
 
 export default function BirthPlaceScreen() {
   const insets = useSafeAreaInsets();
-  const { data, updateData, nextStep } = useOnboardingStore();
+  const { data, updateData, nextStep, completeOnboarding } = useOnboardingStore();
   const inputRef = useRef<TextInput>(null);
 
   // ── State ──
@@ -840,7 +840,8 @@ export default function BirthPlaceScreen() {
     });
 
     nextStep();
-    router.push('/(auth)/onboarding/chart-reveal');
+    completeOnboarding();
+    router.replace('/(tabs)');
   };
 
   const handlePressIn = () => {

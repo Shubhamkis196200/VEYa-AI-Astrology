@@ -918,9 +918,7 @@ export default function BirthTimeScreen() {
     }
 
     nextStep();
-    // TEST: Skip to tabs after 3 screens
-    completeOnboarding();
-    router.replace('/(tabs)');
+    router.push('/(auth)/onboarding/birth-place');
   };
 
   const handlePressIn = () => {
