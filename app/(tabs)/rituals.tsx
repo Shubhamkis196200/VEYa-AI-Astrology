@@ -13,6 +13,8 @@ import {
   Dimensions,
   Platform,
   TextInput,
+  Modal,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +49,8 @@ import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getMoonPhase, getCurrentTransits } from '@/services/astroEngine';
 import { colors as themeColors } from '@/theme/colors';
+import { useJournalStore } from '@/stores/journalStore';
+import { generateJournalInsights } from '@/services/ai';
 
 // ─────────────────────────────────────────────────────────────
 // DESIGN TOKENS
@@ -228,6 +232,104 @@ async function hapticMedium() {
   if (Platform.OS === 'ios') {
     await hapticImpact('Medium');
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// COMPONENT: Journal Modal
+// ─────────────────────────────────────────────────────────────
+
+const MOODS = ['✨', '🌊', '🔥', '💜', '🌙', '☀️', '💫', '🌸'];
+
+function JournalModal({ 
+  visible, 
+  onClose, 
+  prompt 
+}: { 
+  visible: boolean; 
+  onClose: () => void; 
+  prompt: string;
+}) {
+  const [text, setText] = useState('');
+  const [selectedMood, setSelectedMood] = useState('✨');
+  const { addEntry } = useJournalStore();
+
+  const handleSave = async () => {
+    if (!text.trim()) return;
+    await hapticMedium();
+    addEntry({ text, mood: selectedMood });
+    setText('');
+    setSelectedMood('✨');
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
+      >
+        <View style={{
+          backgroundColor: colors.white,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: spacing.lg,
+          paddingBottom: spacing.xxl,
+        }}>
+          <Text style={{ fontFamily: typography.fonts.displaySemiBold, fontSize: 20, color: colors.textPrimary, marginBottom: spacing.sm }}>
+            Cosmic Journal ✍️
+          </Text>
+          <Text style={{ fontFamily: typography.fonts.displayItalic, fontSize: 14, color: colors.textSecondary, marginBottom: spacing.md }}>
+            {prompt}
+          </Text>
+          
+          <Text style={{ fontFamily: typography.fonts.bodySemiBold, fontSize: 12, color: colors.textMuted, marginBottom: spacing.xs }}>
+            How are you feeling?
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: spacing.md, flexWrap: 'wrap' }}>
+            {MOODS.map((mood) => (
+              <Pressable key={mood} onPress={() => setSelectedMood(mood)} style={{
+                padding: 8,
+                borderRadius: 20,
+                backgroundColor: selectedMood === mood ? colors.primaryLight : colors.surface,
+                borderWidth: selectedMood === mood ? 2 : 0,
+                borderColor: colors.primary,
+              }}>
+                <Text style={{ fontSize: 20 }}>{mood}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <TextInput
+            multiline
+            placeholder="Write your thoughts..."
+            placeholderTextColor={colors.textMuted}
+            value={text}
+            onChangeText={setText}
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 12,
+              padding: spacing.md,
+              minHeight: 120,
+              fontFamily: typography.fonts.body,
+              fontSize: 16,
+              color: colors.textPrimary,
+              textAlignVertical: 'top',
+              marginBottom: spacing.md,
+            }}
+          />
+
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Pressable onPress={onClose} style={{ flex: 1, padding: spacing.md, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center' }}>
+              <Text style={{ fontFamily: typography.fonts.bodySemiBold, color: colors.textSecondary }}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={handleSave} style={{ flex: 1, padding: spacing.md, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center' }}>
+              <Text style={{ fontFamily: typography.fonts.bodySemiBold, color: colors.white }}>Save ✨</Text>
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -673,8 +775,9 @@ function EveningRitualCard() {
 // COMPONENT: Cosmic Journal Section ✍️
 // ─────────────────────────────────────────────────────────────
 
-function CosmicJournalSection() {
+function CosmicJournalSection({ onWrite }: { onWrite: () => void }) {
   const writeButtonScale = useSharedValue(1);
+  const entries = useJournalStore((state) => state.entries);
 
   const handleWritePress = async () => {
     await hapticMedium();
@@ -682,6 +785,7 @@ function CosmicJournalSection() {
       withTiming(0.92, { duration: 80 }),
       withSpring(1, { damping: 10, stiffness: 200 })
     );
+    onWrite();
   };
 
   const writeButtonStyle = useAnimatedStyle(() => ({
@@ -719,16 +823,19 @@ function CosmicJournalSection() {
 
       <View style={styles.recentEntriesContainer}>
         <Text style={styles.recentEntriesTitle}>Recent Entries</Text>
-        {MOCK.journal.recentEntries.map((entry, index) => (
+        {entries.length === 0 && (
+          <Text style={styles.emptyEntriesText}>No entries yet — write your first reflection.</Text>
+        )}
+        {entries.slice(0, 3).map((entry, index) => (
           <Animated.View key={entry.id} entering={FadeInDown.duration(400).delay(1200 + index * 100)}>
             <Pressable onPress={() => hapticLight()} style={styles.recentEntryCard}>
               <View style={styles.recentEntryLeft}>
                 <Text style={styles.recentEntryMood}>{entry.mood}</Text>
               </View>
               <View style={styles.recentEntryContent}>
-                <Text style={styles.recentEntryDate}>{entry.date}</Text>
+                <Text style={styles.recentEntryDate}>{entry.dateLabel}</Text>
                 <Text style={styles.recentEntryPreview} numberOfLines={1} ellipsizeMode="tail">
-                  {entry.preview}
+                  {entry.text}
                 </Text>
               </View>
               <Text style={styles.recentEntryArrow}>›</Text>
@@ -746,6 +853,9 @@ function CosmicJournalSection() {
 
 function InsightsCard() {
   const shimmer = useSharedValue(0);
+  const entries = useJournalStore((state) => state.entries);
+  const [insights, setInsights] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     shimmer.value = withRepeat(
@@ -758,9 +868,29 @@ function InsightsCard() {
     );
   }, []);
 
+  useEffect(() => {
+    let isActive = true;
+    setIsLoading(true);
+    generateJournalInsights(entries)
+      .then((result) => {
+        if (isActive) setInsights(result);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [entries]);
+
   const shimmerStyle = useAnimatedStyle(() => ({
     opacity: interpolate(shimmer.value, [0, 1], [0.6, 1]),
   }));
+
+  const displayInsights = insights.length
+    ? insights
+    : ['Gathering your cosmic patterns...', 'Your journal reveals hidden rhythms', 'Insights will appear as you reflect'];
 
   return (
     <Animated.View entering={FadeInDown.duration(600).delay(1400)}>
@@ -779,12 +909,14 @@ function InsightsCard() {
             </View>
           </View>
 
-          {MOCK.insights.map((insight, index) => (
+          {displayInsights.slice(0, 3).map((insight, index) => (
             <Animated.View key={index} style={[styles.insightRow, shimmerStyle]}>
               <View style={styles.insightDot} />
               <Text style={styles.insightText}>{insight}</Text>
             </Animated.View>
           ))}
+
+          {isLoading && <Text style={styles.insightsLoading}>Updating insights...</Text>}
         </View>
       </View>
     </Animated.View>
@@ -868,6 +1000,7 @@ function StardustParticle({ config }: { config: ParticleConfig }) {
 
 export default function RitualsScreen() {
   const insets = useSafeAreaInsets();
+  const [journalVisible, setJournalVisible] = useState(false);
 
   return (
     <View style={styles.root}>
@@ -890,10 +1023,15 @@ export default function RitualsScreen() {
         <PracticeHeader />
         <MorningRitualCard />
         <EveningRitualCard />
-        <CosmicJournalSection />
+        <CosmicJournalSection onWrite={() => setJournalVisible(true)} />
         <InsightsCard />
         <View style={{ height: 40 }} />
       </ScrollView>
+      <JournalModal 
+        visible={journalVisible} 
+        onClose={() => setJournalVisible(false)}
+        prompt={REAL_RITUAL.journalPrompt}
+      />
     </View>
   );
 }
@@ -1143,6 +1281,12 @@ const styles = StyleSheet.create({
   writeButtonText: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.bodySmall, color: colors.white, letterSpacing: 0.3 },
   recentEntriesContainer: { gap: spacing.xs },
   recentEntriesTitle: { fontFamily: typography.fonts.bodyMedium, fontSize: typography.sizes.caption, color: colors.textMuted, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 4 },
+  emptyEntriesText: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.caption,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
   recentEntryCard: {
     flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: colors.white,
     borderRadius: borderRadius.md, paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
@@ -1154,6 +1298,93 @@ const styles = StyleSheet.create({
   recentEntryDate: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.tiny, color: colors.textMuted, letterSpacing: 0.3, marginBottom: 2 },
   recentEntryPreview: { fontFamily: typography.fonts.body, fontSize: typography.sizes.caption, color: colors.textSecondary, lineHeight: 18.2 },
   recentEntryArrow: { fontFamily: typography.fonts.body, fontSize: 20, color: colors.textMuted, marginLeft: spacing.xs },
+
+  // Journal modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    padding: spacing.lg,
+  },
+  modalCard: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  modalTitle: {
+    fontFamily: typography.fonts.displaySemiBold,
+    fontSize: typography.sizes.heading3,
+    color: colors.textPrimary,
+  },
+  modalSubtitle: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.caption,
+    color: colors.textMuted,
+    marginTop: 4,
+    marginBottom: spacing.md,
+  },
+  moodRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  moodOption: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moodOptionSelected: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  moodOptionText: {
+    fontSize: 18,
+  },
+  journalInput: {
+    minHeight: 120,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.bodySmall,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+    textAlignVertical: 'top',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalCancelButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  modalCancelText: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.bodySmall,
+    color: colors.textMuted,
+  },
+  modalSaveButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.full,
+  },
+  modalSaveText: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.bodySmall,
+    color: colors.white,
+  },
 
   // Insights
   insightsCard: { marginBottom: spacing.md, overflow: 'hidden' as const, position: 'relative' as const },
@@ -1167,6 +1398,12 @@ const styles = StyleSheet.create({
   insightRow: { flexDirection: 'row' as const, alignItems: 'center' as const, marginBottom: spacing.sm },
   insightDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary, marginRight: spacing.sm },
   insightText: { fontFamily: typography.fonts.body, fontSize: typography.sizes.bodySmall, color: colors.textSecondary, lineHeight: 21, flex: 1 },
+  insightsLoading: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.tiny,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
   insightsFrostOverlay: { position: 'absolute' as const, bottom: 60, left: 0, right: 0, height: 80 },
   insightsUnlockButton: { borderRadius: borderRadius.full, overflow: 'hidden' as const, marginTop: spacing.xs },
   insightsUnlockGradient: { paddingVertical: spacing.sm, borderRadius: borderRadius.full, alignItems: 'center' as const },

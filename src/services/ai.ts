@@ -20,6 +20,7 @@ import type {
   UserProfile,
   BirthChart,
 } from '../types';
+import type { JournalEntry } from '../stores/journalStore';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -510,7 +511,128 @@ export async function generateCompatibility(
 }
 
 // ---------------------------------------------------------------------------
-// 4. generateEmbedding
+// 4. generateJournalInsights
+// ---------------------------------------------------------------------------
+
+export async function generateJournalInsights(entries: JournalEntry[]): Promise<string[]> {
+  if (!entries.length) {
+    return [
+      'Start journaling to unlock patterns in your cosmic rhythm',
+      'Your reflections will help reveal your most aligned days',
+      'Track moods and themes to discover what energizes you',
+    ];
+  }
+
+  const recent = entries.slice(0, 12);
+  const entryText = recent
+    .map((e) => `- (${e.dateLabel}) Mood ${e.mood}: ${e.text}`)
+    .join('\n');
+
+  const messages: ChatMessage[] = [
+    {
+      role: 'system',
+      content:
+        'You are VEYa, a cosmic journaling assistant. Analyze the user\'s recent journal entries and produce exactly 3 short, personalized insights. Each insight should be 1 sentence, warm and specific. Return ONLY a JSON array of strings.',
+    },
+    {
+      role: 'user',
+      content: `Recent journal entries:\n${entryText}\n\nReturn a JSON array of 3 insights.`,
+    },
+  ];
+
+  try {
+    const data = await openAIFetch<{
+      choices: Array<{ message: { content: string } }>;
+    }>('/chat/completions', {
+      model: MODELS.free,
+      messages,
+      temperature: 0.7,
+      max_tokens: 500,
+    });
+
+    const raw = data.choices[0]?.message?.content ?? '';
+    const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    if (Array.isArray(parsed) && parsed.length) {
+      return parsed.slice(0, 3).map((item) => String(item));
+    }
+  } catch (err) {
+    console.warn('[AI] generateJournalInsights failed:', err instanceof Error ? err.message : err);
+  }
+
+  // Fallback: basic patterning
+  const moodCounts: Record<string, number> = {};
+  for (const e of recent) {
+    moodCounts[e.mood] = (moodCounts[e.mood] || 0) + 1;
+  }
+  const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '✨';
+
+  return [
+    `Your most frequent mood lately is ${topMood}, suggesting a strong recurring emotional tone.`,
+    `You\'ve been consistently journaling across ${recent.length} entries — momentum is building.`,
+    'Themes you repeat are your inner compass; keep noting what feels most alive.',
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// 5. generateTarotReading
+// ---------------------------------------------------------------------------
+
+export interface TarotReadingCard {
+  name: string;
+  arcana: string;
+  keywords: string[];
+  upright: string;
+  reversed: string;
+}
+
+export async function generateTarotReading(
+  card: TarotReadingCard,
+  isReversed: boolean,
+  userProfile?: { sun_sign?: string; moon_sign?: string; rising_sign?: string; name?: string }
+): Promise<string> {
+  const orientation = isReversed ? 'reversed' : 'upright';
+  const meaning = isReversed ? card.reversed : card.upright;
+  
+  const profileContext = userProfile?.sun_sign 
+    ? `The querent is ${userProfile.name || 'a seeker'} with Sun in ${userProfile.sun_sign}${userProfile.moon_sign ? `, Moon in ${userProfile.moon_sign}` : ''}${userProfile.rising_sign ? `, Rising in ${userProfile.rising_sign}` : ''}.`
+    : '';
+
+  const prompt = `You are VEYa, a wise and warm cosmic guide specializing in tarot.
+
+${profileContext}
+
+The querent drew: **${card.name}** (${orientation})
+Keywords: ${card.keywords.join(', ')}
+Traditional meaning: ${meaning}
+
+Provide a personalized, insightful 2-3 sentence tarot reading. Be warm and specific, connecting the card's energy to their current cosmic moment. End with gentle guidance or an invitation to reflect.`;
+
+  try {
+    const data = await openAIFetch<{
+      choices: Array<{ message: { content: string } }>;
+    }>('/chat/completions', {
+      model: MODELS.chat,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 200,
+      temperature: 0.8,
+    });
+
+    return data.choices?.[0]?.message?.content?.trim() || getFallbackTarotReading(card, isReversed);
+  } catch (error) {
+    console.warn('[AI] generateTarotReading failed:', error);
+    return getFallbackTarotReading(card, isReversed);
+  }
+}
+
+function getFallbackTarotReading(card: TarotReadingCard, isReversed: boolean): string {
+  const orientation = isReversed ? 'reversed' : 'upright';
+  const meaning = isReversed ? card.reversed : card.upright;
+  return `${card.name} (${orientation}) speaks to you today: ${meaning} Trust this wisdom as you move forward.`;
+}
+
+// ---------------------------------------------------------------------------
+// 6. generateEmbedding
 // ---------------------------------------------------------------------------
 
 export async function generateEmbedding(text: string): Promise<number[]> {

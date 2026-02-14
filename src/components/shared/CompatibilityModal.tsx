@@ -195,6 +195,8 @@ export default function CompatibilityModal({ visible, onClose }: Props) {
   const [birthDay, setBirthDay] = useState('');
   const [birthYear, setBirthYear] = useState('');
   const [birthPlace, setBirthPlace] = useState('');
+  const [partnerMoonSign, setPartnerMoonSign] = useState('');
+  const [partnerRisingSign, setPartnerRisingSign] = useState('');
   const [report, setReport] = useState<CompatibilityReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -217,6 +219,8 @@ export default function CompatibilityModal({ visible, onClose }: Props) {
       setBirthDay('');
       setBirthYear('');
       setBirthPlace('');
+      setPartnerMoonSign('');
+      setPartnerRisingSign('');
       setReport(null);
       setError(null);
       setIsLoading(false);
@@ -252,6 +256,8 @@ export default function CompatibilityModal({ visible, onClose }: Props) {
         {
           name: partnerLabel,
           sun_sign: sunSign,
+          moon_sign: partnerMoonSign || undefined,
+          rising_sign: partnerRisingSign || undefined,
         },
       );
       setReport(result);
@@ -369,22 +375,43 @@ export default function CompatibilityModal({ visible, onClose }: Props) {
 
         {step === 3 && (
           <View style={styles.stepContent}>
-            <Text style={styles.stepLabel}>Birth Place (Optional)</Text>
-            <Text style={styles.stepTitle}>Where were they born?</Text>
+            <Text style={styles.stepLabel}>Additional Details (Optional)</Text>
+            <Text style={styles.stepTitle}>Know their Moon or Rising?</Text>
+            <Text style={styles.stepSubtitle}>Adding these creates a deeper synastry reading</Text>
+            
             <TextInput
               value={birthPlace}
               onChangeText={setBirthPlace}
-              placeholder="City, Country"
+              placeholder="Birth place (City, Country)"
+              placeholderTextColor="rgba(26, 26, 46, 0.4)"
+              style={[styles.textInput, { marginBottom: 12 }]}
+            />
+            
+            <TextInput
+              value={partnerMoonSign}
+              onChangeText={setPartnerMoonSign}
+              placeholder="Moon sign (e.g. Pisces)"
+              placeholderTextColor="rgba(26, 26, 46, 0.4)"
+              style={[styles.textInput, { marginBottom: 12 }]}
+              autoCapitalize="words"
+            />
+            
+            <TextInput
+              value={partnerRisingSign}
+              onChangeText={setPartnerRisingSign}
+              placeholder="Rising sign (e.g. Leo)"
               placeholderTextColor="rgba(26, 26, 46, 0.4)"
               style={styles.textInput}
+              autoCapitalize="words"
             />
+            
             {error && <Text style={styles.errorText}>{error}</Text>}
             <View style={styles.actionsRow}>
               <Pressable onPress={() => setStep(2)} style={styles.secondaryButton}>
                 <Text style={styles.secondaryButtonText}>Back</Text>
               </Pressable>
               <Pressable onPress={() => setStep(4)} style={styles.primaryButton}>
-                <Text style={styles.primaryButtonText}>Reveal Results</Text>
+                <Text style={styles.primaryButtonText}>Reveal Results ✨</Text>
               </Pressable>
             </View>
           </View>
@@ -538,6 +565,12 @@ const styles = StyleSheet.create({
     fontFamily: typography.fonts.display,
     fontSize: typography.sizes.heading2,
     color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  stepSubtitle: {
+    fontFamily: typography.fonts.bodyItalic || typography.fonts.body,
+    fontSize: typography.sizes.bodySmall,
+    color: colors.textMuted,
     marginBottom: spacing.lg,
   },
   textInput: {

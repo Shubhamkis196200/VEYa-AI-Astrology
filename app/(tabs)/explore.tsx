@@ -90,6 +90,8 @@ import {
   type PlanetPosition,
   type MonthEvent,
 } from '@/services/astroEngine';
+import { generateTarotReading } from '@/services/ai';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 // ─────────────────────────────────────────────────────────────
 // DESIGN TOKENS (using theme)
@@ -688,7 +690,9 @@ function TarotSection() {
   const [revealedCard, setRevealedCard] = useState<TarotCard | null>(null);
   const [isCardRevealed, setIsCardRevealed] = useState(false);
   const [aiReading, setAiReading] = useState<string | null>(null);
+  const [isLoadingReading, setIsLoadingReading] = useState(false);
   const [spreadCards, setSpreadCards] = useState<TarotCard[]>([]);
+  const onboardingData = useOnboardingStore((s) => s.data);
 
   const dailyFlip = useSharedValue(0);
   const spreadFlip1 = useSharedValue(0);
@@ -705,14 +709,39 @@ function TarotSection() {
     dailyFlip.value = withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) });
   };
 
-  const handleGetAIReading = () => {
-    if (!revealedCard) return;
-    const reversed = isCardReversed(revealedCard.id, 0);
-    const orientation = reversed ? 'reversed' : 'upright';
-    const keywords = revealedCard.keywords.slice(0, 3).join(', ');
-    setAiReading(
-      `Your ${revealedCard.name} (${orientation}) highlights ${keywords}. Let this guide your next step with intention and calm.`
-    );
+  const handleGetAIReading = async () => {
+    if (!revealedCard || isLoadingReading) return;
+    hapticLight();
+    setIsLoadingReading(true);
+    try {
+      const reversed = isCardReversed(revealedCard.id, 0);
+      const userProfile = onboardingData?.sunSign ? {
+        sun_sign: onboardingData.sunSign,
+        moon_sign: onboardingData.moonSign,
+        rising_sign: onboardingData.risingSign,
+        name: onboardingData.name,
+      } : undefined;
+      
+      const reading = await generateTarotReading(
+        {
+          name: revealedCard.name,
+          arcana: revealedCard.arcana,
+          keywords: revealedCard.keywords,
+          upright: revealedCard.upright,
+          reversed: revealedCard.reversed,
+        },
+        reversed,
+        userProfile
+      );
+      setAiReading(reading);
+    } catch (error) {
+      console.warn('[Tarot] AI reading failed:', error);
+      const reversed = isCardReversed(revealedCard.id, 0);
+      const orientation = reversed ? 'reversed' : 'upright';
+      setAiReading(`${revealedCard.name} (${orientation}): ${reversed ? revealedCard.reversed : revealedCard.upright}`);
+    } finally {
+      setIsLoadingReading(false);
+    }
   };
 
   const dealSpread = () => {
@@ -757,14 +786,16 @@ function TarotSection() {
             )}
             {isCardRevealed && (
               <View style={styles.tarotReadingArea}>
-                <Pressable onPress={handleGetAIReading} style={styles.tarotAiButton}>
+                <Pressable onPress={handleGetAIReading} style={[styles.tarotAiButton, isLoadingReading && { opacity: 0.7 }]} disabled={isLoadingReading}>
                   <LinearGradient
                     colors={[colors.primary, colors.primaryDark]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.tarotAiGradient}
                   >
-                    <Text style={styles.tarotAiButtonText}>Get AI Reading</Text>
+                    <Text style={styles.tarotAiButtonText}>
+                      {isLoadingReading ? 'Reading the cards...' : 'Get AI Reading ✨'}
+                    </Text>
                   </LinearGradient>
                 </Pressable>
                 {aiReading && (
