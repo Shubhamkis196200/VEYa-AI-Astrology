@@ -1,15 +1,12 @@
 /**
  * VEYa — Screen 05: Birth Place (Location Search)
  *
- * Collects the user's birth location via an elegant search-with-autocomplete UI.
- * Latitude/longitude from the selected city are critical for accurate house
- * placements and Rising sign calculation.
+ * Collects the user's birth location via an elegant free-text input.
+ * Latitude/longitude can be added later for precise house placements.
  *
  * Design features:
- *   - Premium search input with gold search icon
- *   - Autocomplete dropdown with soft shadow, rounded corners, slide-down reveal
- *   - Each suggestion shows a warm-gold map pin + city/country text
- *   - Once selected, the input transforms to a confirmed-selection chip
+ *   - Premium input with gold search icon
+ *   - Gentle helper text + confirmation card
  *   - Subtle abstract globe SVG illustration as background decoration
  *   - Progress 5/8 dots
  *
@@ -20,7 +17,7 @@
  * @version 1.0.0
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -30,7 +27,6 @@ import {
   Dimensions,
   Platform,
   ScrollView,
-  Keyboard,
 } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -49,9 +45,6 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-  FadeOut,
-  SlideInDown,
-  Layout,
 } from 'react-native-reanimated';
 import Svg, {
   Circle,
@@ -142,79 +135,10 @@ const TOTAL_STEPS = 10;
 const CURRENT_STEP = 4; // 0-indexed: step 4 of 8 (5th dot)
 
 // ─────────────────────────────────────────────────────────────
-// MOCK AUTOCOMPLETE DATA
-// Simulates city search results for the design.
-// In production, this would come from Google Places or a geocoding API.
-// ─────────────────────────────────────────────────────────────
-
-interface CityResult {
-  id: string;
-  city: string;
-  region: string;
-  country: string;
-  /** ISO 2-letter country code, used to display flag emoji */
-  countryCode: string;
-}
-
-const MOCK_RESULTS: Record<string, CityResult[]> = {
-  lon: [
-    { id: '1', city: 'London', region: 'England', country: 'United Kingdom', countryCode: 'GB' },
-    { id: '2', city: 'Long Beach', region: 'California', country: 'United States', countryCode: 'US' },
-    { id: '3', city: 'Londrina', region: 'Paraná', country: 'Brazil', countryCode: 'BR' },
-  ],
-  new: [
-    { id: '4', city: 'New York', region: 'New York', country: 'United States', countryCode: 'US' },
-    { id: '5', city: 'New Delhi', region: 'Delhi', country: 'India', countryCode: 'IN' },
-    { id: '6', city: 'New Orleans', region: 'Louisiana', country: 'United States', countryCode: 'US' },
-    { id: '7', city: 'Newcastle', region: 'England', country: 'United Kingdom', countryCode: 'GB' },
-  ],
-  par: [
-    { id: '8', city: 'Paris', region: 'Île-de-France', country: 'France', countryCode: 'FR' },
-    { id: '9', city: 'Paraná', region: 'Entre Ríos', country: 'Argentina', countryCode: 'AR' },
-  ],
-  tok: [
-    { id: '10', city: 'Tokyo', region: 'Tokyo', country: 'Japan', countryCode: 'JP' },
-  ],
-  los: [
-    { id: '11', city: 'Los Angeles', region: 'California', country: 'United States', countryCode: 'US' },
-    { id: '12', city: 'Los Cabos', region: 'Baja California Sur', country: 'Mexico', countryCode: 'MX' },
-  ],
-};
-
-/**
- * Mock search function — matches input prefix against known entries.
- * Returns results with a small simulated delay for realism.
- */
-function mockSearch(query: string): CityResult[] {
-  if (query.length < 2) return [];
-  const lower = query.toLowerCase().trim();
-  for (const prefix of Object.keys(MOCK_RESULTS)) {
-    if (lower.startsWith(prefix)) {
-      return MOCK_RESULTS[prefix];
-    }
-  }
-  return [];
-}
-
-/**
- * Convert ISO 3166-1 alpha-2 code to flag emoji.
- */
-function countryCodeToFlag(code: string): string {
-  const base = 0x1f1e6 - 65; // 'A' = 65
-  return String.fromCodePoint(
-    ...code
-      .toUpperCase()
-      .split('')
-      .map((c) => c.charCodeAt(0) + base)
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
 // ANIMATED COMPONENTS
 // ─────────────────────────────────────────────────────────────
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
 // ─────────────────────────────────────────────────────────────
 // STARDUST PARTICLES (consistent with Screens 01–04)
@@ -258,7 +182,7 @@ function generateParticles(count: number): ParticleConfig[] {
   return particles;
 }
 
-const PARTICLES = generateParticles(14);
+const PARTICLES = generateParticles(5);
 
 function StardustParticle({ config }: { config: ParticleConfig }) {
   const translateX = useSharedValue(0);
@@ -360,7 +284,7 @@ function ProgressDots({
 }) {
   return (
     <Animated.View
-      entering={FadeIn.duration(600).delay(200)}
+      entering={FadeIn.duration(600).delay(100)}
       style={styles.progressContainer}
     >
       {Array.from({ length: totalSteps }).map((_, index) => {
@@ -438,7 +362,7 @@ function SearchIcon({ color = colors.textMuted, size = 20 }: { color?: string; s
   );
 }
 
-/** Map pin icon — warm gold, used in results and selected state */
+/** Map pin icon — warm gold accent */
 function MapPinIcon({ color = colors.accentGold, size = 18 }: { color?: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 18 18">
@@ -626,163 +550,25 @@ function GlobeIllustration() {
 // Tap to select. Subtle highlight on press.
 // ─────────────────────────────────────────────────────────────
 
-interface ResultRowProps {
-  result: CityResult;
-  onSelect: (result: CityResult) => void;
-  index: number;
-}
-
-function ResultRow({ result, onSelect, index }: ResultRowProps) {
-  const scaleValue = useSharedValue(1);
-  const bgOpacity = useSharedValue(0);
-
-  const handlePressIn = () => {
-    scaleValue.value = withTiming(0.98, { duration: 80 });
-    bgOpacity.value = withTiming(1, { duration: 80 });
-  };
-
-  const handlePressOut = () => {
-    scaleValue.value = withSpring(1, { damping: 15, stiffness: 200 });
-    bgOpacity.value = withTiming(0, { duration: 150 });
-  };
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scaleValue.value }],
-  }));
-
-  const bgStyle = useAnimatedStyle(() => ({
-    backgroundColor: `rgba(212, 165, 71, ${bgOpacity.value * 0.06})`,
-  }));
-
-  const flag = countryCodeToFlag(result.countryCode);
-
-  return (
-    <Animated.View
-      entering={FadeInDown.duration(300)
-        .delay(index * 60)
-        .easing(Easing.out(Easing.ease))}
-    >
-      <AnimatedPressable
-        onPress={() => onSelect(result)}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={[styles.resultRow, animatedStyle, bgStyle]}
-        accessibilityRole="button"
-        accessibilityLabel={`${result.city}, ${result.region}, ${result.country}`}
-      >
-        <View style={styles.resultPinContainer}>
-          <MapPinIcon size={16} />
-        </View>
-
-        <View style={styles.resultTextContainer}>
-          <Text style={styles.resultCity} numberOfLines={1}>
-            {result.city}
-            <Text style={styles.resultRegion}>, {result.region}</Text>
-          </Text>
-          <Text style={styles.resultCountry} numberOfLines={1}>
-            {result.country}
-          </Text>
-        </View>
-
-        <Text style={styles.resultFlag}>{flag}</Text>
-      </AnimatedPressable>
-    </Animated.View>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// SELECTED LOCATION CHIP
-// Once a city is selected, the search input is replaced by an
-// elegant chip showing the confirmed selection with a map pin,
-// city name, and a dismiss (X) button to re-search.
-// ─────────────────────────────────────────────────────────────
-
-interface SelectedChipProps {
-  result: CityResult;
-  onClear: () => void;
-}
-
-function SelectedLocationChip({ result, onClear }: SelectedChipProps) {
-  const flag = countryCodeToFlag(result.countryCode);
-
-  return (
-    <Animated.View
-      entering={FadeIn.duration(400).easing(Easing.out(Easing.ease))}
-      style={styles.selectedChipOuter}
-    >
-      <View style={styles.selectedChip}>
-        {/* Gold pin icon */}
-        <View style={styles.selectedPinContainer}>
-          <MapPinIcon color={colors.accentGold} size={20} />
-        </View>
-
-        {/* City info */}
-        <View style={styles.selectedTextContainer}>
-          <Text style={styles.selectedCity} numberOfLines={1}>
-            {result.city}, {result.region}
-          </Text>
-          <Text style={styles.selectedCountry} numberOfLines={1}>
-            {flag} {result.country}
-          </Text>
-        </View>
-
-        {/* Clear button */}
-        <Pressable
-          onPress={onClear}
-          style={styles.clearButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityRole="button"
-          accessibilityLabel="Clear selection"
-          accessibilityHint="Removes the selected city so you can search again"
-        >
-          <CloseIcon color={colors.textMuted} size={14} />
-        </Pressable>
-      </View>
-    </Animated.View>
-  );
-}
-
 // ─────────────────────────────────────────────────────────────
 // MAIN COMPONENT: BirthPlaceScreen
 // ─────────────────────────────────────────────────────────────
 
 export default function BirthPlaceScreen() {
   const insets = useSafeAreaInsets();
-  const { data, updateData, nextStep, completeOnboarding } = useOnboardingStore();
+  const { data, updateData, nextStep } = useOnboardingStore();
   const inputRef = useRef<TextInput>(null);
 
   // ── State ──
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<CityResult[]>([]);
-  const [selectedCity, setSelectedCity] = useState<CityResult | null>(null);
+  const [birthCity, setBirthCity] = useState(data.birthPlace ?? '');
   const [isFocused, setIsFocused] = useState(false);
 
   // ── Derived ──
-  const isValid = selectedCity !== null;
-  const showDropdown = isFocused && results.length > 0 && !selectedCity;
-
-  // ── Search effect ──
-  useEffect(() => {
-    if (selectedCity) {
-      setResults([]);
-      return;
-    }
-    const trimmed = query.trim();
-    if (trimmed.length >= 2) {
-      // Simulated debounce — in production, use a proper debounce + API call
-      const timeout = setTimeout(() => {
-        setResults(mockSearch(trimmed));
-      }, 150);
-      return () => clearTimeout(timeout);
-    } else {
-      setResults([]);
-    }
-  }, [query, selectedCity]);
+  const isValid = birthCity.trim().length >= 2;
 
   // ── Animation values ──
   const buttonScale = useSharedValue(1);
   const buttonOpacity = useSharedValue(0.4);
-  const inputBorderColor = useSharedValue(0); // 0 = default, 1 = focused
 
   useEffect(() => {
     buttonOpacity.value = withTiming(isValid ? 1 : 0.4, {
@@ -790,13 +576,6 @@ export default function BirthPlaceScreen() {
       easing: Easing.out(Easing.ease),
     });
   }, [isValid]);
-
-  useEffect(() => {
-    inputBorderColor.value = withTiming(isFocused ? 1 : 0, {
-      duration: 200,
-      easing: Easing.out(Easing.ease),
-    });
-  }, [isFocused]);
 
   // ── Handlers ──
   const handleBack = async () => {
@@ -806,37 +585,21 @@ export default function BirthPlaceScreen() {
     router.back();
   };
 
-  const handleSelectCity = async (result: CityResult) => {
-    if (Platform.OS === 'ios') {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    Keyboard.dismiss();
-    setSelectedCity(result);
-    setQuery('');
-    setResults([]);
-  };
-
-  const handleClearSelection = async () => {
-    if (Platform.OS === 'ios') {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    setSelectedCity(null);
-    setQuery('');
-    setResults([]);
-    // Re-focus the input after clearing
-    setTimeout(() => inputRef.current?.focus(), 100);
+  const handleChange = (text: string) => {
+    setBirthCity(text);
+    updateData({ birthPlace: text });
   };
 
   const handleContinue = async () => {
-    if (!isValid || !selectedCity) return;
+    if (!isValid) return;
 
     if (Platform.OS === 'ios') {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
 
+    const trimmedCity = birthCity.trim();
     updateData({
-      birthPlace: `${selectedCity.city}, ${selectedCity.region}, ${selectedCity.country}`,
-      // In production: latitude/longitude would come from geocoding API
+      birthPlace: trimmedCity,
     });
 
     nextStep();
@@ -897,7 +660,7 @@ export default function BirthPlaceScreen() {
       >
         {/* ── Header: Back + Progress ── */}
         <Animated.View
-          entering={FadeIn.duration(500).delay(100)}
+          entering={FadeIn.duration(500).delay(50)}
           style={styles.header}
         >
           <BackButton onPress={handleBack} />
@@ -915,7 +678,7 @@ export default function BirthPlaceScreen() {
         >
           {/* ── Headline ── */}
           <Animated.Text
-            entering={FadeInDown.duration(700).delay(300).easing(Easing.out(Easing.ease))}
+            entering={FadeInDown.duration(700).delay(150).easing(Easing.out(Easing.ease))}
             style={styles.headline}
             accessibilityRole="header"
           >
@@ -924,98 +687,69 @@ export default function BirthPlaceScreen() {
 
           {/* ── Subtext ── */}
           <Animated.Text
-            entering={FadeInDown.duration(600).delay(500).easing(Easing.out(Easing.ease))}
+            entering={FadeInDown.duration(600).delay(250).easing(Easing.out(Easing.ease))}
             style={styles.subtext}
           >
             Your birth location fine-tunes your{'\n'}Rising sign and house placements
           </Animated.Text>
 
-          {/* ── Search input OR selected chip ── */}
+          {/* ── Birth city input ── */}
           <Animated.View
-            entering={FadeInDown.duration(600).delay(650).easing(Easing.out(Easing.ease))}
+            entering={FadeInDown.duration(600).delay(325).easing(Easing.out(Easing.ease))}
             style={styles.searchSection}
           >
-            {selectedCity ? (
-              <SelectedLocationChip
-                result={selectedCity}
-                onClear={handleClearSelection}
-              />
-            ) : (
-              <View style={styles.searchInputContainer}>
-                {/* Search icon */}
-                <View style={styles.searchIconContainer}>
-                  <SearchIcon
-                    color={isFocused ? colors.accentGold : colors.textMuted}
-                    size={20}
-                  />
-                </View>
-
-                {/* Text input */}
-                <TextInput
-                  ref={inputRef}
-                  style={[
-                    styles.searchInput,
-                    isFocused && styles.searchInputFocused,
-                  ]}
-                  value={query}
-                  onChangeText={setQuery}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => {
-                    // Small delay so tap on result registers before blur hides dropdown
-                    setTimeout(() => setIsFocused(false), 200);
-                  }}
-                  placeholder="Start typing your city..."
-                  placeholderTextColor={colors.textMuted}
-                  autoCorrect={false}
-                  autoCapitalize="words"
-                  returnKeyType="search"
-                  accessibilityLabel="Search for your birth city"
-                  accessibilityHint="Type a city name to see autocomplete suggestions"
+            <View style={styles.searchInputContainer}>
+              {/* Search icon */}
+              <View style={styles.searchIconContainer}>
+                <SearchIcon
+                  color={isFocused ? colors.accentGold : colors.textMuted}
+                  size={20}
                 />
               </View>
-            )}
 
-            {/* ── Autocomplete dropdown ── */}
-            {showDropdown && (
-              <Animated.View
-                entering={FadeInDown.duration(300).easing(Easing.out(Easing.ease))}
-                exiting={FadeOut.duration(200)}
-                style={styles.dropdown}
-              >
-                {results.map((result, index) => (
-                  <React.Fragment key={result.id}>
-                    {index > 0 && <View style={styles.dropdownDivider} />}
-                    <ResultRow
-                      result={result}
-                      onSelect={handleSelectCity}
-                      index={index}
-                    />
-                  </React.Fragment>
-                ))}
-              </Animated.View>
-            )}
+              {/* Text input */}
+              <TextInput
+                ref={inputRef}
+                style={[
+                  styles.searchInput,
+                  isFocused && styles.searchInputFocused,
+                ]}
+                value={birthCity}
+                onChangeText={handleChange}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                placeholder="City of birth"
+                placeholderTextColor={colors.textMuted}
+                autoCorrect={false}
+                autoCapitalize="words"
+                returnKeyType="done"
+                onSubmitEditing={handleContinue}
+                accessibilityLabel="Birth city"
+                accessibilityHint="Enter the city where you were born"
+              />
+            </View>
           </Animated.View>
 
           {/* ── Helper text when no selection yet ── */}
-          {!selectedCity && !showDropdown && query.length === 0 && (
+          {birthCity.trim().length === 0 && (
             <Animated.View
-              entering={FadeIn.duration(400).delay(800)}
+              entering={FadeIn.duration(400).delay(400)}
               style={styles.helperContainer}
             >
               <View style={styles.helperIconRow}>
                 <MapPinIcon color={colors.accentGold} size={22} />
               </View>
               <Text style={styles.helperText}>
-                Search for the city where you were born.{'\n'}
-                Even a nearby city works great.
+                Enter the city where you were born.{'\n'}
+                A nearby city works great too.
               </Text>
             </Animated.View>
           )}
 
-          {/* ── Confirmed selection display (extra detail below chip) ── */}
-          {selectedCity && (
+          {/* ── Confirmed entry display ── */}
+          {birthCity.trim().length > 0 && (
             <Animated.View
-              entering={FadeInDown.duration(500).delay(200).easing(Easing.out(Easing.ease))}
+              entering={FadeInDown.duration(500).delay(100).easing(Easing.out(Easing.ease))}
               style={styles.confirmationContainer}
             >
               <LinearGradient
@@ -1026,10 +760,7 @@ export default function BirthPlaceScreen() {
               >
                 <Text style={styles.confirmationEmoji}>📍</Text>
                 <Text style={styles.confirmationTitle}>
-                  {selectedCity.city}
-                </Text>
-                <Text style={styles.confirmationSubtitle}>
-                  {selectedCity.region}, {selectedCity.country}
+                  {birthCity.trim()}
                 </Text>
                 <View style={styles.confirmationDivider} />
                 <Text style={styles.confirmationNote}>
@@ -1046,7 +777,7 @@ export default function BirthPlaceScreen() {
 
         {/* ── Continue button (fixed at bottom) ── */}
         <Animated.View
-          entering={FadeInUp.duration(600).delay(900).easing(Easing.out(Easing.ease))}
+          entering={FadeInUp.duration(600).delay(450).easing(Easing.out(Easing.ease))}
           style={styles.ctaContainer}
         >
           <AnimatedPressable

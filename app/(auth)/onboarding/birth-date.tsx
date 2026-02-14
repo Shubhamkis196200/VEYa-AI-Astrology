@@ -280,7 +280,7 @@ function generateParticles(count: number): ParticleConfig[] {
   return particles;
 }
 
-const PARTICLES = generateParticles(14);
+const PARTICLES = generateParticles(5);
 
 function StardustParticle({ config }: { config: ParticleConfig }) {
   const translateX = useSharedValue(0);
@@ -382,7 +382,7 @@ function ProgressDots({
 }) {
   return (
     <Animated.View
-      entering={FadeIn.duration(600).delay(200)}
+      entering={FadeIn.duration(600).delay(100)}
       style={styles.progressContainer}
     >
       {Array.from({ length: totalSteps }).map((_, index) => {
@@ -975,7 +975,7 @@ export default function BirthDateScreen() {
       >
         {/* ── Header: Back + Progress ── */}
         <Animated.View
-          entering={FadeIn.duration(500).delay(100)}
+          entering={FadeIn.duration(500).delay(50)}
           style={styles.header}
         >
           <BackButton onPress={handleBack} />
@@ -991,14 +991,14 @@ export default function BirthDateScreen() {
 
         {/* ── Cosmic sparkle icon ── */}
         <Animated.View
-          entering={FadeIn.duration(800).delay(300).easing(Easing.out(Easing.ease))}
+          entering={FadeIn.duration(800).delay(150).easing(Easing.out(Easing.ease))}
         >
           <CosmicSparkle />
         </Animated.View>
 
         {/* ── Headline ── */}
         <Animated.Text
-          entering={FadeInDown.duration(700).delay(500).easing(Easing.out(Easing.ease))}
+          entering={FadeInDown.duration(700).delay(250).easing(Easing.out(Easing.ease))}
           style={styles.headline}
           accessibilityRole="header"
         >
@@ -1007,7 +1007,7 @@ export default function BirthDateScreen() {
 
         {/* ── Subtext ── */}
         <Animated.Text
-          entering={FadeInDown.duration(600).delay(700).easing(Easing.out(Easing.ease))}
+          entering={FadeInDown.duration(600).delay(350).easing(Easing.out(Easing.ease))}
           style={styles.subtext}
         >
           Your birth date reveals your Sun sign{'\n'}and cosmic blueprint
@@ -1015,7 +1015,7 @@ export default function BirthDateScreen() {
 
         {/* ── Date Picker Container ── */}
         <Animated.View
-          entering={FadeInDown.duration(600).delay(900).easing(Easing.out(Easing.ease))}
+          entering={FadeInDown.duration(600).delay(450).easing(Easing.out(Easing.ease))}
           style={styles.pickerContainer}
         >
           {IS_WEB ? (
@@ -1092,7 +1092,7 @@ export default function BirthDateScreen() {
 
         {/* ── Continue button ── */}
         <Animated.View
-          entering={FadeInUp.duration(600).delay(1100).easing(Easing.out(Easing.ease))}
+          entering={FadeInUp.duration(600).delay(550).easing(Easing.out(Easing.ease))}
         >
           <AnimatedPressable
             onPress={handleContinue}

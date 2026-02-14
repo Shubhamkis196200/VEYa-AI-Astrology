@@ -171,7 +171,7 @@ function generateParticles(count: number): ParticleConfig[] {
   return particles;
 }
 
-const PARTICLES = generateParticles(14); // Fewer particles — cleaner for input
+const PARTICLES = generateParticles(5); // Fewer particles — cleaner for input
 
 function StardustParticle({ config }: { config: ParticleConfig }) {
   const translateX = useSharedValue(0);
@@ -274,7 +274,7 @@ function ProgressDots({
 }) {
   return (
     <Animated.View
-      entering={FadeIn.duration(600).delay(200)}
+      entering={FadeIn.duration(600).delay(100)}
       style={styles.progressContainer}
     >
       {Array.from({ length: totalSteps }).map((_, index) => {
@@ -534,7 +534,7 @@ export default function NameScreen() {
         >
           {/* ── Header: Back + Progress ── */}
           <Animated.View
-            entering={FadeIn.duration(500).delay(100)}
+            entering={FadeIn.duration(500).delay(50)}
             style={styles.header}
           >
             <BackButton onPress={handleBack} />
@@ -551,14 +551,14 @@ export default function NameScreen() {
 
           {/* ── Cosmic sparkle icon ── */}
           <Animated.View
-            entering={FadeIn.duration(800).delay(300).easing(Easing.out(Easing.ease))}
+            entering={FadeIn.duration(800).delay(150).easing(Easing.out(Easing.ease))}
           >
             <CosmicSparkle />
           </Animated.View>
 
           {/* ── Headline ── */}
           <Animated.Text
-            entering={FadeInDown.duration(700).delay(500).easing(Easing.out(Easing.ease))}
+            entering={FadeInDown.duration(700).delay(250).easing(Easing.out(Easing.ease))}
             style={styles.headline}
             accessibilityRole="header"
           >
@@ -567,7 +567,7 @@ export default function NameScreen() {
 
           {/* ── Subtext ── */}
           <Animated.Text
-            entering={FadeInDown.duration(600).delay(700).easing(Easing.out(Easing.ease))}
+            entering={FadeInDown.duration(600).delay(350).easing(Easing.out(Easing.ease))}
             style={styles.subtext}
           >
             This helps VEYa personalize your cosmic experience
@@ -575,7 +575,7 @@ export default function NameScreen() {
 
           {/* ── Name input ── */}
           <Animated.View
-            entering={FadeInDown.duration(600).delay(900).easing(Easing.out(Easing.ease))}
+            entering={FadeInDown.duration(600).delay(450).easing(Easing.out(Easing.ease))}
             style={styles.inputContainer}
           >
             <TextInput
@@ -621,7 +621,7 @@ export default function NameScreen() {
 
           {/* ── Continue button ── */}
           <Animated.View
-            entering={FadeInUp.duration(600).delay(1100).easing(Easing.out(Easing.ease))}
+            entering={FadeInUp.duration(600).delay(550).easing(Easing.out(Easing.ease))}
           >
             <AnimatedPressable
               onPress={handleContinue}

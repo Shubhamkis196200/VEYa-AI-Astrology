@@ -268,7 +268,7 @@ function generateParticles(count: number): ParticleConfig[] {
   return particles;
 }
 
-const PARTICLES = generateParticles(10);
+const PARTICLES = generateParticles(5);
 
 const StardustParticle = React.memo(function StardustParticle({ config }: { config: ParticleConfig }) {
   const translateX = useSharedValue(0);
@@ -349,7 +349,7 @@ function ProgressDots({
 }) {
   return (
     <Animated.View
-      entering={FadeIn.duration(600).delay(200)}
+      entering={FadeIn.duration(600).delay(100)}
       style={styles.progressContainer}
     >
       {Array.from({ length: totalSteps }).map((_, index) => {
@@ -448,7 +448,7 @@ function InterestCard({ area, isSelected, onToggle, index }: InterestCardProps) 
   const selectionProgress = useSharedValue(isSelected ? 1 : 0);
   const cardScale = useSharedValue(1);
   const checkmarkScale = useSharedValue(isSelected ? 1 : 0);
-  const enterDelay = 600 + index * 80; // Staggered entrance
+  const enterDelay = 300 + index * 40; // Staggered entrance
 
   // Update animation when selection changes
   useEffect(() => {
@@ -853,7 +853,7 @@ export default function InterestsScreen() {
       >
         {/* ── Header: Back + Progress ── */}
         <Animated.View
-          entering={FadeIn.duration(500).delay(100)}
+          entering={FadeIn.duration(500).delay(50)}
           style={styles.header}
         >
           <BackButton onPress={handleBack} />
@@ -871,7 +871,7 @@ export default function InterestsScreen() {
           {/* ── Headline ── */}
           <Animated.Text
             entering={FadeInDown.duration(600)
-              .delay(300)
+              .delay(150)
               .easing(Easing.out(Easing.ease))}
             style={styles.headline}
             accessibilityRole="header"
@@ -882,7 +882,7 @@ export default function InterestsScreen() {
           {/* ── Subtext ── */}
           <Animated.Text
             entering={FadeInDown.duration(500)
-              .delay(500)
+              .delay(250)
               .easing(Easing.out(Easing.ease))}
             style={styles.subtext}
           >
@@ -917,7 +917,7 @@ export default function InterestsScreen() {
         {/* ── CTA Button: "Complete Your Profile ✨" (fixed at bottom) ── */}
         <Animated.View
           entering={FadeInUp.duration(500)
-            .delay(1400)
+            .delay(700)
             .easing(Easing.out(Easing.ease))}
           style={styles.ctaContainer}
         >

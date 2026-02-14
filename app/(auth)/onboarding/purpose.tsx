@@ -191,7 +191,7 @@ function generateParticles(count: number): ParticleConfig[] {
   }));
 }
 
-const PARTICLES = generateParticles(10);
+const PARTICLES = generateParticles(5);
 
 const StardustParticle = (({ config }: { config: ParticleConfig }) => {
   const translateX = useSharedValue(0);
@@ -241,7 +241,7 @@ const StardustParticle = (({ config }: { config: ParticleConfig }) => {
 
 function ProgressDots({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) {
   return (
-    <Animated.View entering={FadeIn.duration(600).delay(200)} style={styles.progressContainer}>
+    <Animated.View entering={FadeIn.duration(600).delay(100)} style={styles.progressContainer}>
       {Array.from({ length: totalSteps }).map((_, index) => (
         <View
           key={index}
@@ -448,7 +448,7 @@ function PurposeScreenInner() {
         paddingTop: insets.top + spacing.md,
         paddingBottom: insets.bottom + spacing.lg,
       }]}>
-        <Animated.View entering={FadeIn.duration(500).delay(100)} style={styles.header}>
+        <Animated.View entering={FadeIn.duration(500).delay(50)} style={styles.header}>
           <BackButton onPress={handleBack} />
           <ProgressDots currentStep={CURRENT_STEP} totalSteps={TOTAL_STEPS} />
           <View style={styles.headerSpacer} />
@@ -456,12 +456,12 @@ function PurposeScreenInner() {
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false} bounces>
-          <Animated.Text entering={FadeInDown.duration(600).delay(300).easing(Easing.out(Easing.ease))}
+          <Animated.Text entering={FadeInDown.duration(600).delay(150).easing(Easing.out(Easing.ease))}
             style={styles.headline} accessibilityRole="header">
             What Brings{'\n'}You Here?
           </Animated.Text>
 
-          <Animated.Text entering={FadeInDown.duration(500).delay(500).easing(Easing.out(Easing.ease))}
+          <Animated.Text entering={FadeInDown.duration(500).delay(250).easing(Easing.out(Easing.ease))}
             style={styles.subtext}>
             Understanding your goals helps{'\n'}VEYa guide you better
           </Animated.Text>
@@ -483,7 +483,7 @@ function PurposeScreenInner() {
           <View style={{ height: spacing.xxl + 20 }} />
         </ScrollView>
 
-        <Animated.View entering={FadeInUp.duration(500).delay(1400).easing(Easing.out(Easing.ease))}
+        <Animated.View entering={FadeInUp.duration(500).delay(700).easing(Easing.out(Easing.ease))}
           style={styles.ctaContainer}>
           <AnimatedPressable onPress={handleContinue} onPressIn={handlePressIn}
             onPressOut={handlePressOut} disabled={!hasSelection}

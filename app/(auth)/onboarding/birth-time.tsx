@@ -249,7 +249,7 @@ function generateParticles(count: number): ParticleConfig[] {
   return particles;
 }
 
-const PARTICLES = generateParticles(14);
+const PARTICLES = generateParticles(5);
 
 function StardustParticle({ config }: { config: ParticleConfig }) {
   const translateX = useSharedValue(0);
@@ -351,7 +351,7 @@ function ProgressDots({
 }) {
   return (
     <Animated.View
-      entering={FadeIn.duration(600).delay(200)}
+      entering={FadeIn.duration(600).delay(100)}
       style={styles.progressContainer}
     >
       {Array.from({ length: totalSteps }).map((_, index) => {
@@ -977,7 +977,7 @@ export default function BirthTimeScreen() {
       >
         {/* ── Header: Back + Progress ── */}
         <Animated.View
-          entering={FadeIn.duration(500).delay(100)}
+          entering={FadeIn.duration(500).delay(50)}
           style={styles.header}
         >
           <BackButton onPress={handleBack} />
@@ -998,7 +998,7 @@ export default function BirthTimeScreen() {
         >
           {/* ── Headline ── */}
           <Animated.Text
-            entering={FadeInDown.duration(700).delay(300).easing(Easing.out(Easing.ease))}
+            entering={FadeInDown.duration(700).delay(150).easing(Easing.out(Easing.ease))}
             style={styles.headline}
             accessibilityRole="header"
           >
@@ -1007,7 +1007,7 @@ export default function BirthTimeScreen() {
 
           {/* ── Subtext ── */}
           <Animated.Text
-            entering={FadeInDown.duration(600).delay(500).easing(Easing.out(Easing.ease))}
+            entering={FadeInDown.duration(600).delay(250).easing(Easing.out(Easing.ease))}
             style={styles.subtext}
           >
             Your birth time reveals your Rising sign —{'\n'}the face you show the world
@@ -1021,7 +1021,7 @@ export default function BirthTimeScreen() {
               subtitle="Hour and minute"
               isSelected={selectedOption === 'exact'}
               onPress={() => handleOptionSelect('exact')}
-              delay={600}
+              delay={300}
             />
 
             <OptionCard
@@ -1030,7 +1030,7 @@ export default function BirthTimeScreen() {
               subtitle="General time of day"
               isSelected={selectedOption === 'approximate'}
               onPress={() => handleOptionSelect('approximate')}
-              delay={700}
+              delay={350}
             />
 
             <OptionCard
@@ -1039,7 +1039,7 @@ export default function BirthTimeScreen() {
               subtitle="That's completely okay"
               isSelected={selectedOption === 'unknown'}
               onPress={() => handleOptionSelect('unknown')}
-              delay={800}
+              delay={400}
             />
           </View>
 
@@ -1126,7 +1126,7 @@ export default function BirthTimeScreen() {
                     config={config}
                     isSelected={selectedTimeOfDay === config.key}
                     onPress={() => handleTimeOfDaySelect(config.key)}
-                    delay={100 + index * 80}
+                    delay={50 + index * 40}
                   />
                 ))}
               </View>
@@ -1146,7 +1146,7 @@ export default function BirthTimeScreen() {
 
         {/* ── Continue button (fixed at bottom) ── */}
         <Animated.View
-          entering={FadeInUp.duration(600).delay(900).easing(Easing.out(Easing.ease))}
+          entering={FadeInUp.duration(600).delay(450).easing(Easing.out(Easing.ease))}
           style={styles.ctaContainer}
         >
           <AnimatedPressable
