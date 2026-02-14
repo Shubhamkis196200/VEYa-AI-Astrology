@@ -95,9 +95,9 @@ export default function RootLayout() {
           | string
           | undefined;
         if (screen) {
-          router.push(screen);
+          router.push(screen as any);
         } else {
-          router.push('/(tabs)');
+          router.push('/(tabs)' as any);
         }
       },
     );

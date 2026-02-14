@@ -10,7 +10,7 @@
 //
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getMoonPhase, getCurrentTransits, type MoonPhaseData } from '@/services/astroEngine';
+import { getMoonPhase, getCurrentTransits, type MoonPhaseInfo } from '@/services/astroEngine';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -180,7 +180,7 @@ export async function generateWidgetData(sunSign: string): Promise<WidgetData> {
     sunSign,
     zodiacEmoji: ZODIAC_EMOJIS[sunSign] || '⭐',
     moonPhaseEmoji: moonPhase.emoji,
-    moonPhaseName: moonPhase.name,
+    moonPhaseName: moonPhase.phaseName,
     energyScore,
     dailyInsight,
     luckyColor,

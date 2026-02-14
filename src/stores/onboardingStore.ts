@@ -8,6 +8,7 @@ interface OnboardingData {
   birthTime: Date | string | null;
   birthTimeKnown: boolean;
   birthTimePrecision: string;
+  birthTimeRange?: 'morning' | 'afternoon' | 'evening' | 'night' | null;
   birthPlace: string;
   birthLat: number | null;
   birthLng: number | null;

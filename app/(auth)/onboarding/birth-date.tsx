@@ -825,7 +825,7 @@ export default function BirthDateScreen() {
   const [selectedYearIndex, setSelectedYearIndex] = useState(DEFAULT_YEAR_INDEX);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [showZodiac, setShowZodiac] = useState(false);
-  const zodiacTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const zodiacTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Derived
   const selectedYear = YEARS[selectedYearIndex];

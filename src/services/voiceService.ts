@@ -150,9 +150,9 @@ export async function speakText(text: string, language?: string): Promise<void> 
 
     const arrayBuffer = await response.arrayBuffer();
     const base64Audio = Buffer.from(arrayBuffer).toString('base64');
-    const fileUri = `${FileSystem.cacheDirectory}veya_tts_${Date.now()}.mp3`;
+    const fileUri = `${FileSystem.documentDirectory || ''}veya_tts_${Date.now()}.mp3`;
     await FileSystem.writeAsStringAsync(fileUri, base64Audio, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: 'base64' as any,
     });
 
     const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true });

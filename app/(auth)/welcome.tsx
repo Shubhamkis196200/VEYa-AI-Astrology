@@ -437,7 +437,7 @@ export default function WelcomeScreen() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     // Navigate to sign-in flow
-    router.push('/(auth)/sign-in');
+    router.push('/(auth)/sign-in' as any);
   };
 
   const buttonAnimatedStyle = useAnimatedStyle(() => ({

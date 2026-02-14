@@ -124,8 +124,8 @@ function calculateCosmicWeather(friend: CosmicFriend): CosmicWeather {
     (moonElement === 'water' && (friendElement === 'water' || friendElement === 'earth'));
   
   // Check for challenging transits
-  const mars = transits.find(t => t.planet === 'Mars');
-  const saturn = transits.find(t => t.planet === 'Saturn');
+  const mars = transits.find(t => t.name === 'Mars');
+  const saturn = transits.find(t => t.name === 'Saturn');
   const hasTensionTransit = 
     mars?.sign === friendSunSign || 
     saturn?.sign === friendSunSign;

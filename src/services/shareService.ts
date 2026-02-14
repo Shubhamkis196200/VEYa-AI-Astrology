@@ -34,22 +34,16 @@ async function captureCard(
 ) {
   if (!viewRef?.current?.capture) return null;
 
-  return viewRef.current.capture({
-    format: 'png',
-    quality: 1,
-    width,
-    height,
-  });
+  // Note: ViewShot capture() takes no args - options set via component props
+  return viewRef.current.capture();
 }
 
 export async function captureAndShare(
   viewRef: RefObject<ViewShot | null>,
 ): Promise<boolean> {
   try {
-    const uri = await viewRef.current?.capture?.({
-      format: 'png',
-      quality: 1,
-    });
+    // Note: ViewShot capture() takes no args - options set via component props
+    const uri = await viewRef.current?.capture?.();
 
     if (!uri) return false;
 

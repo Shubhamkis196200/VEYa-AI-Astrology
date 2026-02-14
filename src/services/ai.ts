@@ -156,10 +156,10 @@ function formatChartContext(profile: UserProfile, chart?: BirthChart | null): st
     }
   }
 
-  if (chart?.aspects?.length) {
+  if (chart?.aspects && Array.isArray(chart.aspects) && chart.aspects.length) {
     lines.push('\nKey Natal Aspects:');
-    for (const aspect of (chart.aspects as any[]).slice(0, 10)) {
-      lines.push(`  ${aspect.planet1} ${aspect.type} ${aspect.planet2} (orb ${aspect.orb.toFixed(1)}°)`);
+    for (const aspect of chart.aspects.slice(0, 10)) {
+      lines.push(`  ${(aspect as any).planet1} ${(aspect as any).type} ${(aspect as any).planet2} (orb ${(aspect as any).orb.toFixed(1)}°)`);
     }
   }
 
@@ -466,12 +466,15 @@ export async function generateCompatibility(
       dimensions: {
         communication: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
         emotional: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
-        values: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
         passion: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
         growth: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
+        conflict: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
+        longterm: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
       },
-      summary: 'Rate limit reached. Please try again in a moment for your personalized compatibility reading.',
-      tips: ['Take a breath and try again shortly'],
+      narrative: 'Rate limit reached. Please try again in a moment for your personalized compatibility reading.',
+      strengths: ['Try again shortly'],
+      challenges: [],
+      advice: 'Take a breath and try again shortly',
     };
   }
 
@@ -697,7 +700,7 @@ export async function searchMemories(
   userId: string,
   limit: number = 5,
 ): Promise<MemoryResult[]> {
-  const { data, error } = await supabase.rpc('match_user_embeddings', {
+  const { data, error } = await (supabase.rpc as any)('match_user_embeddings', {
     query_embedding: queryEmbedding,
     match_user_id: userId,
     match_count: limit,

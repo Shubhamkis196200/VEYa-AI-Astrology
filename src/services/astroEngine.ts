@@ -357,16 +357,16 @@ function generateAspectInterpretation(
       },
     },
     Trine: {
-      default: `Flowing harmony between ${transitPlanet} in ${transitSign} and your natal ${natalPlanet} — natural ease and positive energy`,
+      default: { _: `Flowing harmony between ${transitPlanet} in ${transitSign} and your natal ${natalPlanet} — natural ease and positive energy` },
     },
     Sextile: {
-      default: `Opportunities arise as ${transitPlanet} in ${transitSign} supports your natal ${natalPlanet} — take the initiative`,
+      default: { _: `Opportunities arise as ${transitPlanet} in ${transitSign} supports your natal ${natalPlanet} — take the initiative` },
     },
     Square: {
-      default: `Creative tension between ${transitPlanet} in ${transitSign} and your natal ${natalPlanet} — growth through challenge`,
+      default: { _: `Creative tension between ${transitPlanet} in ${transitSign} and your natal ${natalPlanet} — growth through challenge` },
     },
     Opposition: {
-      default: `Awareness and balance needed as ${transitPlanet} in ${transitSign} opposes your natal ${natalPlanet} — see both sides`,
+      default: { _: `Awareness and balance needed as ${transitPlanet} in ${transitSign} opposes your natal ${natalPlanet} — see both sides` },
     },
   };
 
@@ -383,7 +383,8 @@ function generateAspectInterpretation(
 
   // Fall back to default for this aspect type
   if (aspectInterps.default) {
-    return aspectInterps.default as string;
+    const defaultInterp = aspectInterps.default;
+    return typeof defaultInterp === 'string' ? defaultInterp : defaultInterp._ || defaultInterp[Object.keys(defaultInterp)[0]];
   }
 
   return `${transitPlanet} in ${transitSign} ${aspectType.toLowerCase()}s your natal ${natalPlanet}`;
