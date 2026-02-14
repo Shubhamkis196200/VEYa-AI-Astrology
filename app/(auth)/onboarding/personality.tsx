@@ -849,7 +849,7 @@ function PersonalitySnapshotScreenInner() {
     }
     // Save resonance response to onboarding store (for analytics)
     // useOnboardingStore.getState().setPersonalityResonance(resonanceResponse);
-    router.push('/(auth)/onboarding/methodology');
+    router.push('/(auth)/onboarding/interests');
   };
 
   const handleResonanceResponse = useCallback((response: 'spot_on' | 'not_quite') => {
