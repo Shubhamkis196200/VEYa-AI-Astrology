@@ -71,6 +71,8 @@ async function hapticImpact(style: 'Light' | 'Medium' = 'Light') {
 }
 import AnimatedPressable from '@/components/ui/AnimatedPressable';
 import CompatibilityModal from '@/components/shared/CompatibilityModal';
+import SoulConnectionScreen from '@/components/social/SoulConnectionScreen';
+import CosmicYearTimeline from '@/components/shared/CosmicYearTimeline';
 import NatalChart, {
   ZODIAC_SIGNS,
   ELEMENT_COLORS,
@@ -1131,6 +1133,21 @@ export default function ExploreTab() {
         <TarotSection />
         <MoonTrackerSection />
         <TransitCalendarSection />
+
+        {/* Soul Connections Section */}
+        <Animated.View entering={FadeInDown.duration(600).delay(1000)} style={styles.sectionContainer}>
+          <Text style={styles.sectionLabel}>SOUL CONNECTIONS</Text>
+          <Text style={styles.sectionTitle}>Your Cosmic Circle</Text>
+          <SoulConnectionScreen />
+        </Animated.View>
+
+        {/* Cosmic Year Section */}
+        <Animated.View entering={FadeInDown.duration(600).delay(1200)} style={styles.sectionContainer}>
+          <Text style={styles.sectionLabel}>YOUR COSMIC YEAR</Text>
+          <Text style={styles.sectionTitle}>2026 at a Glance</Text>
+          <CosmicYearTimeline />
+        </Animated.View>
+
         <View style={{ height: 40 }} />
       </ScrollView>
       <CompatibilityModal

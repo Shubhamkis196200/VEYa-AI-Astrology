@@ -1,7 +1,7 @@
 /**
  * VEYa — Today Tab (Home) — SAFE VERSION
  */
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,16 @@ import {
   StyleSheet,
   Platform,
   ActivityIndicator,
+  Pressable,
+  Modal,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import ViewShot from 'react-native-view-shot';
+import { Audio } from 'expo-av';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useReadingStore } from '@/stores/readingStore';
 import { useStreakStore } from '@/stores/streakStore';
@@ -19,6 +26,12 @@ import type { ZodiacSign } from '@/types';
 import OneInsightCard from '@/components/home/OneInsightCard';
 import DailyBriefingCard from '@/components/home/DailyBriefingCard';
 import StreakCounter from '@/components/home/StreakCounter';
+import EnergyMeter from '@/components/home/EnergyMeter';
+import DoAndDontCard from '@/components/home/DoAndDontCard';
+import TransitHighlights from '@/components/home/TransitHighlights';
+import ShareableCard from '@/components/shared/ShareableCard';
+import VoiceInterface from '@/components/voice/VoiceInterface';
+import { shareReading, captureAndShare } from '@/services/shareService';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -44,7 +57,7 @@ export default function TodayScreen() {
   const { currentStreak, isLoading: streakLoading, performCheckIn, loadStreak } = useStreakStore();
 
   const [showVoice, setShowVoice] = useState(false);
-  const shareRef = React.useRef<ViewShot | null>(null);
+  const shareRef = useRef<ViewShot | null>(null);
 
   const demoUserId = 'demo-user-001';
   const sunSign: ZodiacSign = (data?.sunSign as ZodiacSign) || 'Scorpio';

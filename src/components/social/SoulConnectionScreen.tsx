@@ -67,10 +67,10 @@ function FriendCard({ friend, weather, onSendSupport, onPress, index }: FriendCa
     scale.value = withSpring(1);
   };
 
-  const weatherColors = {
-    good: ['#059669', '#10B981'],
-    neutral: ['#6366F1', '#818CF8'],
-    challenging: ['#DC2626', '#EF4444'],
+  const weatherColors: Record<string, readonly [string, string]> = {
+    good: ['#059669', '#10B981'] as const,
+    neutral: ['#6366F1', '#818CF8'] as const,
+    challenging: ['#DC2626', '#EF4444'] as const,
   };
 
   return (
