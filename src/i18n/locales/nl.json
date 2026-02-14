@@ -1,0 +1,10 @@
+{
+  "tabs": { "today": "Vandaag", "chat": "Chat", "explore": "Ontdek", "rituals": "Rituelen", "profile": "Profiel" },
+  "home": { "goodMorning": "Goedemorgen", "goodAfternoon": "Goedemiddag", "goodEvening": "Goedenavond", "talkToVeya": "Praat met VEYa ✨", "hearReading": "🔊 Luister naar je lezing", "dailyBriefing": "Je kosmische briefing", "streak": "Dagen op rij", "cosmicEnergy": "Kosmische energie" },
+  "chat": { "placeholder": "Vraag VEYa alles...", "voiceMode": "Spraakmode", "sending": "Verzenden..." },
+  "voice": { "listening": "Luisteren...", "processing": "Begrijpen...", "speaking": "VEYa spreekt...", "tapToStart": "Tik om te starten", "replay": "Opnieuw 🔁", "askAboutChart": "Vraag VEYa over je horoscoop", "talkToVeya": "Praat met VEYa" },
+  "explore": { "birthChart": "Je geboortehoroscoop", "bigThree": "Je grote drie", "fullChart": "Volledige horoscoop", "askVeya": "🎙️ Vraag VEYa over je horoscoop" },
+  "profile": { "settings": "Instellingen", "voiceSettings": "Stem", "veyaVoice": "VEYa's stem: Nova ✨", "autoSpeak": "Automatisch voorlezen", "language": "Taal", "notifications": "Meldingen", "about": "Over VEYa" },
+  "rituals": { "morningRitual": "Ochtendritueel", "breathe": "Neem 3 diepe ademhalingen", "intention": "Stel je intentie", "readBriefing": "Lees je dagelijkse briefing" },
+  "common": { "share": "Delen", "close": "Sluiten", "save": "Opslaan", "cancel": "Annuleren", "done": "Klaar" }
+}

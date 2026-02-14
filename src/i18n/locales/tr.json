@@ -1,0 +1,10 @@
+{
+  "tabs": { "today": "Bugün", "chat": "Sohbet", "explore": "Keşfet", "rituals": "Ritüeller", "profile": "Profil" },
+  "home": { "goodMorning": "Günaydın", "goodAfternoon": "İyi günler", "goodEvening": "İyi akşamlar", "talkToVeya": "VEYa ile konuş ✨", "hearReading": "🔊 Okumayı dinle", "dailyBriefing": "Günlük kozmik brifing", "streak": "Gün serisi", "cosmicEnergy": "Kozmik enerji" },
+  "chat": { "placeholder": "VEYa'ya sor...", "voiceMode": "Ses modu", "sending": "Gönderiliyor..." },
+  "voice": { "listening": "Dinliyorum...", "processing": "Anlıyorum...", "speaking": "VEYa konuşuyor...", "tapToStart": "Başlamak için dokun", "replay": "Tekrar dinle 🔁", "askAboutChart": "VEYa'ya haritanı sor", "talkToVeya": "VEYa ile konuş" },
+  "explore": { "birthChart": "Doğum haritanız", "bigThree": "Büyük üçlünüz", "fullChart": "Tam harita", "askVeya": "🎙️ VEYa'ya haritanı sor" },
+  "profile": { "settings": "Ayarlar", "voiceSettings": "Ses", "veyaVoice": "VEYa'nın sesi: Nova ✨", "autoSpeak": "Otomatik sesli yanıt", "language": "Dil", "notifications": "Bildirimler", "about": "VEYa hakkında" },
+  "rituals": { "morningRitual": "Sabah ritüeli", "breathe": "3 derin nefes al", "intention": "Niyetini belirle", "readBriefing": "Günlük brifingini oku" },
+  "common": { "share": "Paylaş", "close": "Kapat", "save": "Kaydet", "cancel": "İptal", "done": "Tamam" }
+}

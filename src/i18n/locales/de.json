@@ -1,0 +1,10 @@
+{
+  "tabs": { "today": "Heute", "chat": "Chat", "explore": "Entdecken", "rituals": "Rituale", "profile": "Profil" },
+  "home": { "goodMorning": "Guten Morgen", "goodAfternoon": "Guten Tag", "goodEvening": "Guten Abend", "talkToVeya": "Sprich mit VEYa ✨", "hearReading": "🔊 Dein Horoskop anhören", "dailyBriefing": "Dein kosmisches Briefing", "streak": "Tage am Stück", "cosmicEnergy": "Kosmische Energie" },
+  "chat": { "placeholder": "Frag VEYa alles...", "voiceMode": "Sprachmodus", "sending": "Wird gesendet..." },
+  "voice": { "listening": "Ich höre...", "processing": "Ich verstehe...", "speaking": "VEYa spricht...", "tapToStart": "Tippen zum Starten", "replay": "Nochmal 🔁", "askAboutChart": "Frag VEYa über dein Horoskop", "talkToVeya": "Sprich mit VEYa" },
+  "explore": { "birthChart": "Dein Geburtshoroskop", "bigThree": "Deine großen Drei", "fullChart": "Vollständiges Horoskop", "askVeya": "🎙️ Frag VEYa über dein Horoskop" },
+  "profile": { "settings": "Einstellungen", "voiceSettings": "Stimme", "veyaVoice": "VEYas Stimme: Nova ✨", "autoSpeak": "Automatisch vorlesen", "language": "Sprache", "notifications": "Benachrichtigungen", "about": "Über VEYa" },
+  "rituals": { "morningRitual": "Morgenritual", "breathe": "Nimm 3 tiefe Atemzüge", "intention": "Setze deine Absicht", "readBriefing": "Lies dein tägliches Briefing" },
+  "common": { "share": "Teilen", "close": "Schließen", "save": "Speichern", "cancel": "Abbrechen", "done": "Fertig" }
+}

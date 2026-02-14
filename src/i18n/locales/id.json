@@ -1,0 +1,10 @@
+{
+  "tabs": { "today": "Hari Ini", "chat": "Obrolan", "explore": "Jelajahi", "rituals": "Ritual", "profile": "Profil" },
+  "home": { "goodMorning": "Selamat pagi", "goodAfternoon": "Selamat siang", "goodEvening": "Selamat malam", "talkToVeya": "Bicara dengan VEYa ✨", "hearReading": "🔊 Dengarkan bacaanmu", "dailyBriefing": "Briefing kosmis harian", "streak": "Hari berturut-turut", "cosmicEnergy": "Energi kosmis" },
+  "chat": { "placeholder": "Tanyakan apa saja ke VEYa...", "voiceMode": "Mode suara", "sending": "Mengirim..." },
+  "voice": { "listening": "Mendengarkan...", "processing": "Memahami...", "speaking": "VEYa berbicara...", "tapToStart": "Ketuk untuk mulai", "replay": "Putar ulang 🔁", "askAboutChart": "Tanya VEYa tentang baganmu", "talkToVeya": "Bicara dengan VEYa" },
+  "explore": { "birthChart": "Bagan kelahiranmu", "bigThree": "Tiga besar", "fullChart": "Bagan lengkap", "askVeya": "🎙️ Tanya VEYa tentang baganmu" },
+  "profile": { "settings": "Pengaturan", "voiceSettings": "Suara", "veyaVoice": "Suara VEYa: Nova ✨", "autoSpeak": "Jawaban suara otomatis", "language": "Bahasa", "notifications": "Notifikasi", "about": "Tentang VEYa" },
+  "rituals": { "morningRitual": "Ritual pagi", "breathe": "Ambil 3 napas dalam", "intention": "Tetapkan niat Anda", "readBriefing": "Baca briefing harian" },
+  "common": { "share": "Bagikan", "close": "Tutup", "save": "Simpan", "cancel": "Batal", "done": "Selesai" }
+}

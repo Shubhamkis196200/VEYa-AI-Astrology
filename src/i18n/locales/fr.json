@@ -1,0 +1,10 @@
+{
+  "tabs": { "today": "Aujourd'hui", "chat": "Chat", "explore": "Explorer", "rituals": "Rituels", "profile": "Profil" },
+  "home": { "goodMorning": "Bonjour", "goodAfternoon": "Bon après-midi", "goodEvening": "Bonsoir", "talkToVeya": "Parlez à VEYa ✨", "hearReading": "🔊 Écouter votre lecture", "dailyBriefing": "Votre briefing cosmique", "streak": "Jours consécutifs", "cosmicEnergy": "Énergie cosmique" },
+  "chat": { "placeholder": "Demandez à VEYa...", "voiceMode": "Mode vocal", "sending": "Envoi..." },
+  "voice": { "listening": "J'écoute...", "processing": "Je comprends...", "speaking": "VEYa parle...", "tapToStart": "Appuyez pour commencer", "replay": "Réécouter 🔁", "askAboutChart": "Demandez à VEYa sur votre thème", "talkToVeya": "Parlez à VEYa" },
+  "explore": { "birthChart": "Votre thème natal", "bigThree": "Vos trois grands", "fullChart": "Thème complet", "askVeya": "🎙️ Demandez à VEYa sur votre thème" },
+  "profile": { "settings": "Paramètres", "voiceSettings": "Voix", "veyaVoice": "Voix de VEYa : Nova ✨", "autoSpeak": "Réponses vocales auto", "language": "Langue", "notifications": "Notifications", "about": "À propos de VEYa" },
+  "rituals": { "morningRitual": "Rituel du matin", "breathe": "Prenez 3 respirations profondes", "intention": "Définissez votre intention", "readBriefing": "Lisez votre briefing quotidien" },
+  "common": { "share": "Partager", "close": "Fermer", "save": "Enregistrer", "cancel": "Annuler", "done": "Terminé" }
+}

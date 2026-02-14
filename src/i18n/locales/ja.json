@@ -1,0 +1,10 @@
+{
+  "tabs": { "today": "今日", "chat": "チャット", "explore": "探索", "rituals": "リチュアル", "profile": "プロフィール" },
+  "home": { "goodMorning": "おはようございます", "goodAfternoon": "こんにちは", "goodEvening": "こんばんは", "talkToVeya": "VEYaと話す ✨", "hearReading": "🔊 リーディングを聴く", "dailyBriefing": "今日の宇宙ブリーフィング", "streak": "連続日数", "cosmicEnergy": "宇宙エネルギー" },
+  "chat": { "placeholder": "VEYaに何でも聞いて...", "voiceMode": "音声モード", "sending": "送信中..." },
+  "voice": { "listening": "聴いています...", "processing": "理解しています...", "speaking": "VEYaが話しています...", "tapToStart": "タップして開始", "replay": "もう一度 🔁", "askAboutChart": "VEYaにチャートについて聞く", "talkToVeya": "VEYaと話す" },
+  "explore": { "birthChart": "あなたの出生図", "bigThree": "ビッグスリー", "fullChart": "完全チャート", "askVeya": "🎙️ VEYaにチャートについて聞く" },
+  "profile": { "settings": "設定", "voiceSettings": "音声", "veyaVoice": "VEYaの声: Nova ✨", "autoSpeak": "自動音声応答", "language": "言語", "notifications": "通知", "about": "VEYaについて" },
+  "rituals": { "morningRitual": "朝のリチュアル", "breathe": "深呼吸を3回", "intention": "意図を設定する", "readBriefing": "日々のブリーフィングを読む" },
+  "common": { "share": "共有", "close": "閉じる", "save": "保存", "cancel": "キャンセル", "done": "完了" }
+}

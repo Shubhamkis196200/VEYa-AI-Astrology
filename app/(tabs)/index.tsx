@@ -1,129 +1,175 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useOnboardingStore } from '../../src/stores/onboardingStore';
+/**
+ * VEYa — Today Tab (Home) — SAFE VERSION
+ */
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Platform,
+  Pressable,
+  ActivityIndicator,
+} from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useReadingStore } from '@/stores/readingStore';
+import { useStreakStore } from '@/stores/streakStore';
+import type { ZodiacSign } from '@/types';
+import EnergyMeter from '@/components/home/EnergyMeter';
+import DailyBriefingCard from '@/components/home/DailyBriefingCard';
+import DoAndDontCard from '@/components/home/DoAndDontCard';
+import TransitHighlights from '@/components/home/TransitHighlights';
+import StreakCounter from '@/components/home/StreakCounter';
+
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 5) return 'Quiet hours';
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  if (hour < 21) return 'Good evening';
+  return 'Sweet night';
+}
+
+function getDateDisplay(): string {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+}
 
 export default function TodayScreen() {
-  const name = useOnboardingStore((s) => s.data.name) || 'friend';
+  const insets = useSafeAreaInsets();
+  const { data } = useOnboardingStore();
+  const { generatedReading, loadGeneratedReading } = useReadingStore();
+  const { currentStreak, isLoading: streakLoading, performCheckIn } = useStreakStore();
+
+  const demoUserId = 'demo-user-001';
+  const sunSign: ZodiacSign = (data?.sunSign as ZodiacSign) || 'Scorpio';
+
+  useEffect(() => {
+    try { loadGeneratedReading(sunSign); } catch (e) { console.warn('[Reading] error', e); }
+  }, [sunSign]);
+
+  useEffect(() => {
+    performCheckIn(demoUserId).catch(() => {});
+  }, []);
+
+  const greeting = useMemo(() => getGreeting(), []);
+  const dateDisplay = useMemo(() => getDateDisplay(), []);
+  const r = generatedReading;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <Text style={styles.header}>Good morning, {name} ☉</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>Scorpio</Text>
-        </View>
-      </View>
+    <View style={[styles.root, { paddingTop: insets.top + 16 }]}>
+      <StatusBar style="dark" />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <StreakCounter currentStreak={currentStreak} isLoading={streakLoading} />
 
-      <View style={styles.card}>
-        <View style={styles.cardHeaderRow}>
-          <Text style={styles.cardTitle}>Energy Meter</Text>
-          <Text style={styles.cardTitle}>75%</Text>
-        </View>
-        <View style={styles.meterTrack}>
-          <View style={styles.meterFill} />
-        </View>
-        <Text style={styles.bodyText}>
-          Your focus is strong today. Lean into steady progress rather than quick wins.
-        </Text>
-      </View>
+        {/* Talk to VEYa Card */}
+        <Pressable style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
+          <LinearGradient
+            colors={['#8B5CF6', '#6D28D9', '#5B21B6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.talkCard}
+          >
+            <View style={styles.talkCardContent}>
+              <Ionicons name="mic" size={28} color="#FFFFFF" />
+              <View style={styles.talkCardText}>
+                <Text style={styles.talkCardTitle}>Talk to VEYa ✨</Text>
+                <Text style={styles.talkCardSubtitle}>Your AI astrologer is ready to chat</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
+            </View>
+          </LinearGradient>
+        </Pressable>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Daily Briefing</Text>
-        <Text style={styles.bodyText}>
-          The moon harmonizes with your sun sign, making it a perfect day to simplify routines and protect your
-          energy. Conversations feel more meaningful when you lead with curiosity.
-        </Text>
-      </View>
+        <Text style={styles.greeting}>{greeting}, {data?.name || 'Star Child'} ☉</Text>
+        <Text style={styles.subtitle}>{dateDisplay} · {sunSign}</Text>
 
-      <View style={styles.cardRow}>
-        <View style={styles.miniCard}>
-          <Text style={styles.cardTitle}>Lucky Color</Text>
-          <Text style={styles.highlight}>Deep Plum</Text>
-        </View>
-        <View style={styles.miniCard}>
-          <Text style={styles.cardTitle}>Lucky Number</Text>
-          <Text style={styles.highlight}>8</Text>
-        </View>
-        <View style={styles.miniCard}>
-          <Text style={styles.cardTitle}>Lucky Time</Text>
-          <Text style={styles.highlight}>4:32 PM</Text>
-        </View>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Do / Don't</Text>
-        <View style={styles.splitRow}>
-          <View style={styles.splitCol}>
-            <Text style={styles.splitLabel}>Do</Text>
-            <Text style={styles.bodyText}>Outline your top three priorities.</Text>
+        {r?.moonPhase && (
+          <View style={styles.moonBadge}>
+            <Text style={styles.moonEmoji}>{r.moonPhase.emoji}</Text>
+            <View style={styles.moonTextWrap}>
+              <Text style={styles.moonName}>{r.moonPhase.name} · {r.moonPhase.illumination}% illuminated</Text>
+              <Text style={styles.moonGuidance}>{r.moonPhase.guidance}</Text>
+            </View>
           </View>
-          <View style={styles.divider} />
-          <View style={styles.splitCol}>
-            <Text style={styles.splitLabel}>Don't</Text>
-            <Text style={styles.bodyText}>Overcommit to last-minute plans.</Text>
+        )}
+
+        {r && (
+          <View style={styles.card}>
+            <EnergyMeter score={r.energyScore} />
           </View>
-        </View>
-      </View>
-    </ScrollView>
+        )}
+
+        {r?.briefing && <DailyBriefingCard briefing={r.briefing} />}
+        {r?.dos && r?.donts && <DoAndDontCard dos={r.dos} donts={r.donts} />}
+        {r?.transits && <TransitHighlights transits={r.transits} />}
+
+        {r && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>🍀 Lucky Elements</Text>
+            <View style={styles.luckyGrid}>
+              <View style={styles.luckyItem}>
+                <Text style={styles.luckyIcon}>🎨</Text>
+                <Text style={styles.luckyLabel}>Color</Text>
+                <Text style={styles.luckyValue}>{r.luckyColor}</Text>
+              </View>
+              <View style={styles.luckyItem}>
+                <Text style={styles.luckyIcon}>🔢</Text>
+                <Text style={styles.luckyLabel}>Number</Text>
+                <Text style={styles.luckyValue}>{r.luckyNumber}</Text>
+              </View>
+              <View style={styles.luckyItem}>
+                <Text style={styles.luckyIcon}>⏰</Text>
+                <Text style={styles.luckyLabel}>Time</Text>
+                <Text style={styles.luckyValue}>{r.luckyTime}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {r?.compatibility && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>💫 Today's Cosmic Allies</Text>
+            <Text style={styles.compatText}>Best match: <Text style={styles.compatSign}>{r.compatibility.best}</Text></Text>
+            <Text style={styles.compatText}>Rising connection: <Text style={styles.compatSign}>{r.compatibility.rising}</Text></Text>
+          </View>
+        )}
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FDFBF7' },
-  content: { padding: 20, paddingBottom: 40, gap: 16 },
-  headerRow: { gap: 10 },
-  header: {
-    fontSize: 28,
-    fontFamily: 'PlayfairDisplay-Bold',
-    color: '#2B2620',
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#F4E7D3',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  badgeText: { fontFamily: 'Inter-SemiBold', color: '#7A5A3A', fontSize: 12, letterSpacing: 0.5 },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
-  },
-  cardTitle: { fontFamily: 'Inter-SemiBold', fontSize: 14, color: '#5C4C3C', marginBottom: 8 },
-  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  bodyText: { fontFamily: 'Inter-Regular', fontSize: 14, color: '#4B433A', lineHeight: 20 },
-  meterTrack: {
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: '#F1EEE9',
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  meterFill: {
-    width: '75%',
-    height: '100%',
-    backgroundColor: '#8B5CF6',
-  },
-  cardRow: { flexDirection: 'row', gap: 12 },
-  miniCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 1,
-  },
-  highlight: { fontFamily: 'PlayfairDisplay-SemiBold', fontSize: 16, color: '#2E2520' },
-  splitRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  splitCol: { flex: 1, gap: 6 },
-  splitLabel: { fontFamily: 'Inter-Bold', fontSize: 12, color: '#8B5CF6', textTransform: 'uppercase' },
-  divider: { width: 1, height: '100%', backgroundColor: '#EFE7DD' },
+  root: { flex: 1, backgroundColor: '#FDFBF7' },
+  content: { paddingHorizontal: 24, paddingBottom: 24 },
+  greeting: { fontSize: 26, fontFamily: 'PlayfairDisplay-Bold', color: '#1A1A2E', marginBottom: 4 },
+  subtitle: { fontSize: 14, fontFamily: 'Inter-Regular', color: '#9B9BAD', marginBottom: 20 },
+  moonBadge: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: 'rgba(212,165,71,0.08)', borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(212,165,71,0.15)' },
+  moonEmoji: { fontSize: 28, marginRight: 12, marginTop: 2 },
+  moonTextWrap: { flex: 1 },
+  moonName: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#D4A547', marginBottom: 4 },
+  moonGuidance: { fontSize: 13, fontFamily: 'Inter-Regular', color: '#6B6B80', lineHeight: 19 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(212,165,71,0.12)', ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8 }, android: { elevation: 2 } }) },
+  cardTitle: { fontSize: 16, fontFamily: 'Inter-SemiBold', color: '#1A1A2E', marginBottom: 12 },
+  luckyGrid: { flexDirection: 'row', justifyContent: 'space-between' },
+  luckyItem: { alignItems: 'center', flex: 1 },
+  luckyIcon: { fontSize: 22, marginBottom: 4 },
+  luckyLabel: { fontSize: 11, fontFamily: 'Inter-Regular', color: '#9B9BAD', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  luckyValue: { fontSize: 13, fontFamily: 'Inter-SemiBold', color: '#1A1A2E', textAlign: 'center' },
+  compatText: { fontSize: 14, fontFamily: 'Inter-Regular', color: '#6B6B80', marginBottom: 6 },
+  compatSign: { fontFamily: 'Inter-SemiBold', color: '#D4A547' },
+  talkCard: { borderRadius: 16, padding: 18, marginBottom: 16 },
+  talkCardContent: { flexDirection: 'row', alignItems: 'center' },
+  talkCardText: { flex: 1, marginLeft: 14 },
+  talkCardTitle: { fontSize: 17, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
+  talkCardSubtitle: { fontSize: 13, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.75)', marginTop: 2 },
 });

@@ -1,0 +1,10 @@
+{
+  "tabs": { "today": "Dzisiaj", "chat": "Czat", "explore": "Odkrywaj", "rituals": "Rytuały", "profile": "Profil" },
+  "home": { "goodMorning": "Dzień dobry", "goodAfternoon": "Dzień dobry", "goodEvening": "Dobry wieczór", "talkToVeya": "Porozmawiaj z VEYą ✨", "hearReading": "🔊 Posłuchaj odczytu", "dailyBriefing": "Twój codzienny horoskop", "streak": "Dni z rzędu", "cosmicEnergy": "Energia kosmiczna" },
+  "chat": { "placeholder": "Zapytaj VEYę o cokolwiek...", "voiceMode": "Tryb głosowy", "sending": "Wysyłanie..." },
+  "voice": { "listening": "Słucham...", "processing": "Rozumiem...", "speaking": "VEYa mówi...", "tapToStart": "Dotknij, aby rozpocząć", "replay": "Powtórz 🔁", "askAboutChart": "Zapytaj VEYę o swój wykres", "talkToVeya": "Porozmawiaj z VEYą" },
+  "explore": { "birthChart": "Twój wykres urodzeniowy", "bigThree": "Twoja wielka trójka", "fullChart": "Pełny wykres", "askVeya": "🎙️ Zapytaj VEYę o swój wykres" },
+  "profile": { "settings": "Ustawienia", "voiceSettings": "Głos", "veyaVoice": "Głos VEYi: Nova ✨", "autoSpeak": "Automatyczne czytanie", "language": "Język", "notifications": "Powiadomienia", "about": "O VEYa" },
+  "rituals": { "morningRitual": "Rytuał poranny", "breathe": "Weź 3 głębokie oddechy", "intention": "Ustaw swoją intencję", "readBriefing": "Przeczytaj codzienny horoskop" },
+  "common": { "share": "Udostępnij", "close": "Zamknij", "save": "Zapisz", "cancel": "Anuluj", "done": "Gotowe" }
+}

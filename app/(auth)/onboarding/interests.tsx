@@ -643,6 +643,30 @@ function ShimmerOverlay() {
 // Creates a brief, delightful "completion" moment.
 // ─────────────────────────────────────────────────────────────
 
+// Individual burst particle — extracted to avoid useAnimatedStyle inside .map()
+function BurstParticle({
+  angle, distance, size, burstProgress,
+}: {
+  angle: number; distance: number; size: number; burstProgress: Animated.SharedValue<number>;
+}) {
+  const particleStyle = useAnimatedStyle(() => {
+    const progress = burstProgress.value;
+    const x = Math.cos(angle) * distance * progress;
+    const y = Math.sin(angle) * distance * progress;
+    return {
+      position: 'absolute' as const,
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      backgroundColor: colors.accentGold,
+      transform: [{ translateX: x }, { translateY: y }],
+      opacity: interpolate(progress, [0, 0.3, 1], [0, 1, 0]),
+    };
+  });
+
+  return <Animated.View style={particleStyle} />;
+}
+
 function CelebrationBurst({ active }: { active: boolean }) {
   const particles = useMemo(
     () =>
@@ -669,24 +693,15 @@ function CelebrationBurst({ active }: { active: boolean }) {
 
   return (
     <View style={styles.celebrationContainer} pointerEvents="none">
-      {particles.map((p, i) => {
-        const particleStyle = useAnimatedStyle(() => {
-          const progress = burstProgress.value;
-          const x = Math.cos(p.angle) * p.distance * progress;
-          const y = Math.sin(p.angle) * p.distance * progress;
-          return {
-            position: 'absolute' as const,
-            width: p.size,
-            height: p.size,
-            borderRadius: p.size / 2,
-            backgroundColor: colors.accentGold,
-            transform: [{ translateX: x }, { translateY: y }],
-            opacity: interpolate(progress, [0, 0.3, 1], [0, 1, 0]),
-          };
-        });
-
-        return <Animated.View key={i} style={particleStyle} />;
-      })}
+      {particles.map((p, i) => (
+        <BurstParticle
+          key={i}
+          angle={p.angle}
+          distance={p.distance}
+          size={p.size}
+          burstProgress={burstProgress}
+        />
+      ))}
     </View>
   );
 }

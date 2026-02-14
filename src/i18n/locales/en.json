@@ -1,0 +1,10 @@
+{
+  "tabs": { "today": "Today", "chat": "Chat", "explore": "Explore", "rituals": "Rituals", "profile": "Profile" },
+  "home": { "goodMorning": "Good morning", "goodAfternoon": "Good afternoon", "goodEvening": "Good evening", "talkToVeya": "Talk to VEYa ✨", "hearReading": "🔊 Hear Your Reading", "dailyBriefing": "Your Daily Briefing", "streak": "Day Streak", "cosmicEnergy": "Cosmic Energy" },
+  "chat": { "placeholder": "Ask VEYa anything...", "voiceMode": "Voice Mode", "sending": "Sending..." },
+  "voice": { "listening": "Listening...", "processing": "Understanding...", "speaking": "VEYa is speaking...", "tapToStart": "Tap to start", "replay": "Replay 🔁", "askAboutChart": "Ask VEYa About Your Chart", "talkToVeya": "Talk to VEYa" },
+  "explore": { "birthChart": "Your Birth Chart", "bigThree": "Your Big Three", "fullChart": "Full Chart", "askVeya": "🎙️ Ask VEYa About Your Chart" },
+  "profile": { "settings": "Settings", "voiceSettings": "Voice", "veyaVoice": "VEYa's Voice: Nova ✨", "autoSpeak": "Auto-speak responses", "language": "Language", "notifications": "Notifications", "about": "About VEYa" },
+  "rituals": { "morningRitual": "Morning Ritual", "breathe": "Take 3 deep breaths", "intention": "Set your intention", "readBriefing": "Read your daily briefing" },
+  "common": { "share": "Share", "close": "Close", "save": "Save", "cancel": "Cancel", "done": "Done" }
+}

@@ -1,0 +1,10 @@
+{
+  "tabs": { "today": "Hôm nay", "chat": "Trò chuyện", "explore": "Khám phá", "rituals": "Nghi lễ", "profile": "Hồ sơ" },
+  "home": { "goodMorning": "Chào buổi sáng", "goodAfternoon": "Chào buổi chiều", "goodEvening": "Chào buổi tối", "talkToVeya": "Nói chuyện với VEYa ✨", "hearReading": "🔊 Nghe bài đọc", "dailyBriefing": "Tóm tắt vũ trụ hàng ngày", "streak": "Ngày liên tiếp", "cosmicEnergy": "Năng lượng vũ trụ" },
+  "chat": { "placeholder": "Hỏi VEYa bất cứ điều gì...", "voiceMode": "Chế độ giọng nói", "sending": "Đang gửi..." },
+  "voice": { "listening": "Đang nghe...", "processing": "Đang hiểu...", "speaking": "VEYa đang nói...", "tapToStart": "Chạm để bắt đầu", "replay": "Phát lại 🔁", "askAboutChart": "Hỏi VEYa về bản đồ sao", "talkToVeya": "Nói chuyện với VEYa" },
+  "explore": { "birthChart": "Bản đồ sao của bạn", "bigThree": "Ba lớn", "fullChart": "Bản đồ đầy đủ", "askVeya": "🎙️ Hỏi VEYa về bản đồ sao" },
+  "profile": { "settings": "Cài đặt", "voiceSettings": "Giọng nói", "veyaVoice": "Giọng VEYa: Nova ✨", "autoSpeak": "Tự động phát giọng nói", "language": "Ngôn ngữ", "notifications": "Thông báo", "about": "Về VEYa" },
+  "rituals": { "morningRitual": "Nghi lễ buổi sáng", "breathe": "Hít thở sâu 3 lần", "intention": "Đặt ý định", "readBriefing": "Đọc tóm tắt hàng ngày" },
+  "common": { "share": "Chia sẻ", "close": "Đóng", "save": "Lưu", "cancel": "Hủy", "done": "Xong" }
+}

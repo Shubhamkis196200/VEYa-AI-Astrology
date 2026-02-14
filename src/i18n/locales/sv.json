@@ -1,0 +1,10 @@
+{
+  "tabs": { "today": "Idag", "chat": "Chatt", "explore": "Utforska", "rituals": "Ritualer", "profile": "Profil" },
+  "home": { "goodMorning": "God morgon", "goodAfternoon": "God eftermiddag", "goodEvening": "God kväll", "talkToVeya": "Prata med VEYa ✨", "hearReading": "🔊 Lyssna på din läsning", "dailyBriefing": "Din kosmiska briefing", "streak": "Dagar i rad", "cosmicEnergy": "Kosmisk energi" },
+  "chat": { "placeholder": "Fråga VEYa vad som helst...", "voiceMode": "Röstläge", "sending": "Skickar..." },
+  "voice": { "listening": "Lyssnar...", "processing": "Förstår...", "speaking": "VEYa talar...", "tapToStart": "Tryck för att börja", "replay": "Spela igen 🔁", "askAboutChart": "Fråga VEYa om ditt horoskop", "talkToVeya": "Prata med VEYa" },
+  "explore": { "birthChart": "Ditt födelsehoroskop", "bigThree": "Dina tre stora", "fullChart": "Fullständigt horoskop", "askVeya": "🎙️ Fråga VEYa om ditt horoskop" },
+  "profile": { "settings": "Inställningar", "voiceSettings": "Röst", "veyaVoice": "VEYas röst: Nova ✨", "autoSpeak": "Automatiskt uppläsning", "language": "Språk", "notifications": "Aviseringar", "about": "Om VEYa" },
+  "rituals": { "morningRitual": "Morgonritual", "breathe": "Ta 3 djupa andetag", "intention": "Sätt din avsikt", "readBriefing": "Läs din dagliga briefing" },
+  "common": { "share": "Dela", "close": "Stäng", "save": "Spara", "cancel": "Avbryt", "done": "Klar" }
+}
