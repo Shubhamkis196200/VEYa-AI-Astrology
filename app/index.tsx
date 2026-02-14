@@ -1,21 +1,15 @@
 import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { useOnboardingStore } from '../src/stores/onboardingStore';
 
 export default function Index() {
-  const onboardingCompleted = useOnboardingStore((s) => s.onboardingCompleted);
-
   useEffect(() => {
+    // TEST: Skip everything, go straight to tabs
     const timer = setTimeout(() => {
-      if (onboardingCompleted) {
-        router.replace('/(tabs)');
-      } else {
-        router.replace('/(auth)/welcome');
-      }
-    }, 100);
+      router.replace('/(tabs)');
+    }, 200);
     return () => clearTimeout(timer);
-  }, [onboardingCompleted]);
+  }, []);
 
   return (
     <View style={styles.container}>
