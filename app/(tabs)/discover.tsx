@@ -123,7 +123,7 @@ const colors = {
   moonShadow: '#C4B8A8',
   moonHighlight: '#F5F0E8',
   tarotGold: '#C9A84C',
-  tarotDeepPurple: '#2D1B4E',
+  tarotDeepPurple: '#F5F0E8',
   tarotMidPurple: '#4A2D6E',
   accentRoseLight: '#FFF0F3',
 } as const;

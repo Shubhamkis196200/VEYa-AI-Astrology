@@ -72,15 +72,15 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
 // ─────────────────────────────────────────────────────────────
 
 const colors = {
-  background: '#1B0B38',
-  surface: '#2D1B4E',
-  surfaceAlt: '#241243',
-  textPrimary: '#F6F1FF',
-  textSecondary: '#C7B8E8',
-  textMuted: '#9C8BBE',
-  primary: '#4F46E5',
-  primaryDark: '#3C2FC2',
-  primaryLight: '#6D62F3',
+  background: '#FDFBF7',
+  surface: '#F5F0E8',
+  surfaceAlt: '#EDE7DB',
+  textPrimary: '#1A1A2E',
+  textSecondary: '#6B6B80',
+  textMuted: '#9B9BAD',
+  primary: '#8B5CF6',
+  primaryDark: '#7C3AED',
+  primaryLight: '#EDE9FE',
   accentGold: '#D4A547',
   accentGoldLight: '#F4E2B8',
   accentGoldDim: 'rgba(212, 165, 71, 0.3)',
@@ -88,8 +88,8 @@ const colors = {
   cosmicPurple: '#4F46E5',
   cosmicPurpleDim: 'rgba(79, 70, 229, 0.3)',
   white: '#FFFFFF',
-  overlay: 'rgba(10, 7, 20, 0.75)',
-  error: '#FF7B6B',
+  overlay: 'rgba(26, 26, 46, 0.5)',
+  error: '#D4574E',
   // Card states
   cardBorder: 'rgba(212, 165, 71, 0.2)',
   cardBorderSelected: '#D4A547',
@@ -817,7 +817,7 @@ export default function InterestsScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* ── Background gradient ── */}
       <LinearGradient

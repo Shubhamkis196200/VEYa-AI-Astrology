@@ -60,25 +60,25 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
 // ─────────────────────────────────────────────────────────────
 
 const colors = {
-  background: '#1B0B38',
-  surface: '#2D1B4E',
-  surfaceAlt: '#241243',
-  textPrimary: '#F6F1FF',
-  textSecondary: '#C7B8E8',
-  textMuted: '#9C8BBE',
-  primary: '#4F46E5',
-  primaryDark: '#3C2FC2',
-  primaryLight: '#6D62F3',
+  background: '#FDFBF7',         // Light cream
+  surface: '#F5F0E8',            // Warm linen
+  surfaceAlt: '#EDE7DB',         // Warm sand
+  textPrimary: '#1A1A2E',        // Dark text
+  textSecondary: '#6B6B80',      // Muted text
+  textMuted: '#9B9BAD',          // Light text
+  primary: '#8B5CF6',            // Purple
+  primaryDark: '#7C3AED',
+  primaryLight: '#EDE9FE',
   accentGold: '#D4A547',
-  accentGoldLight: '#F4E2B8',
+  accentGoldLight: '#FDF4E3',
   accentRose: '#E8788A',
-  overlay: 'rgba(10, 7, 20, 0.75)',
-  error: '#FF7B6B',
-  inputBorder: 'rgba(212, 165, 71, 0.25)',
+  overlay: 'rgba(26, 26, 46, 0.5)',
+  error: '#D4574E',
+  inputBorder: '#E5DFD5',
   inputBorderFocused: '#D4A547',
-  disabled: 'rgba(246, 241, 255, 0.4)',
-  pickerHighlight: 'rgba(79, 70, 229, 0.18)',
-  pickerBorder: 'rgba(212, 165, 71, 0.4)',
+  disabled: 'rgba(26, 26, 46, 0.3)',
+  pickerHighlight: 'rgba(139, 92, 246, 0.1)',
+  pickerBorder: '#E5DFD5',
 } as const;
 
 const typography = {
@@ -948,11 +948,11 @@ export default function BirthDateScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* ── Background gradient ── */}
       <LinearGradient
-        colors={['#1B0B38', '#241243', '#2D1B4E']}
+        colors={['#FDFBF7', '#EDE7DB', '#F5F0E8']}
         locations={[0, 0.6, 1]}
         style={StyleSheet.absoluteFillObject}
       />
