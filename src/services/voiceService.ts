@@ -19,21 +19,26 @@ export function getVoiceState() {
 }
 
 export async function startRecording(): Promise<Audio.Recording> {
-  const permission = await Audio.requestPermissionsAsync();
-  if (!permission.granted) {
-    throw new Error('Microphone permission not granted');
+  try {
+    const permission = await Audio.requestPermissionsAsync();
+    if (!permission.granted) {
+      throw new Error('Microphone permission not granted');
+    }
+
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: true,
+      playsInSilentModeIOS: true,
+    });
+
+    const recording = new Audio.Recording();
+    await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+    await recording.startAsync();
+    isRecording = true;
+    return recording;
+  } catch (error) {
+    isRecording = false;
+    throw error;
   }
-
-  await Audio.setAudioModeAsync({
-    allowsRecordingIOS: true,
-    playsInSilentModeIOS: true,
-  });
-
-  const recording = new Audio.Recording();
-  await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-  await recording.startAsync();
-  isRecording = true;
-  return recording;
 }
 
 export async function stopRecording(recording: Audio.Recording): Promise<string> {

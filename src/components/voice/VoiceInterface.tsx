@@ -118,6 +118,25 @@ export default function VoiceInterface({
     };
   }, [responseText]);
 
+  useEffect(() => {
+    if (!externalResponse || !onTranscript) return;
+    if (lastSpokenText === externalResponse) return;
+
+    const speak = async () => {
+      setLastSpokenText(externalResponse);
+      setSpeaking(true);
+      try {
+        await speakText(externalResponse);
+      } catch {
+        // Silent fail
+      } finally {
+        setSpeaking(false);
+      }
+    };
+
+    speak();
+  }, [externalResponse, lastSpokenText, onTranscript, setSpeaking]);
+
   // --- Animations ---
   const pulse = useSharedValue(1);
   const rotation = useSharedValue(0);

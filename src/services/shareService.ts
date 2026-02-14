@@ -21,21 +21,23 @@ function formatDate(dateString?: string) {
 
 export async function captureAndShare(
   viewRef: RefObject<ViewShot | null>,
-) {
+): Promise<boolean> {
   try {
     const uri = await viewRef.current?.capture?.({
       format: 'png',
       quality: 1,
     });
 
-    if (!uri) return;
+    if (!uri) return false;
 
     const available = await Sharing.isAvailableAsync();
-    if (!available) return;
+    if (!available) return false;
 
     await Sharing.shareAsync(uri);
+    return true;
   } catch (error) {
     console.error('[ShareService] captureAndShare error:', error);
+    return false;
   }
 }
 

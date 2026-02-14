@@ -20,6 +20,7 @@ interface StreakStore {
   isLoading: boolean;
 
   fetchStreak: (userId: string) => Promise<Streak | null>;
+  loadStreak: (userId: string) => Promise<Streak | null>;
   performCheckIn: (userId: string) => Promise<Streak | null>;
 }
 
@@ -29,7 +30,7 @@ interface StreakStore {
 
 export const useStreakStore = create<StreakStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       currentStreak: 0,
       longestStreak: 0,
       totalCheckIns: 0,
@@ -49,14 +50,30 @@ export const useStreakStore = create<StreakStore>()(
               isLoading: false,
             });
           } else {
-            set({ isLoading: false });
+            set({
+              currentStreak: 0,
+              longestStreak: 0,
+              totalCheckIns: 0,
+              lastCheckIn: null,
+              isLoading: false,
+            });
           }
           return data;
         } catch (error) {
           console.warn('[StreakStore] fetchStreak error', error);
-          set({ isLoading: false });
+          set({
+            currentStreak: 0,
+            longestStreak: 0,
+            totalCheckIns: 0,
+            lastCheckIn: null,
+            isLoading: false,
+          });
           return null;
         }
+      },
+
+      loadStreak: async (userId) => {
+        return get().fetchStreak(userId);
       },
 
       performCheckIn: async (userId) => {
@@ -72,12 +89,24 @@ export const useStreakStore = create<StreakStore>()(
               isLoading: false,
             });
           } else {
-            set({ isLoading: false });
+            set({
+              currentStreak: 0,
+              longestStreak: 0,
+              totalCheckIns: 0,
+              lastCheckIn: null,
+              isLoading: false,
+            });
           }
           return data;
         } catch (error) {
           console.warn('[StreakStore] performCheckIn error', error);
-          set({ isLoading: false });
+          set({
+            currentStreak: 0,
+            longestStreak: 0,
+            totalCheckIns: 0,
+            lastCheckIn: null,
+            isLoading: false,
+          });
           return null;
         }
       },

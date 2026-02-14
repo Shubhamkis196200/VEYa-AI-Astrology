@@ -35,6 +35,7 @@ interface ReadingStore {
   // Actions — Generated (offline-first)
   loadGeneratedReading: (zodiacSign: ZodiacSign, date?: string) => GeneratedDailyReading;
   getOrLoadReading: (zodiacSign: ZodiacSign) => GeneratedDailyReading;
+  ensureGeneratedReading: (zodiacSign: ZodiacSign) => Promise<GeneratedDailyReading>;
 
   // Actions — AI-powered (optional, requires network)
   fetchTodayReading: (userProfile: UserProfile) => Promise<DailyReading | null>;
@@ -108,6 +109,20 @@ export const useReadingStore = create<ReadingStore>()(
         }
 
         return get().loadGeneratedReading(zodiacSign, today);
+      },
+
+      ensureGeneratedReading: async (zodiacSign: ZodiacSign) => {
+        set({ isLoading: true, error: null });
+        try {
+          return get().getOrLoadReading(zodiacSign);
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error ? err.message : 'Failed to generate reading';
+          set({ error: errorMessage });
+          throw err;
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
       // ----- Network: AI-powered reading (optional enhancement) -----

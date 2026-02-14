@@ -10,11 +10,15 @@ import {
   Platform,
   Pressable,
   ActivityIndicator,
+  Modal,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import ViewShot from 'react-native-view-shot';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useReadingStore } from '@/stores/readingStore';
 import { useStreakStore } from '@/stores/streakStore';
@@ -24,6 +28,9 @@ import DailyBriefingCard from '@/components/home/DailyBriefingCard';
 import DoAndDontCard from '@/components/home/DoAndDontCard';
 import TransitHighlights from '@/components/home/TransitHighlights';
 import StreakCounter from '@/components/home/StreakCounter';
+import ShareableCard from '@/components/shared/ShareableCard';
+import { captureAndShare, shareReading } from '@/services/shareService';
+import VoiceInterface from '@/components/voice/VoiceInterface';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -45,32 +52,84 @@ function getDateDisplay(): string {
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const { data } = useOnboardingStore();
-  const { generatedReading, loadGeneratedReading } = useReadingStore();
-  const { currentStreak, isLoading: streakLoading, performCheckIn } = useStreakStore();
+  const { generatedReading, ensureGeneratedReading, isLoading: readingLoading } = useReadingStore();
+  const { currentStreak, isLoading: streakLoading, performCheckIn, loadStreak } = useStreakStore();
+
+  const [showVoice, setShowVoice] = useState(false);
+  const shareRef = React.useRef<ViewShot | null>(null);
 
   const demoUserId = 'demo-user-001';
   const sunSign: ZodiacSign = (data?.sunSign as ZodiacSign) || 'Scorpio';
 
   useEffect(() => {
-    try { loadGeneratedReading(sunSign); } catch (e) { console.warn('[Reading] error', e); }
-  }, [sunSign]);
+    (async () => {
+      try {
+        await ensureGeneratedReading(sunSign);
+      } catch (e) {
+        console.warn('[Reading] error', e);
+      }
+    })();
+  }, [ensureGeneratedReading, sunSign]);
 
   useEffect(() => {
-    performCheckIn(demoUserId).catch(() => {});
-  }, []);
+    (async () => {
+      try {
+        await loadStreak(demoUserId);
+        await performCheckIn(demoUserId);
+      } catch {
+        // Silent fail
+      }
+    })();
+  }, [loadStreak, performCheckIn]);
 
   const greeting = useMemo(() => getGreeting(), []);
   const dateDisplay = useMemo(() => getDateDisplay(), []);
   const r = generatedReading;
 
+  const shareData = useMemo(() => (r ? shareReading(r, sunSign) : null), [r, sunSign]);
+
+  const handleShare = useCallback(async () => {
+    if (!shareData) return;
+    const success = await captureAndShare(shareRef);
+    if (!success) {
+      Alert.alert('Share failed', 'Unable to share this card right now. Please try again.');
+    }
+  }, [shareData]);
+
+  const handleOpenVoice = useCallback(async () => {
+    try {
+      const { granted } = await Audio.requestPermissionsAsync();
+      if (!granted) {
+        Alert.alert('Mic needed', 'Please enable microphone access');
+        return;
+      }
+      setShowVoice(true);
+    } catch {
+      Alert.alert('Mic needed', 'Please enable microphone access');
+    }
+  }, []);
+
   return (
     <View style={[styles.root, { paddingTop: insets.top + 16 }]}>
       <StatusBar style="dark" />
+      {shareData && (
+        <ViewShot ref={shareRef} style={styles.shareShot}>
+          <ShareableCard
+            title={shareData.title}
+            body={shareData.body}
+            signName={shareData.signName}
+            date={shareData.date}
+          />
+        </ViewShot>
+      )}
+      <Modal visible={showVoice} animationType="slide" presentationStyle="fullScreen">
+        <VoiceInterface onClose={() => setShowVoice(false)} />
+      </Modal>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <StreakCounter currentStreak={currentStreak} isLoading={streakLoading} />
 
         {/* Talk to VEYa Card */}
-        <Pressable style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
+        <Pressable onPress={handleOpenVoice} style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
           <LinearGradient
             colors={['#8B5CF6', '#6D28D9', '#5B21B6']}
             start={{ x: 0, y: 0 }}
@@ -91,6 +150,13 @@ export default function TodayScreen() {
         <Text style={styles.greeting}>{greeting}, {data?.name || 'Star Child'} ☉</Text>
         <Text style={styles.subtitle}>{dateDisplay} · {sunSign}</Text>
 
+        {readingLoading && !r && (
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="small" color="#8B5CF6" />
+            <Text style={styles.loadingText}>Consulting the stars...</Text>
+          </View>
+        )}
+
         {r?.moonPhase && (
           <View style={styles.moonBadge}>
             <Text style={styles.moonEmoji}>{r.moonPhase.emoji}</Text>
@@ -107,7 +173,12 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {r?.briefing && <DailyBriefingCard briefing={r.briefing} />}
+        {r?.briefing && (
+          <DailyBriefingCard
+            briefing={r.briefing}
+            onShare={shareData ? handleShare : undefined}
+          />
+        )}
         {r?.dos && r?.donts && <DoAndDontCard dos={r.dos} donts={r.donts} />}
         {r?.transits && <TransitHighlights transits={r.transits} />}
 
@@ -153,6 +224,8 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 24, paddingBottom: 24 },
   greeting: { fontSize: 26, fontFamily: 'PlayfairDisplay-Bold', color: '#1A1A2E', marginBottom: 4 },
   subtitle: { fontSize: 14, fontFamily: 'Inter-Regular', color: '#9B9BAD', marginBottom: 20 },
+  loadingCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(212,165,71,0.12)' },
+  loadingText: { fontSize: 13, fontFamily: 'Inter-Medium', color: '#6B6B80' },
   moonBadge: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: 'rgba(212,165,71,0.08)', borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(212,165,71,0.15)' },
   moonEmoji: { fontSize: 28, marginRight: 12, marginTop: 2 },
   moonTextWrap: { flex: 1 },
@@ -172,4 +245,5 @@ const styles = StyleSheet.create({
   talkCardText: { flex: 1, marginLeft: 14 },
   talkCardTitle: { fontSize: 17, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
   talkCardSubtitle: { fontSize: 13, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  shareShot: { position: 'absolute', left: -2000, top: 0, width: 1080, height: 1920 },
 });
