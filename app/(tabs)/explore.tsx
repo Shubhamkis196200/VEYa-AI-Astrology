@@ -315,10 +315,16 @@ function MiniNatalChart() {
   );
 }
 
-function BigThreePills() {
+function BigThreePills({ data }: { data: { name: string; sunSign?: string; moonSign?: string; risingSign?: string } }) {
+  const bigThree = [
+    { symbol: '☉', sign: data.sunSign || 'Unknown', label: 'Sun' },
+    { symbol: '☽', sign: data.moonSign || 'Unknown', label: 'Moon' },
+    { symbol: '↑', sign: data.risingSign || 'Unknown', label: 'Rising' },
+  ];
+  
   return (
     <View style={styles.bigThreePillsRow}>
-      {MOCK.bigThree.map((item, index) => (
+      {bigThree.map((item, index) => (
         <Animated.View key={item.label} entering={FadeInUp.duration(400).delay(800 + index * 120)}>
           <View style={styles.bigThreePill}>
             <Text style={styles.bigThreePillSymbol}>{item.symbol}</Text>
@@ -332,6 +338,7 @@ function BigThreePills() {
 
 function MyBirthChartSection() {
   const [showFullChart, setShowFullChart] = useState(false);
+  const { data } = useOnboardingStore();
 
   return (
     <Animated.View entering={FadeInDown.duration(600).delay(200)} style={styles.sectionContainer}>
@@ -344,7 +351,7 @@ function MyBirthChartSection() {
           start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
         >
           <MiniNatalChart />
-          <BigThreePills />
+          <BigThreePills data={data} />
           <Animated.View entering={FadeIn.duration(400).delay(1200)} style={styles.viewFullChartRow}>
             <Text style={styles.viewFullChartText}>View Full Chart</Text>
             <Text style={styles.viewFullChartArrow}> →</Text>
@@ -365,6 +372,8 @@ const FULL_ZODIAC_INNER = FULL_OUTER_RADIUS - 28;
 const FULL_HOUSE_INNER = FULL_OUTER_RADIUS * 0.28;
 
 function FullChartModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { data } = useOnboardingStore();
+  const userName = data.name || 'Your';
   const [selectedPlanet, setSelectedPlanet] = useState<Planet | null>(null);
 
   const planetInterpretations: Record<string, string> = {
@@ -421,7 +430,7 @@ function FullChartModal({ visible, onClose }: { visible: boolean; onClose: () =>
         <LinearGradient colors={['#FDFBF7', '#FAF6EE', '#F5F0E8']} style={StyleSheet.absoluteFillObject} />
         <View style={styles.fullChartHeader}>
           <View style={{ width: 44 }} />
-          <Text style={styles.fullChartTitle}>{MOCK.userName}'s Natal Chart</Text>
+          <Text style={styles.fullChartTitle}>{userName}'s Natal Chart</Text>
           <Pressable onPress={onClose} hitSlop={12} style={styles.fullChartCloseBtn}>
             <Text style={styles.fullChartCloseText}>✕</Text>
           </Pressable>
@@ -587,15 +596,6 @@ function CompatibilitySection({ onStart }: { onStart: () => void }) {
             <OverlappingChartsIllustration />
           </View>
         </View>
-        {MOCK.lastCompatibility && (
-          <View style={styles.compatLastResult}>
-            <View style={styles.compatLastResultDot} />
-            <Text style={styles.compatLastResultText}>
-              Last: {MOCK.lastCompatibility.partnerName} — {MOCK.lastCompatibility.overallScore}% match
-            </Text>
-            <Text style={styles.compatLastResultDate}>{MOCK.lastCompatibility.date}</Text>
-          </View>
-        )}
       </AnimatedPressable>
     </Animated.View>
   );

@@ -163,9 +163,25 @@ async function hapticMedium() {
 // COMPONENT: Profile Header
 // ─────────────────────────────────────────────────────────────
 
-function ProfileHeader({ userName }: { userName: string }) {
+interface ProfileHeaderProps {
+  userName: string;
+  sunSign?: string;
+  moonSign?: string;
+  risingSign?: string;
+}
+
+// Zodiac sign to emoji mapping
+const ZODIAC_EMOJIS: Record<string, string> = {
+  Aries: '♈', Taurus: '♉', Gemini: '♊', Cancer: '♋',
+  Leo: '♌', Virgo: '♍', Libra: '♎', Scorpio: '♏',
+  Sagittarius: '♐', Capricorn: '♑', Aquarius: '♒', Pisces: '♓',
+};
+
+function ProfileHeader({ userName, sunSign, moonSign, risingSign }: ProfileHeaderProps) {
   const borderRotate = useSharedValue(0);
   const memoryCounterScale = useSharedValue(0);
+  
+  const zodiacEmoji = ZODIAC_EMOJIS[sunSign || ''] || '✨';
 
   useEffect(() => {
     borderRotate.value = withRepeat(
@@ -213,7 +229,7 @@ function ProfileHeader({ userName }: { userName: string }) {
           </Animated.View>
           <View style={styles.avatarCircle}>
             <LinearGradient colors={['#F0E6FF', '#EDE9FE', '#FDF4E3']} style={styles.avatarGradient}>
-              <Text style={styles.avatarZodiac}>{MOCK_COSMIC.zodiacEmoji}</Text>
+              <Text style={styles.avatarZodiac}>{zodiacEmoji}</Text>
             </LinearGradient>
           </View>
         </View>
@@ -225,28 +241,28 @@ function ProfileHeader({ userName }: { userName: string }) {
 
       <Animated.View entering={FadeInDown.duration(500).delay(400)} style={styles.bigThreeRow}>
         <View style={styles.bigThreeBadge}>
-          <Text style={styles.bigThreeSymbol}>{MOCK_COSMIC.bigThree.sun.symbol}</Text>
-          <Text style={styles.bigThreeSign}>{MOCK_COSMIC.bigThree.sun.sign}</Text>
+          <Text style={styles.bigThreeSymbol}>☉</Text>
+          <Text style={styles.bigThreeSign}>{sunSign || 'Unknown'}</Text>
         </View>
         <Text style={styles.bigThreeSeparator}>·</Text>
         <View style={styles.bigThreeBadge}>
-          <Text style={styles.bigThreeSymbol}>{MOCK_COSMIC.bigThree.moon.symbol}</Text>
-          <Text style={styles.bigThreeSign}>{MOCK_COSMIC.bigThree.moon.sign}</Text>
+          <Text style={styles.bigThreeSymbol}>☽</Text>
+          <Text style={styles.bigThreeSign}>{moonSign || 'Unknown'}</Text>
         </View>
         <Text style={styles.bigThreeSeparator}>·</Text>
         <View style={styles.bigThreeBadge}>
-          <Text style={styles.bigThreeSymbol}>{MOCK_COSMIC.bigThree.rising.symbol}</Text>
-          <Text style={styles.bigThreeSign}>{MOCK_COSMIC.bigThree.rising.sign}</Text>
+          <Text style={styles.bigThreeSymbol}>↑</Text>
+          <Text style={styles.bigThreeSign}>{risingSign || 'Unknown'}</Text>
         </View>
       </Animated.View>
 
       <Animated.Text entering={FadeInDown.duration(400).delay(500)} style={styles.memberSince}>
-        Member since {MOCK_COSMIC.memberSince}
+        Welcome to VEYa ✨
       </Animated.Text>
 
       <Animated.View style={[styles.memoryCounterBadge, memoryAnimatedStyle]}>
         <Text style={styles.memoryCounterText}>
-          ✨ VEYa knows {MOCK_COSMIC.memoryCount} things about your journey
+          ✨ Your cosmic journey is just beginning
         </Text>
       </Animated.View>
     </Animated.View>
@@ -282,9 +298,23 @@ function CosmicStatsCard() {
 // COMPONENT: My Chart Summary
 // ─────────────────────────────────────────────────────────────
 
-function MyChartSummary({ birthDate, birthPlace }: { birthDate: string | null; birthPlace: string }) {
-  const displayDate = birthDate ? new Date(birthDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not set';
+interface MyChartSummaryProps {
+  birthDate: Date | string | null;
+  birthPlace: string;
+  sunSign?: string;
+  moonSign?: string;
+  risingSign?: string;
+}
+
+function MyChartSummary({ birthDate, birthPlace, sunSign, moonSign, risingSign }: MyChartSummaryProps) {
+  const displayDate = birthDate ? new Date(birthDate as string).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not set';
   const displayPlace = birthPlace || 'Not set';
+
+  const placements = [
+    { symbol: '☉', label: 'Sun', sign: sunSign || 'Unknown' },
+    { symbol: '☽', label: 'Moon', sign: moonSign || 'Unknown' },
+    { symbol: '↑', label: 'Rising', sign: risingSign || 'Unknown' },
+  ];
 
   return (
     <Animated.View entering={FadeInDown.duration(600).delay(900)}>
@@ -297,11 +327,7 @@ function MyChartSummary({ birthDate, birthPlace }: { birthDate: string | null; b
         </View>
 
         <View style={styles.chartPlacements}>
-          {[
-            { symbol: '☉', label: 'Sun', sign: MOCK_COSMIC.bigThree.sun.sign },
-            { symbol: '☽', label: 'Moon', sign: MOCK_COSMIC.bigThree.moon.sign },
-            { symbol: '↑', label: 'Rising', sign: MOCK_COSMIC.bigThree.rising.sign },
-          ].map((item, i) => (
+          {placements.map((item, i) => (
             <React.Fragment key={item.label}>
               {i > 0 && <View style={styles.chartPlacementDivider} />}
               <View style={styles.chartPlacementRow}>
@@ -536,7 +562,7 @@ function SettingsSection({ focusAreas }: { focusAreas: string[] }) {
       <Pressable onPress={() => hapticMedium()} style={styles.signOutButton}>
         <Text style={styles.signOutText}>Sign Out</Text>
       </Pressable>
-      <Text style={styles.appVersion}>VEYa v{MOCK_COSMIC.appVersion}</Text>
+      <Text style={styles.appVersion}>VEYa v4.0.0</Text>
     </Animated.View>
   );
 }
@@ -622,6 +648,9 @@ export default function ProfileScreen() {
   const birthDate = data.birthDate;
   const birthPlace = data.birthPlace || '';
   const focusAreas = data.focusAreas || [];
+  const sunSign = data.sunSign;
+  const moonSign = data.moonSign;
+  const risingSign = data.risingSign;
 
   return (
     <View style={styles.root}>
@@ -640,9 +669,9 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        <ProfileHeader userName={userName} />
+        <ProfileHeader userName={userName} sunSign={sunSign} moonSign={moonSign} risingSign={risingSign} />
         <CosmicStatsCard />
-        <MyChartSummary birthDate={birthDate} birthPlace={birthPlace} />
+        <MyChartSummary birthDate={birthDate} birthPlace={birthPlace} sunSign={sunSign} moonSign={moonSign} risingSign={risingSign} />
         {/* SubscriptionCard hidden — all features unlocked */}
         <SettingsSection focusAreas={focusAreas} />
         <View style={{ height: 40 }} />
