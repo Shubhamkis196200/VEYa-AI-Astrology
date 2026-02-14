@@ -74,7 +74,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   sectionTitle: {
-    ...typography.sectionTitle,
+    fontFamily: typography.fonts.displaySemiBold,
+    fontSize: typography.sizes.heading2,
     color: colors.textPrimary,
     marginBottom: spacing.sm,
     paddingHorizontal: spacing.lg,
@@ -107,7 +108,8 @@ const styles = StyleSheet.create({
     fontSize: 26,
   },
   storyLabel: {
-    ...typography.caption,
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.caption,
     color: colors.textPrimary,
     marginTop: spacing.xs,
     textAlign: 'center',

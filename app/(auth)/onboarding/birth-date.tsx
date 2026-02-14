@@ -60,25 +60,25 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
 // ─────────────────────────────────────────────────────────────
 
 const colors = {
-  background: '#FDFBF7',
-  surface: '#F5F0E8',
-  surfaceAlt: '#EDE7DB',
-  textPrimary: '#1A1A2E',
-  textSecondary: '#6B6B80',
-  textMuted: '#9B9BAD',
-  primary: '#8B5CF6',
-  primaryDark: '#7C3AED',
-  primaryLight: '#EDE9FE',
+  background: '#1B0B38',
+  surface: '#2D1B4E',
+  surfaceAlt: '#241243',
+  textPrimary: '#F6F1FF',
+  textSecondary: '#C7B8E8',
+  textMuted: '#9C8BBE',
+  primary: '#4F46E5',
+  primaryDark: '#3C2FC2',
+  primaryLight: '#6D62F3',
   accentGold: '#D4A547',
-  accentGoldLight: '#FDF4E3',
+  accentGoldLight: '#F4E2B8',
   accentRose: '#E8788A',
-  overlay: 'rgba(26, 26, 46, 0.7)',
-  error: '#D4564E',
-  inputBorder: '#DDD8CE',
+  overlay: 'rgba(10, 7, 20, 0.75)',
+  error: '#FF7B6B',
+  inputBorder: 'rgba(212, 165, 71, 0.25)',
   inputBorderFocused: '#D4A547',
-  disabled: '#C5C0B6',
-  pickerHighlight: 'rgba(212, 165, 71, 0.08)',
-  pickerBorder: 'rgba(212, 165, 71, 0.25)',
+  disabled: 'rgba(246, 241, 255, 0.4)',
+  pickerHighlight: 'rgba(79, 70, 229, 0.18)',
+  pickerBorder: 'rgba(212, 165, 71, 0.4)',
 } as const;
 
 const typography = {
@@ -947,11 +947,11 @@ export default function BirthDateScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
       {/* ── Background gradient ── */}
       <LinearGradient
-        colors={['#FDFBF7', '#F8F4EC', '#F5F0E8']}
+        colors={['#1B0B38', '#241243', '#2D1B4E']}
         locations={[0, 0.6, 1]}
         style={StyleSheet.absoluteFillObject}
       />
@@ -1002,7 +1002,7 @@ export default function BirthDateScreen() {
           style={styles.headline}
           accessibilityRole="header"
         >
-          When were you{'\n'}born?
+          When Did the Universe{'\n'}Welcome You?
         </Animated.Text>
 
         {/* ── Subtext ── */}
@@ -1010,7 +1010,7 @@ export default function BirthDateScreen() {
           entering={FadeInDown.duration(600).delay(350).easing(Easing.out(Easing.ease))}
           style={styles.subtext}
         >
-          Your birth date reveals your Sun sign{'\n'}and cosmic blueprint
+          Each turn of the wheel redraws the sky above you
         </Animated.Text>
 
         {/* ── Date Picker Container ── */}

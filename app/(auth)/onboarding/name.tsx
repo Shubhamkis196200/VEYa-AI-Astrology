@@ -40,6 +40,7 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
+  FadeOut,
 } from 'react-native-reanimated';
 import Svg, {
   Circle,
@@ -414,6 +415,7 @@ export default function NameScreen() {
   const buttonOpacity = useSharedValue(0.4);
   const underlineWidth = useSharedValue(0);
   const underlineColor = useSharedValue(0); // 0 = neutral, 1 = gold
+  const inputGlow = useSharedValue(0);
 
   // ── Auto-focus input on mount ──
   useEffect(() => {
@@ -441,7 +443,11 @@ export default function NameScreen() {
       duration: 300,
       easing: Easing.out(Easing.ease),
     });
-  }, [isFocused]);
+    inputGlow.value = withTiming(isFocused || nameValue.length > 0 ? 1 : 0, {
+      duration: 450,
+      easing: Easing.out(Easing.ease),
+    });
+  }, [isFocused, nameValue]);
 
   const spawnSparkle = () => {
     const { width, height } = inputLayout.current;
@@ -517,6 +523,16 @@ export default function NameScreen() {
       underlineColor.value,
       [0, 1],
       [colors.inputBorder, colors.accentGold]
+    ),
+  }));
+
+  const inputGlowStyle = useAnimatedStyle(() => ({
+    shadowOpacity: interpolate(inputGlow.value, [0, 1], [0, 0.35]),
+    shadowRadius: interpolate(inputGlow.value, [0, 1], [0, 16]),
+    borderColor: interpolateColor(
+      inputGlow.value,
+      [0, 1],
+      [colors.surfaceAlt, colors.accentGold]
     ),
   }));
 
@@ -597,8 +613,25 @@ export default function NameScreen() {
           {/* ── Name input ── */}
           <Animated.View
             entering={FadeInDown.duration(600).delay(450).easing(Easing.out(Easing.ease))}
-            style={styles.inputContainer}
+            style={[styles.inputContainer, inputGlowStyle]}
+            onLayout={(event) => {
+              inputLayout.current = event.nativeEvent.layout;
+            }}
           >
+            <View style={styles.sparkleLayer} pointerEvents="none">
+              {inputSparkles.map((sparkle) => (
+                <Animated.View
+                  key={sparkle.id}
+                  entering={FadeIn.duration(150)}
+                  exiting={FadeOut.duration(400)}
+                  style={[
+                    styles.inputSparkle,
+                    { left: sparkle.x, top: sparkle.y },
+                  ]}
+                />
+              ))}
+            </View>
+
             <TextInput
               ref={inputRef}
               value={nameValue}
@@ -802,6 +835,15 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 320,
     alignSelf: 'center',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.surfaceAlt,
+    backgroundColor: 'rgba(27, 11, 56, 0.6)',
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.md,
+    shadowColor: colors.accentGold,
+    shadowOffset: { width: 0, height: 0 },
   },
 
   textInput: {
@@ -811,8 +853,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xs,
-    letterSpacing: 0.5,
-    // No border — we use the underline below
+    letterSpacing: 0.6,
   },
 
   underlineBase: {
@@ -828,6 +869,27 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     // Transform origin is center by default — scaleX from center
+  },
+
+  sparkleLayer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
+
+  inputSparkle: {
+    position: 'absolute',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.accentGold,
+    shadowColor: colors.accentGold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
   },
 
   errorText: {

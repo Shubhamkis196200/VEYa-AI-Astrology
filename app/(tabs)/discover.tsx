@@ -73,6 +73,7 @@ import AnimatedPressable from '@/components/ui/AnimatedPressable';
 import CompatibilityModal from '@/components/shared/CompatibilityModal';
 import SoulConnectionScreen from '@/components/social/SoulConnectionScreen';
 import CosmicYearTimeline from '@/components/shared/CosmicYearTimeline';
+import SoundscapePlayer from '@/components/shared/SoundscapePlayer';
 import NatalChart, {
   ZODIAC_SIGNS,
   ELEMENT_COLORS,
@@ -1146,6 +1147,11 @@ export default function ExploreTab() {
           <Text style={styles.sectionLabel}>YOUR COSMIC YEAR</Text>
           <Text style={styles.sectionTitle}>2026 at a Glance</Text>
           <CosmicYearTimeline />
+        </Animated.View>
+
+        {/* Soundscapes Section */}
+        <Animated.View entering={FadeInDown.duration(600).delay(1400)} style={styles.sectionContainer}>
+          <SoundscapePlayer />
         </Animated.View>
 
         <View style={{ height: 40 }} />

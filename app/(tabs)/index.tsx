@@ -29,8 +29,10 @@ import StreakCounter from '@/components/home/StreakCounter';
 import EnergyMeter from '@/components/home/EnergyMeter';
 import DoAndDontCard from '@/components/home/DoAndDontCard';
 import TransitHighlights from '@/components/home/TransitHighlights';
+import CosmicWeatherWidget from '@/components/home/CosmicWeatherWidget';
 import ShareableCard from '@/components/shared/ShareableCard';
 import VoiceInterface from '@/components/voice/VoiceInterface';
+import AstroStories from '@/components/stories/AstroStories';
 import { shareReading, captureAndShare } from '@/services/shareService';
 
 function getGreeting(): string {
@@ -127,6 +129,9 @@ export default function TodayScreen() {
         <VoiceInterface onClose={() => setShowVoice(false)} />
       </Modal>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Astro Stories — Instagram-style daily content */}
+        <AstroStories />
+
         <StreakCounter currentStreak={currentStreak} isLoading={streakLoading} />
 
         {/* Talk to VEYa Card */}
@@ -153,6 +158,9 @@ export default function TodayScreen() {
 
         {/* Hero Card - The ONE daily insight */}
         <OneInsightCard />
+
+        {/* Cosmic Weather Widget */}
+        <CosmicWeatherWidget />
 
         {readingLoading && !r && (
           <View style={styles.loadingCard}>
