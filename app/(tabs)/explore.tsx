@@ -70,6 +70,7 @@ async function hapticImpact(style: 'Light' | 'Medium' = 'Light') {
   } catch {}
 }
 import AnimatedPressable from '@/components/ui/AnimatedPressable';
+import CompatibilityModal from '@/components/shared/CompatibilityModal';
 import NatalChart, {
   ZODIAC_SIGNS,
   ELEMENT_COLORS,
@@ -552,7 +553,7 @@ function OverlappingChartsIllustration() {
   );
 }
 
-function CompatibilitySection() {
+function CompatibilitySection({ onStart }: { onStart: () => void }) {
   const scale = useSharedValue(1);
   const handlePressIn = () => { scale.value = withSpring(0.97, { damping: 15, stiffness: 200 }); };
   const handlePressOut = () => { scale.value = withSpring(1, { damping: 10, stiffness: 180 }); };
@@ -570,7 +571,10 @@ function CompatibilitySection() {
           <View style={styles.compatTextArea}>
             <Text style={styles.compatCardTitle}>Check Your{'\n'}Compatibility</Text>
             <Text style={styles.compatCardHint}>Enter your partner's birth data</Text>
-            <Pressable onPress={() => hapticMedium()} style={styles.compatStartButton}>
+            <Pressable
+              onPress={() => { hapticMedium(); onStart(); }}
+              style={styles.compatStartButton}
+            >
               <LinearGradient colors={[colors.primary, colors.primaryDark]}
                 style={styles.compatStartGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <Text style={styles.compatStartText}>Start →</Text>
@@ -644,7 +648,7 @@ function TarotFlipCard({
 
   return (
     <View style={[styles.tarotFlipContainer, { width, height }]}>
-      <Animated.View style={[styles.tarotFlipSide, backStyle]}>
+      <Animated.View style={[styles.tarotFlipSide, backStyle]} pointerEvents={card ? 'none' : 'auto'}>
         <TarotCardBack width={width} height={height} onPress={onPress} />
       </Animated.View>
       <Animated.View style={[styles.tarotFlipSide, frontStyle]} pointerEvents="none">
@@ -1049,6 +1053,7 @@ function TransitCalendarSection() {
 
 export default function ExploreTab() {
   const insets = useSafeAreaInsets();
+  const [showCompatibility, setShowCompatibility] = useState(false);
 
   return (
     <View style={styles.root}>
@@ -1091,7 +1096,7 @@ export default function ExploreTab() {
           </LinearGradient>
         </Pressable>
 
-        <CompatibilitySection />
+        <CompatibilitySection onStart={() => setShowCompatibility(true)} />
         <TarotSection />
         <MoonTrackerSection />
         <TransitCalendarSection />
@@ -1236,19 +1241,131 @@ const styles = StyleSheet.create({
   // Tarot
   tarotCardContainer: { alignItems: 'center', marginBottom: spacing.lg },
   tarotCardArea: { alignItems: 'center' },
-  tarotCard: {
-    borderRadius: borderRadius.md,
-    ...Platform.select({
-      ios: { shadowColor: 'rgba(45, 27, 78, 0.35)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 1, shadowRadius: 24 },
-      android: { elevation: 8 },
-    }),
+  tarotFlipContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tarotFlipSide: {
+    position: 'absolute',
+    backfaceVisibility: 'hidden',
+  },
+  tarotRevealedCard: {
+    backgroundColor: '#FFF6E9',
+    borderRadius: borderRadius.lg,
+    borderWidth: 1.2,
+    borderColor: colors.tarotGold,
+    padding: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tarotRevealedCardFull: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  tarotRevealedCardCompact: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md,
+  },
+  tarotRevealedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  tarotCardEmoji: {
+    fontSize: 44,
+    marginBottom: spacing.xs,
+  },
+  tarotCardName: {
+    fontFamily: typography.fonts.display,
+    fontSize: typography.sizes.heading3,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  tarotCardMeaning: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: typography.sizes.bodySmall * 1.5,
+    marginBottom: spacing.sm,
+  },
+  tarotKeywordRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  tarotKeywordTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(201, 168, 76, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 168, 76, 0.35)',
+  },
+  tarotKeywordText: {
+    fontFamily: typography.fonts.bodyMedium,
+    fontSize: typography.sizes.tiny,
+    color: colors.textPrimary,
+  },
+  tarotReversedLabel: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.tiny,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   tarotRevealHint: { fontFamily: typography.fonts.displayItalic, fontSize: typography.sizes.bodySmall, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm, letterSpacing: 0.3 },
+  tarotReadingArea: { width: '100%', marginTop: spacing.md, alignItems: 'center' },
+  tarotAiButton: { borderRadius: borderRadius.md, overflow: 'hidden', alignSelf: 'stretch' },
+  tarotAiGradient: { paddingVertical: spacing.sm, borderRadius: borderRadius.md, alignItems: 'center' },
+  tarotAiButtonText: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.bodySmall, color: colors.white, letterSpacing: 0.4 },
+  tarotAiReadingCard: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    padding: spacing.md,
+  },
+  tarotAiReadingText: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: typography.sizes.bodySmall * 1.5,
+  },
+  tarotSpreadContainer: { alignItems: 'center' },
+  tarotSpreadRow: { flexDirection: 'row', gap: spacing.sm },
+  tarotSpreadItem: { alignItems: 'center' },
+  tarotSpreadLabel: {
+    marginTop: spacing.xs,
+    fontFamily: typography.fonts.bodyMedium,
+    fontSize: typography.sizes.tiny,
+    color: colors.textMuted,
+  },
+  tarotCelticContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+  },
+  tarotCelticText: {
+    fontFamily: typography.fonts.displayItalic,
+    fontSize: typography.sizes.bodySmall,
+    color: colors.textMuted,
+  },
   spreadOptions: { gap: spacing.xs },
   spreadOption: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: colors.white, paddingVertical: spacing.md, paddingHorizontal: spacing.md,
     borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors.cardBorder,
+  },
+  spreadOptionActive: {
+    borderColor: 'rgba(201, 168, 76, 0.6)',
+    backgroundColor: 'rgba(255, 247, 234, 0.6)',
   },
   spreadOptionLocked: { backgroundColor: 'rgba(245, 240, 232, 0.5)', borderColor: 'rgba(212, 165, 71, 0.08)' },
   spreadOptionLeft: { flex: 1 },
