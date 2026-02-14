@@ -10,6 +10,12 @@ import {
   COMPATIBILITY_PROMPT,
 } from '../constants/veyaPrompt';
 import { VEYA_VOICE_SYSTEM_PROMPT as VEYA_VOICE_PROMPT } from '../constants/veyaVoicePrompt';
+import {
+  buildSmartContext,
+  buildVoiceContext,
+  buildDailyReadingContext,
+  type UserChartData,
+} from './aiContext';
 import type {
   UserProfile,
   BirthChart,
@@ -150,7 +156,7 @@ function formatChartContext(profile: UserProfile, chart?: BirthChart | null): st
 
   if (chart?.aspects?.length) {
     lines.push('\nKey Natal Aspects:');
-    for (const aspect of chart.aspects.slice(0, 10)) {
+    for (const aspect of (chart.aspects as any[]).slice(0, 10)) {
       lines.push(`  ${aspect.planet1} ${aspect.type} ${aspect.planet2} (orb ${aspect.orb.toFixed(1)}°)`);
     }
   }
@@ -254,10 +260,17 @@ function getPersonalizedFallback(message: string, sunSign?: string | null, name?
 // Build Chat System Prompt
 // ---------------------------------------------------------------------------
 
-function buildChatSystemPrompt(sunSign?: string | null, birthDate?: string | null): string {
-  const signStr = sunSign || 'a beautiful soul';
-  const dateStr = birthDate || 'a date the stars remember well';
-  return `You are VEYa, a warm, wise AI astrologer. You combine deep astrological knowledge with genuine care. You know the user's birth chart: Sun in ${signStr}, born on ${dateStr}. Speak with warmth, use cosmic metaphors naturally, and provide personalized guidance. Keep responses concise (2-3 paragraphs max). Never be cold or robotic.`;
+function profileToUserChartData(profile: UserProfile, chart?: BirthChart | null): UserChartData {
+  return {
+    name: profile.name,
+    birthDate: profile.birth_date,
+    birthTime: profile.birth_time,
+    birthPlace: profile.birth_place,
+    sunSign: profile.sun_sign,
+    moonSign: profile.moon_sign,
+    risingSign: profile.rising_sign,
+    focusAreas: profile.focus_areas,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -268,7 +281,10 @@ export async function generateDailyReading(
   userProfile: UserProfile,
   chartData?: BirthChart | null,
 ): Promise<DailyReadingAIResponse> {
-  const chartContext = formatChartContext(userProfile, chartData);
+  // Use REAL astronomical context
+  const userData = profileToUserChartData(userProfile, chartData);
+  const enrichedPrompt = buildDailyReadingContext(userData);
+
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -279,11 +295,11 @@ export async function generateDailyReading(
   const messages: ChatMessage[] = [
     {
       role: 'system',
-      content: `${VEYA_SYSTEM_PROMPT}\n\n${DAILY_READING_PROMPT}`,
+      content: `${enrichedPrompt}\n\n${DAILY_READING_PROMPT}`,
     },
     {
       role: 'user',
-      content: `Today's date: ${today}\n\nUser's chart data:\n${chartContext}\n\nGenerate today's personalized daily reading.`,
+      content: `Generate today's personalized daily reading for ${userData.name || 'the user'}.`,
     },
   ];
 
@@ -354,21 +370,20 @@ export async function chatWithVeya(
   isPremium: boolean = false,
   isVoiceMode: boolean = false,
 ): Promise<string> {
-  // Build system prompt with user birth data
-  const personalSystemPrompt = buildChatSystemPrompt(
-    userProfile.sun_sign,
-    userProfile.birth_date,
-  );
+  // Build REAL astronomical context with today's actual planetary positions
+  const chartData = profileToUserChartData(userProfile);
+  const smartCtx = isVoiceMode
+    ? buildVoiceContext(chartData)
+    : buildSmartContext(chartData).systemPrompt;
 
-  const chartContext = formatChartContext(userProfile);
   const ragContextStr = formatRAGContext(ragContext);
 
   const systemContent = [
-    personalSystemPrompt,
-    isVoiceMode ? VEYA_VOICE_PROMPT : null,
-    '\n--- User Chart Context ---',
-    chartContext,
+    smartCtx,
     ragContextStr,
+    isVoiceMode
+      ? '\nVOICE MODE: Keep responses to 2-3 sentences. Sound natural and conversational.'
+      : '\nCHAT MODE: Keep responses to 1-3 paragraphs. Reference specific transits and placements.',
   ]
     .filter(Boolean)
     .join('\n');

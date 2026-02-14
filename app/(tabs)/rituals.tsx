@@ -134,7 +134,7 @@ const MOCK = {
   },
 
   eveningRitual: {
-    status: 'locked' as const,
+    status: 'ready' as const,
     availableAt: '7:00 PM',
     reflectionPrompt: 'What moment today made you feel most alive?',
     estimatedTime: '~2 min',
@@ -750,9 +750,6 @@ function InsightsCard() {
               <Text style={styles.insightsTitle}>Your Cosmic Patterns</Text>
               <Text style={styles.insightsSubtitle}>AI-powered insights from your practice</Text>
             </View>
-            <View style={styles.premiumBadge}>
-              <Text style={styles.premiumBadgeText}>✨ Premium</Text>
-            </View>
           </View>
 
           {MOCK.insights.map((insight, index) => (
@@ -761,25 +758,6 @@ function InsightsCard() {
               <Text style={styles.insightText}>{insight}</Text>
             </Animated.View>
           ))}
-
-          <View style={styles.insightsFrostOverlay}>
-            <LinearGradient
-              colors={['rgba(253, 251, 247, 0)', 'rgba(253, 251, 247, 0.7)', 'rgba(253, 251, 247, 0.95)']}
-              locations={[0, 0.3, 1]}
-              style={StyleSheet.absoluteFillObject}
-            />
-          </View>
-
-          <Pressable onPress={() => hapticMedium()} style={styles.insightsUnlockButton}>
-            <LinearGradient
-              colors={[colors.accentGold, '#C9A84C']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.insightsUnlockGradient}
-            >
-              <Text style={styles.insightsUnlockText}>Unlock Cosmic Patterns</Text>
-            </LinearGradient>
-          </Pressable>
         </View>
       </View>
     </Animated.View>

@@ -643,7 +643,7 @@ export default function ProfileScreen() {
         <ProfileHeader userName={userName} />
         <CosmicStatsCard />
         <MyChartSummary birthDate={birthDate} birthPlace={birthPlace} />
-        <SubscriptionCard />
+        {/* SubscriptionCard hidden — all features unlocked */}
         <SettingsSection focusAreas={focusAreas} />
         <View style={{ height: 40 }} />
       </ScrollView>

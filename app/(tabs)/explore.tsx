@@ -79,6 +79,14 @@ import NatalChart, {
 } from '@/components/shared/NatalChart';
 import MoonPhaseViz from '@/components/shared/MoonPhase';
 import TarotCardBack from '@/components/shared/TarotCard';
+import {
+  getMoonPhase,
+  getCurrentTransits,
+  getMonthEvents,
+  type MoonPhaseInfo,
+  type PlanetPosition,
+  type MonthEvent,
+} from '@/services/astroEngine';
 
 // ─────────────────────────────────────────────────────────────
 // DESIGN TOKENS (using theme)
@@ -597,8 +605,8 @@ interface SpreadOption { name: string; cardCount: string; locked: boolean; }
 
 const SPREADS: SpreadOption[] = [
   { name: 'Daily Pull', cardCount: '1 card', locked: false },
-  { name: '3-Card Spread', cardCount: 'Past · Present · Future', locked: true },
-  { name: 'Celtic Cross', cardCount: '10 cards', locked: true },
+  { name: '3-Card Spread', cardCount: 'Past · Present · Future', locked: false },
+  { name: 'Celtic Cross', cardCount: '10 cards', locked: false },
 ];
 
 function TarotSection() {
@@ -640,15 +648,25 @@ function MoonPhaseVisualization({ illumination }: { illumination: number }) {
   return <MoonPhaseViz illumination={illumination} size={120} />;
 }
 
-function MoonWeekStrip() {
+function MoonWeekStrip({ todayMoon }: { todayMoon: MoonPhaseInfo }) {
+  // Generate real week phases
+  const now = new Date();
+  const dayOfWeek = (now.getDay() + 6) % 7; // Mon=0
+  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const weekPhases = dayLabels.map((label, i) => {
+    const dayOffset = i - dayOfWeek;
+    const d = new Date(now.getTime() + dayOffset * 86400000);
+    const moonInfo = getMoonPhase(d);
+    return { day: label, phase: moonInfo.illumination, isToday: dayOffset === 0 };
+  });
+
   return (
     <View style={styles.moonWeekContainer}>
-      {MOCK.moonPhase.weekPhases.map((day, i) => {
-        const isToday = i === 2;
+      {weekPhases.map((day, i) => {
         const moonR = 10;
         return (
-          <View key={i} style={[styles.moonWeekDay, isToday && styles.moonWeekDayToday]}>
-            <Text style={[styles.moonWeekDayLabel, isToday && styles.moonWeekDayLabelToday]}>{day.day}</Text>
+          <View key={i} style={[styles.moonWeekDay, day.isToday && styles.moonWeekDayToday]}>
+            <Text style={[styles.moonWeekDayLabel, day.isToday && styles.moonWeekDayLabelToday]}>{day.day}</Text>
             <Svg width={moonR * 2 + 4} height={moonR * 2 + 4}>
               <Circle cx={moonR + 2} cy={moonR + 2} r={moonR} fill="#E8E0D4" />
               {day.phase < 1 && (
@@ -666,6 +684,16 @@ function MoonWeekStrip() {
 }
 
 function MoonTrackerSection() {
+  // REAL moon data from astronomy-engine
+  const moonData = React.useMemo(() => getMoonPhase(), []);
+  const daysUntilFull = Math.round(moonData.daysUntilFullMoon);
+  const daysUntilNew = Math.round(moonData.daysUntilNewMoon);
+  const nextEventStr = daysUntilFull <= daysUntilNew
+    ? `Full Moon in ${daysUntilFull} day${daysUntilFull === 1 ? '' : 's'}`
+    : `New Moon in ${daysUntilNew} day${daysUntilNew === 1 ? '' : 's'}`;
+  const nextEmoji = daysUntilFull <= daysUntilNew ? '🌕' : '🌑';
+  const isNearFullMoon = daysUntilFull <= 2;
+
   return (
     <Animated.View entering={FadeInDown.duration(600).delay(800)} style={styles.sectionContainer}>
       <Text style={styles.sectionLabel}>MOON TRACKER</Text>
@@ -673,19 +701,21 @@ function MoonTrackerSection() {
       <View style={[styles.card, styles.moonCard]}>
         <View style={styles.moonCardContent}>
           <View style={styles.moonTopRow}>
-            <MoonPhaseVisualization illumination={MOCK.moonPhase.illumination} />
+            <MoonPhaseVisualization illumination={moonData.illumination} />
             <View style={styles.moonInfo}>
-              <Text style={styles.moonPhaseName}>{MOCK.moonPhase.name}</Text>
-              <Text style={styles.moonPhaseSign}>in {MOCK.moonPhase.sign}</Text>
+              <Text style={styles.moonPhaseName}>{moonData.phaseName}</Text>
+              <Text style={styles.moonPhaseSign}>in {moonData.moonSign}</Text>
               <View style={styles.moonDivider} />
-              <Text style={styles.moonNextPhase}>🌕 {MOCK.moonPhase.nextPhase}</Text>
+              <Text style={styles.moonNextPhase}>{nextEmoji} {nextEventStr}</Text>
             </View>
           </View>
-          <MoonWeekStrip />
-          <Pressable onPress={() => hapticLight()} style={styles.moonRitualHint}>
-            <Text style={styles.moonRitualHintText}>Full Moon ritual guide available</Text>
-            <Text style={styles.moonRitualHintArrow}> →</Text>
-          </Pressable>
+          <MoonWeekStrip todayMoon={moonData} />
+          {isNearFullMoon && (
+            <Pressable onPress={() => hapticLight()} style={styles.moonRitualHint}>
+              <Text style={styles.moonRitualHintText}>Full Moon ritual guide available</Text>
+              <Text style={styles.moonRitualHintArrow}> →</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </Animated.View>
@@ -706,27 +736,63 @@ const TRANSIT_COLORS: Record<string, string> = {
 };
 
 function TransitCalendarSection() {
-  const [selectedDay, setSelectedDay] = useState<number | null>(14);
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 1-indexed
+  const today = now.getDate();
+  const [selectedDay, setSelectedDay] = useState<number | null>(today);
+
+  // Real transit events from astronomy-engine
+  const monthEvents = React.useMemo(() => getMonthEvents(year, month), [year, month]);
+
+  // Build event map: day → events
+  const eventsByDay = React.useMemo(() => {
+    const map: Record<number, MonthEvent[]> = {};
+    for (const ev of monthEvents) {
+      const d = ev.date.getDate();
+      if (!map[d]) map[d] = [];
+      map[d].push(ev);
+    }
+    return map;
+  }, [monthEvents]);
 
   const handleDayPress = (date: number) => {
     hapticLight();
     setSelectedDay(date === selectedDay ? null : date);
   };
 
+  // Calendar grid
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstDayOfWeek = (new Date(year, month - 1, 1).getDay() + 6) % 7; // Mon=0
+
   const calendarCells: (number | null)[] = [];
-  for (let i = 0; i < FIRST_DAY_OFFSET; i++) calendarCells.push(null);
-  for (let d = 1; d <= 28; d++) calendarCells.push(d);
+  for (let i = 0; i < firstDayOfWeek; i++) calendarCells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) calendarCells.push(d);
   while (calendarCells.length % 7 !== 0) calendarCells.push(null);
 
   const weeks: (number | null)[][] = [];
   for (let i = 0; i < calendarCells.length; i += 7) weeks.push(calendarCells.slice(i, i + 7));
 
-  const selectedDayData = selectedDay ? MOCK.transitCalendar.days.find((d) => d.date === selectedDay) : null;
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const getEventColor = (ev: MonthEvent): string => {
+    if (ev.impact === 'positive') return colors.transitOpportunity;
+    if (ev.impact === 'challenging') return colors.transitChallenge;
+    if (ev.impact === 'significant') return colors.transitTransformation;
+    return colors.transitOpportunity;
+  };
+
+  const getEventType = (ev: MonthEvent): string => {
+    if (ev.impact === 'positive') return 'opportunity';
+    if (ev.impact === 'challenging') return 'challenge';
+    return 'transformation';
+  };
 
   return (
     <Animated.View entering={FadeInDown.duration(600).delay(1000)} style={styles.sectionContainer}>
       <Text style={styles.sectionLabel}>TRANSIT CALENDAR</Text>
-      <Text style={styles.sectionTitle}>{MOCK.transitCalendar.month}</Text>
+      <Text style={styles.sectionTitle}>{monthNames[month - 1]} {year}</Text>
       <View style={[styles.card, styles.calendarCard]}>
         <View style={styles.calendarWeekdayRow}>
           {WEEKDAY_LABELS.map((label, i) => (
@@ -739,18 +805,18 @@ function TransitCalendarSection() {
           <View key={weekIndex} style={styles.calendarWeekRow}>
             {week.map((date, dayIndex) => {
               if (date === null) return <View key={dayIndex} style={styles.calendarDayCell} />;
-              const dayData = MOCK.transitCalendar.days[date - 1];
+              const dayEvents = eventsByDay[date] || [];
               const isSelected = date === selectedDay;
-              const isToday = date === 13;
-              const hasTransits = dayData.transits.length > 0;
+              const isToday = date === today;
+              const hasEvents = dayEvents.length > 0;
               return (
                 <Pressable key={dayIndex} onPress={() => handleDayPress(date)}
                   style={[styles.calendarDayCell, isSelected && styles.calendarDayCellSelected, isToday && !isSelected && styles.calendarDayCellToday]}>
                   <Text style={[styles.calendarDayText, isSelected && styles.calendarDayTextSelected, isToday && !isSelected && styles.calendarDayTextToday]}>{date}</Text>
-                  {hasTransits && (
+                  {hasEvents && (
                     <View style={styles.calendarDotRow}>
-                      {dayData.transits.slice(0, 3).map((transit, ti) => (
-                        <View key={ti} style={[styles.calendarDot, { backgroundColor: TRANSIT_COLORS[transit] }, isSelected && { backgroundColor: colors.white }]} />
+                      {dayEvents.slice(0, 3).map((ev, ti) => (
+                        <View key={ti} style={[styles.calendarDot, { backgroundColor: getEventColor(ev) }, isSelected && { backgroundColor: colors.white }]} />
                       ))}
                     </View>
                   )}
@@ -759,15 +825,15 @@ function TransitCalendarSection() {
             })}
           </View>
         ))}
-        {selectedDay && selectedDayData && selectedDayData.transits.length > 0 && (
+        {selectedDay && eventsByDay[selectedDay] && eventsByDay[selectedDay].length > 0 && (
           <View style={styles.calendarDetailCard}>
-            <Text style={styles.calendarDetailDate}>February {selectedDay}</Text>
-            {MOCK.transitCalendar.selectedDay.transits.map((transit, i) => (
+            <Text style={styles.calendarDetailDate}>{monthNames[month - 1]} {selectedDay}</Text>
+            {eventsByDay[selectedDay].map((ev, i) => (
               <View key={i} style={styles.calendarDetailRow}>
-                <View style={[styles.calendarDetailDot, { backgroundColor: TRANSIT_COLORS[transit.type] }]} />
+                <View style={[styles.calendarDetailDot, { backgroundColor: getEventColor(ev) }]} />
                 <View style={styles.calendarDetailText}>
-                  <Text style={styles.calendarDetailPlanet}>{transit.planet}</Text>
-                  <Text style={styles.calendarDetailDesc}>{transit.description}</Text>
+                  <Text style={styles.calendarDetailPlanet}>{ev.emoji} {ev.description}</Text>
+                  <Text style={styles.calendarDetailDesc}>{ev.type === 'full_moon' ? 'Release and illuminate' : ev.type === 'new_moon' ? 'Set intentions and plant seeds' : ev.type === 'ingress' ? 'Energy shifts' : ev.type === 'retrograde' ? 'Review and reflect' : 'Forward momentum'}</Text>
                 </View>
               </View>
             ))}
@@ -784,7 +850,7 @@ function TransitCalendarSection() {
           </View>
           <View style={styles.calendarLegendItem}>
             <View style={[styles.calendarLegendDot, { backgroundColor: colors.transitTransformation }]} />
-            <Text style={styles.calendarLegendText}>Transform</Text>
+            <Text style={styles.calendarLegendText}>Significant</Text>
           </View>
         </View>
       </View>

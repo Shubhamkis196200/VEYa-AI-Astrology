@@ -1,5 +1,5 @@
 /**
- * VEYa — Chat Tab — SAFE VERSION
+ * VEYa — Chat Tab with Voice AI
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
@@ -15,11 +15,21 @@ import {
   Keyboard,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useChatStore, type DisplayMessage } from '../../src/stores/chatStore';
 import { useOnboardingStore } from '../../src/stores/onboardingStore';
+import {
+  startRecording,
+  stopRecording,
+  transcribeAudio,
+  speakText,
+  stopSpeaking,
+  getVoiceState,
+} from '../../src/services/voiceService';
+import type { Audio } from 'expo-av';
 import type { UserProfile } from '../../src/types';
 
 const COLORS = {
@@ -116,6 +126,13 @@ export default function ChatScreen() {
   const { messages, isLoading, sendMessage, clearChat } = useChatStore();
   const onboardingData = useOnboardingStore((s) => s.data);
 
+  // Voice state
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
   const userProfile: any = {
     id: 'local',
     user_id: 'local',
@@ -131,6 +148,22 @@ export default function ChatScreen() {
     }
   }, [messages.length, isLoading]);
 
+  // Pulse animation for recording
+  useEffect(() => {
+    if (isVoiceRecording) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.2, duration: 600, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+        ]),
+      );
+      pulse.start();
+      return () => pulse.stop();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [isVoiceRecording, pulseAnim]);
+
   const handleSend = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
@@ -138,6 +171,53 @@ export default function ChatScreen() {
     Keyboard.dismiss();
     sendMessage(trimmed, userProfile);
   }, [isLoading, sendMessage, userProfile]);
+
+  // Voice recording handlers
+  const handleMicPress = useCallback(async () => {
+    if (isVoiceRecording) {
+      // Stop recording
+      try {
+        if (recordingRef.current) {
+          setIsVoiceRecording(false);
+          setIsTranscribing(true);
+          const uri = await stopRecording(recordingRef.current);
+          recordingRef.current = null;
+          const transcript = await transcribeAudio(uri);
+          setIsTranscribing(false);
+          if (transcript.trim()) {
+            // Send as voice message + speak response
+            sendMessage(transcript, userProfile, false, true).then(() => {
+              // Speak the last assistant message
+              const currentMessages = useChatStore.getState().messages;
+              const lastAssistant = [...currentMessages].reverse().find(m => m.role === 'assistant');
+              if (lastAssistant) {
+                setIsSpeaking(true);
+                speakText(lastAssistant.content).finally(() => setIsSpeaking(false));
+              }
+            });
+          }
+        }
+      } catch (err) {
+        setIsVoiceRecording(false);
+        setIsTranscribing(false);
+        recordingRef.current = null;
+        Alert.alert('Voice Error', 'Could not process your voice. Please try again.');
+      }
+    } else {
+      // Start recording
+      try {
+        if (isSpeaking) {
+          await stopSpeaking();
+          setIsSpeaking(false);
+        }
+        const recording = await startRecording();
+        recordingRef.current = recording;
+        setIsVoiceRecording(true);
+      } catch (err) {
+        Alert.alert('Microphone Access', 'Please allow microphone access in your device settings to use voice.');
+      }
+    }
+  }, [isVoiceRecording, isSpeaking, sendMessage, userProfile]);
 
   const sunSign = userProfile.sun_sign;
 
@@ -190,25 +270,52 @@ export default function ChatScreen() {
       )}
 
       <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 8) + 8 }]}>
-        <TextInput
-          style={styles.input}
-          value={input}
-          onChangeText={setInput}
-          placeholder="Ask the stars..."
-          placeholderTextColor={COLORS.textMuted}
-          onSubmitEditing={() => handleSend(input)}
-          returnKeyType="send"
-          multiline
-          maxLength={500}
-          editable={!isLoading}
-        />
-        <Pressable
-          onPress={() => handleSend(input)}
-          disabled={!input.trim() || isLoading}
-          style={({ pressed }) => [styles.sendBtn, (!input.trim() || isLoading) && styles.sendBtnDisabled, pressed && styles.sendBtnPressed]}
-        >
-          <Text style={styles.sendBtnText}>↑</Text>
-        </Pressable>
+        {/* Voice status indicator */}
+        {(isTranscribing || isSpeaking) && (
+          <View style={styles.voiceStatusBar}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <Text style={styles.voiceStatusText}>
+              {isTranscribing ? 'Transcribing...' : 'VEYa is speaking...'}
+            </Text>
+          </View>
+        )}
+        <View style={styles.inputRow}>
+          {/* Mic button */}
+          <Pressable
+            onPress={handleMicPress}
+            disabled={isLoading || isTranscribing}
+            style={({ pressed }) => [
+              styles.micBtn,
+              isVoiceRecording && styles.micBtnRecording,
+              pressed && styles.micBtnPressed,
+            ]}
+          >
+            <Animated.View style={{ transform: [{ scale: isVoiceRecording ? pulseAnim : 1 }] }}>
+              <Text style={[styles.micBtnText, isVoiceRecording && styles.micBtnTextRecording]}>
+                {isVoiceRecording ? '⏹' : '🎙️'}
+              </Text>
+            </Animated.View>
+          </Pressable>
+          <TextInput
+            style={styles.input}
+            value={input}
+            onChangeText={setInput}
+            placeholder={isVoiceRecording ? 'Listening...' : 'Ask the stars...'}
+            placeholderTextColor={COLORS.textMuted}
+            onSubmitEditing={() => handleSend(input)}
+            returnKeyType="send"
+            multiline
+            maxLength={500}
+            editable={!isLoading && !isVoiceRecording}
+          />
+          <Pressable
+            onPress={() => handleSend(input)}
+            disabled={!input.trim() || isLoading}
+            style={({ pressed }) => [styles.sendBtn, (!input.trim() || isLoading) && styles.sendBtnDisabled, pressed && styles.sendBtnPressed]}
+          >
+            <Text style={styles.sendBtnText}>↑</Text>
+          </Pressable>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -252,7 +359,15 @@ const styles = StyleSheet.create({
   typingLabel: { fontSize: 13, fontFamily: 'Inter-Regular', color: COLORS.textMuted, marginRight: 8 },
   dotsRow: { flexDirection: 'row', gap: 4 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.gold },
-  inputBar: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingTop: 12, backgroundColor: COLORS.white, borderTopWidth: 1, borderTopColor: COLORS.border },
+  inputBar: { paddingHorizontal: 16, paddingTop: 12, backgroundColor: COLORS.white, borderTopWidth: 1, borderTopColor: COLORS.border },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  voiceStatusBar: { flexDirection: 'row', alignItems: 'center', paddingBottom: 8, gap: 8 },
+  voiceStatusText: { fontSize: 12, fontFamily: 'Inter-Regular', color: COLORS.textMuted },
+  micBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.goldLight, borderWidth: 1, borderColor: COLORS.goldBorder, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
+  micBtnRecording: { backgroundColor: '#FFE5E5', borderColor: '#FF4444' },
+  micBtnPressed: { opacity: 0.7 },
+  micBtnText: { fontSize: 20 },
+  micBtnTextRecording: { fontSize: 18 },
   input: { flex: 1, minHeight: 44, maxHeight: 120, backgroundColor: COLORS.inputBg, borderRadius: 22, paddingHorizontal: 18, paddingVertical: 12, fontSize: 15, fontFamily: 'Inter-Regular', color: COLORS.textPrimary, marginRight: 10 },
   sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled: { backgroundColor: '#D1D5DB' },
