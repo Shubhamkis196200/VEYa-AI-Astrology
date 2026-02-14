@@ -57,23 +57,23 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
 // ─────────────────────────────────────────────────────────────
 
 const colors = {
-  background: '#FDFBF7',
-  surface: '#F5F0E8',
-  surfaceAlt: '#EDE7DB',
-  textPrimary: '#1A1A2E',
-  textSecondary: '#6B6B80',
-  textMuted: '#9B9BAD',
-  primary: '#8B5CF6',
-  primaryDark: '#7C3AED',
-  primaryLight: '#EDE9FE',
+  background: '#1B0B38',
+  surface: '#2D1B4E',
+  surfaceAlt: '#241243',
+  textPrimary: '#F6F1FF',
+  textSecondary: '#C7B8E8',
+  textMuted: '#9C8BBE',
+  primary: '#4F46E5',
+  primaryDark: '#3C2FC2',
+  primaryLight: '#6D62F3',
   accentGold: '#D4A547',
-  accentGoldLight: '#FDF4E3',
+  accentGoldLight: '#F4E2B8',
   accentRose: '#E8788A',
-  overlay: 'rgba(26, 26, 46, 0.7)',
-  error: '#D4564E',
-  inputBorder: '#DDD8CE',
+  overlay: 'rgba(10, 7, 20, 0.75)',
+  error: '#FF7B6B',
+  inputBorder: 'rgba(212, 165, 71, 0.25)',
   inputBorderFocused: '#D4A547',
-  disabled: '#C5C0B6',
+  disabled: 'rgba(246, 241, 255, 0.4)',
 } as const;
 
 const typography = {
@@ -148,11 +148,11 @@ interface ParticleConfig {
 function generateParticles(count: number): ParticleConfig[] {
   const particles: ParticleConfig[] = [];
   const goldTones = [
-    'rgba(212, 165, 71, 0.5)',
-    'rgba(212, 165, 71, 0.3)',
-    'rgba(139, 92, 246, 0.15)',
-    'rgba(232, 120, 138, 0.15)',
-    'rgba(212, 165, 71, 0.4)',
+    'rgba(212, 165, 71, 0.65)',
+    'rgba(79, 70, 229, 0.35)',
+    'rgba(199, 184, 232, 0.25)',
+    'rgba(212, 165, 71, 0.35)',
+    'rgba(109, 98, 243, 0.3)',
   ];
 
   for (let i = 0; i < count; i++) {
@@ -397,7 +397,12 @@ export default function NameScreen() {
   // Local state
   const [isFocused, setIsFocused] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [inputSparkles, setInputSparkles] = useState<
+    { id: number; x: number; y: number }[]
+  >([]);
   const inputRef = useRef<TextInput>(null);
+  const inputLayout = useRef({ x: 0, y: 0, width: 0, height: 0 });
+  const sparkleId = useRef(0);
 
   // Derived
   const nameValue = data.name || '';
@@ -437,6 +442,18 @@ export default function NameScreen() {
       easing: Easing.out(Easing.ease),
     });
   }, [isFocused]);
+
+  const spawnSparkle = () => {
+    const { width, height } = inputLayout.current;
+    if (!width || !height) return;
+    const id = sparkleId.current++;
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    setInputSparkles((prev) => [...prev, { id, x, y }]);
+    setTimeout(() => {
+      setInputSparkles((prev) => prev.filter((p) => p.id !== id));
+    }, 700);
+  };
 
   // ── Handlers ──
   const handleBack = async () => {
@@ -482,6 +499,10 @@ export default function NameScreen() {
     if (!hasInteracted && text.length > 0) {
       setHasInteracted(true);
     }
+    spawnSparkle();
+    if (Platform.OS === 'ios') {
+      Haptics.selectionAsync();
+    }
   };
 
   // ── Animated styles ──
@@ -501,11 +522,11 @@ export default function NameScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
       {/* ── Background gradient (same as Screen 01) ── */}
       <LinearGradient
-        colors={['#FDFBF7', '#F8F4EC', '#F5F0E8']}
+        colors={['#1B0B38', '#241243', '#2D1B4E']}
         locations={[0, 0.6, 1]}
         style={StyleSheet.absoluteFillObject}
       />
@@ -570,7 +591,7 @@ export default function NameScreen() {
             entering={FadeInDown.duration(600).delay(350).easing(Easing.out(Easing.ease))}
             style={styles.subtext}
           >
-            This helps VEYa personalize your cosmic experience
+            Whisper your name to the night — we'll weave it through your stars
           </Animated.Text>
 
           {/* ── Name input ── */}
