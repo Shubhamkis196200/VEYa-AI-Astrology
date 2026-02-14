@@ -376,7 +376,7 @@ function SelectionCounter({ count }: { count: number }) {
 
 function PurposeScreenInner() {
   const insets = useSafeAreaInsets();
-  const { data, updateData } = useOnboardingStore();
+  const { data, updateData, completeOnboarding } = useOnboardingStore();
   const [selectedItems, setSelectedItems] = useState<Set<string>>(
     new Set(data?.purpose || [])
   );
@@ -409,7 +409,8 @@ function PurposeScreenInner() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     updateData({ purpose: Array.from(selectedItems) });
-    router.push('/(auth)/onboarding/interests');
+    completeOnboarding();
+    router.replace('/(tabs)');
   }, [hasSelection, selectedItems, updateData]);
 
   const handlePressIn = useCallback(() => {
