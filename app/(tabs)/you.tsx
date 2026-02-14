@@ -689,7 +689,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: CONTENT_PADDING, paddingBottom: spacing.lg },
+  scrollContent: { paddingHorizontal: CONTENT_PADDING, paddingBottom: 120 },
 
   // Profile Header
   profileHeaderContainer: { alignItems: 'center', paddingTop: spacing.lg, paddingBottom: spacing.xl },

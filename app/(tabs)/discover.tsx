@@ -1207,7 +1207,7 @@ export default function ExploreTab() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: CONTENT_PADDING, paddingBottom: spacing.lg },
+  scrollContent: { paddingHorizontal: CONTENT_PADDING, paddingBottom: 120 },
 
   // Header
   headerContainer: { paddingTop: spacing.sm, paddingBottom: spacing.lg },

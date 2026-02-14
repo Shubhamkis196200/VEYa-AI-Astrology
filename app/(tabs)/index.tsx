@@ -237,7 +237,7 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FDFBF7' },
-  content: { paddingHorizontal: 24, paddingBottom: 24 },
+  content: { paddingHorizontal: 24, paddingBottom: 120 },
   greeting: { fontSize: 26, fontFamily: 'PlayfairDisplay-Bold', color: '#1A1A2E', marginBottom: 4 },
   subtitle: { fontSize: 14, fontFamily: 'Inter-Regular', color: '#9B9BAD', marginBottom: 20 },
   loadingCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(212,165,71,0.12)' },
