@@ -34,6 +34,7 @@ import DailyAffirmation from '@/components/home/DailyAffirmation';
 import ShareableCard from '@/components/shared/ShareableCard';
 import VoiceInterface from '@/components/voice/VoiceInterface';
 import AstroStories from '@/components/stories/AstroStories';
+import { StoryViewer } from '@/components/stories/StoryViewer';
 import { shareReading, captureAndShare } from '@/services/shareService';
 
 function getGreeting(): string {
@@ -129,6 +130,8 @@ export default function TodayScreen() {
       <Modal visible={showVoice} animationType="slide" presentationStyle="fullScreen">
         <VoiceInterface onClose={() => setShowVoice(false)} />
       </Modal>
+      {/* Story Viewer Modal */}
+      <StoryViewer />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Astro Stories — Instagram-style daily content */}
         <AstroStories />

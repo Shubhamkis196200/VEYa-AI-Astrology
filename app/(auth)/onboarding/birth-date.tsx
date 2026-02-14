@@ -1,16 +1,16 @@
 /**
- * VEYa — Screen 03: Birth Date (Simplified)
- * Collects the user's birth date via native date picker
+ * VEYa — Screen 03: Birth Date
+ * Collects the user's birth date via wheel-style pickers
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   Pressable,
   StyleSheet,
-  Platform,
-  ScrollView,
+  FlatList,
+  Dimensions,
 } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -19,6 +19,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const ITEM_HEIGHT = 50;
+const VISIBLE_ITEMS = 5;
+const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 
 // ─────────────────────────────────────────────────────────────
 // DESIGN TOKENS
@@ -33,8 +38,6 @@ const colors = {
   primary: '#8B5CF6',
   primaryDark: '#7C3AED',
   accentGold: '#D4A547',
-  inputBorder: '#E5DFD5',
-  inputBorderFocused: '#D4A547',
   disabled: 'rgba(26, 26, 46, 0.3)',
 };
 
@@ -79,9 +82,91 @@ function getSunSign(month: number, day: number) {
   return ZODIAC_SIGNS[0];
 }
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 const YEARS = Array.from({ length: 100 }, (_, i) => 2024 - i);
+
+// ─────────────────────────────────────────────────────────────
+// WHEEL PICKER COMPONENT
+// ─────────────────────────────────────────────────────────────
+
+interface WheelPickerProps {
+  data: (string | number)[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+  label: string;
+}
+
+function WheelPicker({ data, selectedIndex, onSelect, label }: WheelPickerProps) {
+  const flatListRef = useRef<FlatList>(null);
+  
+  // Add padding items for visual centering
+  const paddedData = useMemo(() => {
+    const padding = Math.floor(VISIBLE_ITEMS / 2);
+    const padItems: (string | number)[] = Array(padding).fill('');
+    return [...padItems, ...data, ...padItems];
+  }, [data]);
+
+  const handleScrollEnd = useCallback((event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const index = Math.round(offsetY / ITEM_HEIGHT);
+    const clampedIndex = Math.max(0, Math.min(index, data.length - 1));
+    
+    if (clampedIndex !== selectedIndex) {
+      onSelect(clampedIndex);
+      Haptics.selectionAsync();
+    }
+  }, [data.length, onSelect, selectedIndex]);
+
+  const renderItem = useCallback(({ item, index }: { item: string | number; index: number }) => {
+    const padding = Math.floor(VISIBLE_ITEMS / 2);
+    const dataIndex = index - padding;
+    const isSelected = dataIndex === selectedIndex;
+    const isEmpty = item === '';
+
+    return (
+      <View style={styles.pickerItem}>
+        {!isEmpty && (
+          <Text style={[
+            styles.pickerItemText,
+            isSelected && styles.pickerItemTextSelected,
+          ]}>
+            {item}
+          </Text>
+        )}
+      </View>
+    );
+  }, [selectedIndex]);
+
+  return (
+    <View style={styles.pickerWrapper}>
+      <Text style={styles.pickerLabel}>{label}</Text>
+      <View style={styles.pickerContainer}>
+        {/* Selection highlight */}
+        <View style={styles.selectionHighlight} pointerEvents="none" />
+        
+        <FlatList
+          ref={flatListRef}
+          data={paddedData}
+          renderItem={renderItem}
+          keyExtractor={(_, index) => `${label}-${index}`}
+          showsVerticalScrollIndicator={false}
+          snapToInterval={ITEM_HEIGHT}
+          decelerationRate="fast"
+          onMomentumScrollEnd={handleScrollEnd}
+          initialScrollIndex={selectedIndex}
+          getItemLayout={(_, index) => ({
+            length: ITEM_HEIGHT,
+            offset: ITEM_HEIGHT * index,
+            index,
+          })}
+          nestedScrollEnabled={true}
+          style={styles.flatList}
+        />
+      </View>
+    </View>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────
 // MAIN COMPONENT
@@ -92,18 +177,20 @@ export default function BirthDateScreen() {
   const { updateData, nextStep } = useOnboardingStore();
 
   const [selectedMonth, setSelectedMonth] = useState(0);
-  const [selectedDay, setSelectedDay] = useState(1);
-  const [selectedYear, setSelectedYear] = useState(2000);
+  const [selectedDay, setSelectedDay] = useState(0);
+  const [selectedYear, setSelectedYear] = useState(YEARS.indexOf(2000));
 
-  const sunSign = useMemo(() => getSunSign(selectedMonth, selectedDay), [selectedMonth, selectedDay]);
+  const actualDay = selectedDay + 1;
+  const actualYear = YEARS[selectedYear];
+  const sunSign = useMemo(() => getSunSign(selectedMonth, actualDay), [selectedMonth, actualDay]);
 
   const isValid = useMemo(() => {
-    const date = new Date(selectedYear, selectedMonth, selectedDay);
+    const date = new Date(actualYear, selectedMonth, actualDay);
     const now = new Date();
     if (date >= now) return false;
     const age = now.getFullYear() - date.getFullYear();
     return age >= 13 && age <= 120;
-  }, [selectedYear, selectedMonth, selectedDay]);
+  }, [actualYear, selectedMonth, actualDay]);
 
   const handleBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -114,7 +201,7 @@ export default function BirthDateScreen() {
     if (!isValid) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     updateData({
-      birthDate: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
+      birthDate: new Date(actualYear, selectedMonth, actualDay).toISOString(),
       sunSign: sunSign.name,
     });
     nextStep();
@@ -143,7 +230,8 @@ export default function BirthDateScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Content */}
+      <View style={styles.content}>
         {/* Icon */}
         <Text style={styles.icon}>🎂</Text>
         
@@ -151,61 +239,26 @@ export default function BirthDateScreen() {
         <Text style={styles.title}>When were you born?</Text>
         <Text style={styles.subtitle}>The stars remember your arrival</Text>
 
-        {/* Date Selectors */}
-        <View style={styles.pickersContainer}>
-          {/* Month Picker */}
-          <View style={styles.pickerWrapper}>
-            <Text style={styles.pickerLabel}>Month</Text>
-            <ScrollView style={styles.picker} showsVerticalScrollIndicator={false}>
-              {MONTHS.map((month, index) => (
-                <Pressable
-                  key={month}
-                  style={[styles.pickerItem, selectedMonth === index && styles.pickerItemSelected]}
-                  onPress={() => setSelectedMonth(index)}
-                >
-                  <Text style={[styles.pickerItemText, selectedMonth === index && styles.pickerItemTextSelected]}>
-                    {month}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Day Picker */}
-          <View style={styles.pickerWrapper}>
-            <Text style={styles.pickerLabel}>Day</Text>
-            <ScrollView style={styles.picker} showsVerticalScrollIndicator={false}>
-              {DAYS.map((day) => (
-                <Pressable
-                  key={day}
-                  style={[styles.pickerItem, selectedDay === day && styles.pickerItemSelected]}
-                  onPress={() => setSelectedDay(day)}
-                >
-                  <Text style={[styles.pickerItemText, selectedDay === day && styles.pickerItemTextSelected]}>
-                    {day}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Year Picker */}
-          <View style={styles.pickerWrapper}>
-            <Text style={styles.pickerLabel}>Year</Text>
-            <ScrollView style={styles.picker} showsVerticalScrollIndicator={false}>
-              {YEARS.map((year) => (
-                <Pressable
-                  key={year}
-                  style={[styles.pickerItem, selectedYear === year && styles.pickerItemSelected]}
-                  onPress={() => setSelectedYear(year)}
-                >
-                  <Text style={[styles.pickerItemText, selectedYear === year && styles.pickerItemTextSelected]}>
-                    {year}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
+        {/* Date Pickers */}
+        <View style={styles.pickersRow}>
+          <WheelPicker
+            data={MONTHS}
+            selectedIndex={selectedMonth}
+            onSelect={setSelectedMonth}
+            label="MONTH"
+          />
+          <WheelPicker
+            data={DAYS}
+            selectedIndex={selectedDay}
+            onSelect={setSelectedDay}
+            label="DAY"
+          />
+          <WheelPicker
+            data={YEARS}
+            selectedIndex={selectedYear}
+            onSelect={setSelectedYear}
+            label="YEAR"
+          />
         </View>
 
         {/* Sun Sign Display */}
@@ -213,7 +266,7 @@ export default function BirthDateScreen() {
           <Text style={styles.sunSignEmoji}>{sunSign.emoji}</Text>
           <Text style={styles.sunSignText}>Your Sun sign is {sunSign.name}</Text>
         </View>
-      </ScrollView>
+      </View>
 
       {/* Continue Button */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
@@ -289,18 +342,15 @@ const styles = StyleSheet.create({
   progressBarComplete: {
     backgroundColor: colors.accentGold,
   },
-  scrollView: {
-    flex: 1,
-  },
   content: {
+    flex: 1,
     paddingHorizontal: 24,
     paddingTop: 20,
-    paddingBottom: 120,
   },
   icon: {
     fontSize: 48,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   title: {
     fontFamily: typography.fonts.display,
@@ -316,7 +366,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 32,
   },
-  pickersContainer: {
+  pickersRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 32,
@@ -327,34 +377,45 @@ const styles = StyleSheet.create({
   },
   pickerLabel: {
     fontFamily: typography.fonts.bodySemiBold,
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textMuted,
     textAlign: 'center',
     marginBottom: 8,
-    textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  picker: {
-    height: 200,
+  pickerContainer: {
+    height: PICKER_HEIGHT,
     backgroundColor: colors.surface,
     borderRadius: 16,
+    overflow: 'hidden',
+  },
+  selectionHighlight: {
+    position: 'absolute',
+    top: ITEM_HEIGHT * 2,
+    left: 4,
+    right: 4,
+    height: ITEM_HEIGHT,
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    borderRadius: 12,
+    zIndex: 1,
+  },
+  flatList: {
+    flex: 1,
   },
   pickerItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    height: ITEM_HEIGHT,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  pickerItemSelected: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
   },
   pickerItemText: {
     fontFamily: typography.fonts.bodyMedium,
-    fontSize: 14,
-    color: colors.textSecondary,
+    fontSize: 18,
+    color: colors.textMuted,
   },
   pickerItemTextSelected: {
-    color: colors.primary,
     fontFamily: typography.fonts.bodySemiBold,
+    fontSize: 20,
+    color: colors.primary,
   },
   sunSignContainer: {
     flexDirection: 'row',

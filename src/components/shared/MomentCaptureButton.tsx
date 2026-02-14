@@ -236,7 +236,7 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
             style={styles.modalContainer}
           >
             <LinearGradient
-              colors={['#1B0B38', '#2D1B4E']}
+              colors={['#FDFBF7', '#F5F0E8']}
               style={styles.modalContent}
             >
               {/* Header */}
@@ -264,7 +264,7 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
                       ]}
                     >
                       <Text style={styles.emotionEmoji}>{emotion.emoji}</Text>
-                      <Text style={styles.emotionText}>{emotion.label}</Text>
+                      <Text style={styles.emotionTextLight}>{emotion.label}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -277,26 +277,26 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
                   value={note}
                   onChangeText={setNote}
                   placeholder="A meaningful conversation, a decision, a feeling..."
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  placeholderTextColor="rgba(26, 26, 46, 0.4)"
                   multiline
                   numberOfLines={4}
-                  style={styles.noteInput}
+                  style={styles.noteInputLight}
                   maxLength={500}
                 />
               </View>
 
               {/* Current Cosmic Weather Preview */}
-              <View style={styles.cosmicPreview}>
-                <Text style={styles.cosmicPreviewLabel}>🌙 Current Cosmic Weather</Text>
-                <Text style={styles.cosmicPreviewText}>
+              <View style={styles.cosmicPreviewLight}>
+                <Text style={styles.cosmicPreviewLabelLight}>🌙 Current Cosmic Weather</Text>
+                <Text style={styles.cosmicPreviewTextLight}>
                   Moon in {getMoonPhase().moonSign} · {getMoonPhase().phaseName}
                 </Text>
               </View>
 
               {/* Actions */}
               <View style={styles.modalActions}>
-                <Pressable onPress={handleClose} style={styles.cancelButton}>
-                  <Text style={styles.cancelText}>Cancel</Text>
+                <Pressable onPress={handleClose} style={styles.cancelButtonLight}>
+                  <Text style={styles.cancelTextLight}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   onPress={handleCapture}
@@ -380,13 +380,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontFamily: typography.fonts.displaySemiBold,
     fontSize: 22,
-    color: '#FFFFFF',
+    color: '#1A1A2E',
     marginBottom: spacing.xs,
   },
   modalSubtitle: {
     fontFamily: typography.fonts.body,
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#6B6B80',
     textAlign: 'center',
   },
   emotionSection: {
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   emotionLabel: {
     fontFamily: typography.fonts.bodySemiBold,
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: '#6B6B80',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: spacing.sm,
@@ -410,10 +410,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#EDE7DB',
   },
   emotionButtonSelected: {
-    backgroundColor: 'rgba(139, 92, 246, 0.3)',
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
     borderWidth: 1,
     borderColor: '#8B5CF6',
   },
@@ -426,13 +426,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: 'rgba(255, 255, 255, 0.7)',
   },
+  emotionTextLight: {
+    fontFamily: typography.fonts.body,
+    fontSize: 10,
+    color: '#6B6B80',
+  },
   noteSection: {
     marginBottom: spacing.md,
   },
   noteLabel: {
     fontFamily: typography.fonts.bodySemiBold,
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: '#6B6B80',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: spacing.sm,
@@ -447,8 +452,24 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
+  noteInputLight: {
+    backgroundColor: '#EDE7DB',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    fontFamily: typography.fonts.body,
+    fontSize: 16,
+    color: '#1A1A2E',
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
   cosmicPreview: {
     backgroundColor: 'rgba(212, 165, 71, 0.1)',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  cosmicPreviewLight: {
+    backgroundColor: 'rgba(212, 165, 71, 0.15)',
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.lg,
@@ -459,10 +480,21 @@ const styles = StyleSheet.create({
     color: '#D4A547',
     marginBottom: 4,
   },
+  cosmicPreviewLabelLight: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: 12,
+    color: '#B8923E',
+    marginBottom: 4,
+  },
   cosmicPreviewText: {
     fontFamily: typography.fonts.body,
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
+  },
+  cosmicPreviewTextLight: {
+    fontFamily: typography.fonts.body,
+    fontSize: 14,
+    color: '#1A1A2E',
   },
   modalActions: {
     flexDirection: 'row',
@@ -475,10 +507,22 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
+  cancelButtonLight: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    borderRadius: borderRadius.lg,
+    backgroundColor: '#EDE7DB',
+  },
   cancelText: {
     fontFamily: typography.fonts.bodySemiBold,
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.7)',
+  },
+  cancelTextLight: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: 16,
+    color: '#6B6B80',
   },
   captureButton: {
     flex: 2,

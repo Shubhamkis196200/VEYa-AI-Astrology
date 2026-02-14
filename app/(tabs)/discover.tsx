@@ -381,6 +381,7 @@ function FullChartModal({ visible, onClose }: { visible: boolean; onClose: () =>
   const [selectedPlanet, setSelectedPlanet] = useState<Planet | null>(null);
   const [isExplaining, setIsExplaining] = useState(false);
   const [chartExplanation, setChartExplanation] = useState<string | null>(null);
+  const [houseSystem, setHouseSystem] = useState<'placidus' | 'whole'>('placidus');
 
   const handleExplainChart = async () => {
     hapticMedium();
@@ -393,13 +394,13 @@ function FullChartModal({ visible, onClose }: { visible: boolean; onClose: () =>
         moon_sign: data.moonSign,
         rising_sign: data.risingSign,
       };
-      const prompt = `Please give me a comprehensive but warm interpretation of my birth chart. My Big Three: ${data.sunSign || 'Unknown'} Sun, ${data.moonSign || 'Unknown'} Moon, ${data.risingSign || 'Unknown'} Rising. Focus on my core personality, emotional nature, and how I present to the world. Keep it personal and insightful, about 3-4 paragraphs.`;
+      const prompt = `Give me a brief, warm 2-3 sentence reading of my Big Three: ${data.sunSign || 'Unknown'} Sun, ${data.moonSign || 'Unknown'} Moon, ${data.risingSign || 'Unknown'} Rising. Speak like a wise friend, not a textbook. Be specific and personal.`;
       
       const response = await chatWithVeya(prompt, [], userProfile, [], false, false);
       setChartExplanation(response);
     } catch (error) {
       console.error('Error explaining chart:', error);
-      setChartExplanation('I\'d love to explain your chart! For now, your cosmic blueprint shows a unique combination of energies. Tap "Chat" to ask VEYa specific questions about your placements.');
+      setChartExplanation('Your cosmic blueprint shows a unique combination of energies. Tap "Chat" to ask VEYa specific questions about your placements.');
     } finally {
       setIsExplaining(false);
     }
@@ -465,12 +466,18 @@ function FullChartModal({ visible, onClose }: { visible: boolean; onClose: () =>
           </Pressable>
         </View>
         <View style={styles.houseSystemToggle}>
-          <View style={[styles.houseSystemOption, styles.houseSystemOptionActive]}>
-            <Text style={[styles.houseSystemOptionText, styles.houseSystemOptionTextActive]}>Placidus</Text>
-          </View>
-          <View style={styles.houseSystemOption}>
-            <Text style={styles.houseSystemOptionText}>Whole Sign</Text>
-          </View>
+          <Pressable 
+            onPress={() => { hapticLight(); setHouseSystem('placidus'); }}
+            style={[styles.houseSystemOption, houseSystem === 'placidus' && styles.houseSystemOptionActive]}
+          >
+            <Text style={[styles.houseSystemOptionText, houseSystem === 'placidus' && styles.houseSystemOptionTextActive]}>Placidus</Text>
+          </Pressable>
+          <Pressable 
+            onPress={() => { hapticLight(); setHouseSystem('whole'); }}
+            style={[styles.houseSystemOption, houseSystem === 'whole' && styles.houseSystemOptionActive]}
+          >
+            <Text style={[styles.houseSystemOptionText, houseSystem === 'whole' && styles.houseSystemOptionTextActive]}>Whole Sign</Text>
+          </Pressable>
         </View>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.fullChartScrollContent}>
           <View style={styles.fullChartSvgContainer}>
