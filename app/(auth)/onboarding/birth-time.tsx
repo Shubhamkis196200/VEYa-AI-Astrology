@@ -818,7 +818,7 @@ function ReassuranceCallout() {
 
 export default function BirthTimeScreen() {
   const insets = useSafeAreaInsets();
-  const { data, updateData, nextStep } = useOnboardingStore();
+  const { data, updateData, nextStep, completeOnboarding } = useOnboardingStore();
 
   // ── State ──
   const [selectedOption, setSelectedOption] = useState<BirthTimeOption>(null);
@@ -918,7 +918,9 @@ export default function BirthTimeScreen() {
     }
 
     nextStep();
-    router.push('/(auth)/onboarding/birth-place');
+    // TEST: Skip to tabs after 3 screens
+    completeOnboarding();
+    router.replace('/(tabs)');
   };
 
   const handlePressIn = () => {
