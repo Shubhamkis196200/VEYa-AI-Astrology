@@ -21,7 +21,7 @@ const STORY_RING_GRADIENTS: Record<string, readonly [string, string]> = {
   transit: ['#34D399', '#22D3EE'],
 };
 
-export function AstroStories() {
+export default function AstroStories() {
   const { stories, viewed, openViewer, refreshStories } = useStoryStore();
 
   useEffect(() => {

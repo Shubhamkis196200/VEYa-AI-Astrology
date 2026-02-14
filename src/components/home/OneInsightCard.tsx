@@ -69,10 +69,10 @@ function generateDailyInsight(
   const moonPhase = getMoonPhase();
   
   // Find the most significant transit for today
-  const venus = transits.find(t => t.planet === 'Venus');
-  const mars = transits.find(t => t.planet === 'Mars');
-  const jupiter = transits.find(t => t.planet === 'Jupiter');
-  const moon = transits.find(t => t.planet === 'Moon');
+  const venus = transits.find(t => t.name === 'Venus');
+  const mars = transits.find(t => t.name === 'Mars');
+  const jupiter = transits.find(t => t.name === 'Jupiter');
+  const moon = transits.find(t => t.name === 'Moon');
 
   // Generate insight based on strongest transit
   const insights: DailyInsight[] = [];
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.xs,
   },
   brandingTagline: {
-    fontFamily: typography.fonts.bodyItalic || typography.fonts.body,
+    fontFamily: typography.fonts.displayItalic,
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.5)',
   },

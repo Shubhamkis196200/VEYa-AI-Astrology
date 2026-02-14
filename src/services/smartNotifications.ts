@@ -165,14 +165,14 @@ export async function generateWeeklyNotifications(
 
   // Find most significant transit for the user
   const significantPlanet = transits.find(t => 
-    ['Venus', 'Mars', 'Jupiter'].includes(t.planet)
+    ['Venus', 'Mars', 'Jupiter'].includes(t.name)
   );
   
   if (significantPlanet) {
     notifications.push({
       id: `daily-${tomorrowMorning.toISOString().split('T')[0]}`,
       title: `✨ Good morning, ${userName}`,
-      body: `${significantPlanet.planet} in ${significantPlanet.sign} colors your day. Tap to see your personalized insight.`,
+      body: `${significantPlanet.name} in ${significantPlanet.sign} colors your day. Tap to see your personalized insight.`,
       triggerDate: tomorrowMorning,
       priority: 'medium',
     });

@@ -170,9 +170,9 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
         timestamp: new Date().toISOString(),
         note: note.trim(),
         transits: transits.map(t => ({
-          planet: t.planet,
+          planet: t.name,
           sign: t.sign,
-          degree: t.degree,
+          degree: t.signDegree,
         })),
         moonPhase: {
           name: moonPhase.phaseName,

@@ -170,32 +170,28 @@ const INTEREST_AREAS: InterestArea[] = [
   {
     id: 'love',
     emoji: '💕',
-    label: 'Love &
-Relationships',
+    label: 'Love & Relationships',
     accentColor: '#E8788A',
     accentColorDim: 'rgba(232, 120, 138, 0.18)',
   },
   {
     id: 'career',
     emoji: '🚀',
-    label: 'Career &
-Purpose',
+    label: 'Career & Purpose',
     accentColor: '#4F46E5',
     accentColorDim: 'rgba(79, 70, 229, 0.2)',
   },
   {
     id: 'self',
     emoji: '🪷',
-    label: 'Self-
-Discovery',
+    label: 'Self-Discovery',
     accentColor: '#D4A547',
     accentColorDim: 'rgba(212, 165, 71, 0.2)',
   },
   {
     id: 'daily',
     emoji: '☀️',
-    label: 'Daily
-Guidance',
+    label: 'Daily Guidance',
     accentColor: '#F2C94C',
     accentColorDim: 'rgba(242, 201, 76, 0.22)',
   },

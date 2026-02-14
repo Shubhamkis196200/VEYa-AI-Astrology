@@ -59,8 +59,8 @@ function calculateCosmicWeather(): WeatherData {
   ).length;
 
   // Moon phase energy
-  const moonEnergy = moonPhase.illumination / 100;
-  const isWaxing = moonPhase.name.includes('Waxing') || moonPhase.name === 'New Moon';
+  const moonEnergy = moonPhase.illumination;
+  const isWaxing = moonPhase.phaseName.includes('Waxing') || moonPhase.phaseName === 'New Moon';
 
   // Calculate overall score
   const score = 50 + (benefic * 15) - (malefic * 10) + (moonEnergy * 20) + (isWaxing ? 5 : 0);
@@ -103,7 +103,7 @@ function calculateCosmicWeather(): WeatherData {
     {
       emoji: moonPhase.emoji,
       label: 'Moon',
-      value: `${moonPhase.name} (${moonPhase.illumination}%)`,
+      value: `${moonPhase.phaseName} (${Math.round(moonPhase.illumination * 100)}%)`,
       color: '#D4A547',
     },
     {
