@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "VEYa",
+    "name": "VEYa - AI Astrology",
     "slug": "veya-v4",
-    "version": "1.0.0",
+    "version": "4.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,16 +13,18 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FDFBF7"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.adlytica.veya"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FDFBF7"
       },
+      "package": "com.adlytica.veya",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -35,7 +37,7 @@
       "expo-web-browser"
     ],
     "owner": "shubham987654",
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": "4.0.0",
     "extra": {
       "router": {},
       "eas": {
