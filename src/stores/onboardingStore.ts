@@ -13,6 +13,8 @@ interface OnboardingData {
   birthLng: number | null;
   timezone: string | null;
   sunSign?: string;
+  moonSign?: string;
+  risingSign?: string;
   methodology: string[];
   purpose: string[];
   focusAreas: string[];

@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   stepSubtitle: {
-    fontFamily: typography.fonts.bodyItalic || typography.fonts.body,
+    fontFamily: typography.fonts.displayItalic,
     fontSize: typography.sizes.bodySmall,
     color: colors.textMuted,
     marginBottom: spacing.lg,

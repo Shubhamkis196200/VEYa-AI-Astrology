@@ -612,7 +612,7 @@ Provide a personalized, insightful 2-3 sentence tarot reading. Be warm and speci
     const data = await openAIFetch<{
       choices: Array<{ message: { content: string } }>;
     }>('/chat/completions', {
-      model: MODELS.chat,
+      model: MODELS.free,
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 200,
       temperature: 0.8,
