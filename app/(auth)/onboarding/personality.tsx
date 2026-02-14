@@ -805,7 +805,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 function PersonalitySnapshotScreenInner() {
   const insets = useSafeAreaInsets();
-  const { data } = useOnboardingStore();
+  const { data, completeOnboarding } = useOnboardingStore();
   const userName = data?.name || 'You';
 
   // ── State ──
@@ -849,7 +849,8 @@ function PersonalitySnapshotScreenInner() {
     }
     // Save resonance response to onboarding store (for analytics)
     // useOnboardingStore.getState().setPersonalityResonance(resonanceResponse);
-    router.push('/(auth)/onboarding/methodology');
+    completeOnboarding();
+    router.replace('/(tabs)');
   };
 
   const handleResonanceResponse = useCallback((response: 'spot_on' | 'not_quite') => {

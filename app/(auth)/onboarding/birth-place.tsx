@@ -840,8 +840,7 @@ export default function BirthPlaceScreen() {
     });
 
     nextStep();
-    completeOnboarding();
-    router.replace('/(tabs)');
+    router.push('/(auth)/onboarding/chart-reveal');
   };
 
   const handlePressIn = () => {
