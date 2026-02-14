@@ -395,7 +395,7 @@ function FullChartModal({ visible, onClose }: { visible: boolean; onClose: () =>
       };
       const prompt = `Please give me a comprehensive but warm interpretation of my birth chart. My Big Three: ${data.sunSign || 'Unknown'} Sun, ${data.moonSign || 'Unknown'} Moon, ${data.risingSign || 'Unknown'} Rising. Focus on my core personality, emotional nature, and how I present to the world. Keep it personal and insightful, about 3-4 paragraphs.`;
       
-      const response = await chatWithVeya(prompt, userProfile);
+      const response = await chatWithVeya(prompt, [], userProfile, [], false, false);
       setChartExplanation(response);
     } catch (error) {
       console.error('Error explaining chart:', error);

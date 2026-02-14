@@ -105,7 +105,7 @@ export default function NameScreen() {
   const [name, setName] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<TextInput>(null);
-  const { setData } = useOnboardingStore();
+  const { updateData } = useOnboardingStore();
 
   const isValid = name.trim().length >= 2;
   const buttonScale = useSharedValue(1);
@@ -114,7 +114,7 @@ export default function NameScreen() {
     if (!isValid) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setData({ name: name.trim() });
+    updateData({ name: name.trim() });
     router.push('/(auth)/onboarding/birth-date');
   };
 
