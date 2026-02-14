@@ -32,6 +32,7 @@ import {
   stopSpeaking,
 } from '../../services/voiceService';
 import { useVoiceStore } from '../../stores/voiceStore';
+import { useOnboardingStore } from '../../stores/onboardingStore';
 import { chatWithVeya } from '../../services/ai';
 import { VEYA_VOICE_SYSTEM_PROMPT } from '../../constants/veyaVoicePrompt';
 
@@ -82,6 +83,16 @@ export default function VoiceInterface({
     setSpeaking,
     setTranscript,
   } = useVoiceStore();
+
+  // Get real user profile from onboarding store
+  const { data: onboardingData } = useOnboardingStore();
+  const userProfile = useMemo(() => ({
+    user_id: 'user-' + Date.now(),
+    name: onboardingData?.name || 'Friend',
+    sun_sign: onboardingData?.sunSign || 'Aries',
+    moon_sign: onboardingData?.moonSign || 'Aries',
+    rising_sign: onboardingData?.risingSign || 'Aries',
+  }), [onboardingData]);
 
   const status: keyof typeof STATUS_LABELS = isRecording
     ? 'listening'
@@ -248,18 +259,11 @@ export default function VoiceInterface({
           // Parent handles the response (chat integration)
           onTranscript(transcript.trim());
         } else {
-          // Standalone mode — call AI directly with voice prompt
-          const demoProfile = {
-            user_id: 'demo-user-001',
-            name: 'Star Child',
-            sun_sign: 'Scorpio',
-            moon_sign: 'Pisces',
-            rising_sign: 'Leo',
-          } as any;
+          // Standalone mode — call AI directly with voice prompt using real user profile
           const reply = await chatWithVeya(
             transcript.trim(),
             [{ role: 'system', content: VEYA_VOICE_SYSTEM_PROMPT }],
-            demoProfile,
+            userProfile as any,
             [],
             false,
           );

@@ -7,45 +7,54 @@ export interface Database {
     Tables: {
       user_profiles: {
         Row: UserProfile;
-        Insert: Partial<UserProfile> & { user_id: string; display_name: string };
-        Update: Partial<UserProfile>;
+        Insert: Omit<UserProfile, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<UserProfile, 'id'>>;
+        Relationships: [];
       };
       birth_charts: {
         Row: BirthChart;
-        Insert: Partial<BirthChart> & { user_id: string };
-        Update: Partial<BirthChart>;
+        Insert: Omit<BirthChart, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<BirthChart, 'id'>>;
+        Relationships: [];
       };
       daily_readings: {
         Row: DailyReading;
-        Insert: Partial<DailyReading> & { user_id: string; reading_date: string };
-        Update: Partial<DailyReading>;
+        Insert: Omit<DailyReading, 'id' | 'created_at'> & { id?: string; created_at?: string };
+        Update: Partial<Omit<DailyReading, 'id'>>;
+        Relationships: [];
       };
       ai_conversations: {
         Row: AIConversation;
-        Insert: Partial<AIConversation> & { user_id: string; role: string; content: string };
-        Update: Partial<AIConversation>;
+        Insert: Omit<AIConversation, 'id' | 'created_at'> & { id?: string; created_at?: string };
+        Update: Partial<Omit<AIConversation, 'id'>>;
+        Relationships: [];
       };
       user_embeddings: {
         Row: UserEmbedding;
-        Insert: Partial<UserEmbedding> & { user_id: string; content: string; content_type: string };
-        Update: Partial<UserEmbedding>;
+        Insert: Omit<UserEmbedding, 'id' | 'created_at'> & { id?: string; created_at?: string };
+        Update: Partial<Omit<UserEmbedding, 'id'>>;
+        Relationships: [];
       };
       rituals: {
         Row: Ritual;
-        Insert: Partial<Ritual> & { user_id: string; ritual_type: string; title: string };
-        Update: Partial<Ritual>;
+        Insert: Omit<Ritual, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<Ritual, 'id'>>;
+        Relationships: [];
       };
       streaks: {
         Row: Streak;
-        Insert: Partial<Streak> & { user_id: string; streak_type: string };
-        Update: Partial<Streak>;
+        Insert: Omit<Streak, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<Streak, 'id'>>;
+        Relationships: [];
       };
       subscriptions: {
         Row: Subscription;
-        Insert: Partial<Subscription> & { user_id: string };
-        Update: Partial<Subscription>;
+        Insert: Omit<Subscription, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<Subscription, 'id'>>;
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
     Functions: {
       match_user_embeddings: {
         Args: {
@@ -63,6 +72,8 @@ export interface Database {
         }[];
       };
     };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
 

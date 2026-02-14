@@ -5,6 +5,7 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
+import { trackRequest } from './rateLimiter';
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
 const OPENAI_BASE = 'https://api.openai.com/v1';
@@ -56,6 +57,11 @@ export async function transcribeAudio(audioUri: string): Promise<string> {
     throw new Error('Missing OpenAI API key');
   }
 
+  // Rate limiting
+  if (!trackRequest('voice.transcribe')) {
+    throw new Error('Rate limit reached. Please try again in a moment.');
+  }
+
   isTranscribing = true;
   try {
     const formData = new FormData();
@@ -100,6 +106,11 @@ export async function speakText(text: string, language?: string): Promise<void> 
   }
 
   if (!text.trim()) return;
+
+  // Rate limiting
+  if (!trackRequest('voice.speak')) {
+    throw new Error('Rate limit reached. Please try again in a moment.');
+  }
 
   isSpeaking = true;
 

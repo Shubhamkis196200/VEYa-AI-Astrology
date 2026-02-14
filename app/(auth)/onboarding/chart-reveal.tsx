@@ -244,13 +244,6 @@ const ZODIAC_SIGNS: ZodiacSign[] = [
   { name: 'Pisces',      symbol: '♓', element: 'water', startDegree: 330 },
 ];
 
-const ELEMENT_COLORS: Record<string, string> = {
-  fire: colors.fire,
-  earth: colors.earth,
-  air: colors.air,
-  water: colors.water,
-};
-
 // ─────────────────────────────────────────────────────────────
 // PLANET DATA (Mock — Scorpio Sun, Pisces Moon, Leo Rising)
 // Degrees are absolute zodiac positions (0–360).
@@ -279,20 +272,47 @@ const PLANETS: Planet[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// ASCENDANT (Rising Sign) position — Leo Rising = ~120°
-// This determines the rotation of the house system overlay.
+// ZODIAC SIGN DATA — Real archetypes and descriptions
 // ─────────────────────────────────────────────────────────────
 
-const ASCENDANT_DEGREE = 120; // Leo Rising
+interface ZodiacData {
+  archetype: string;
+  sunDescription: string;
+  moonDescription: string;
+  risingDescription: string;
+  element: 'fire' | 'earth' | 'air' | 'water';
+  degree: number; // Starting degree of sign (0-360)
+}
 
-// House cusps — Placidus-style mock data (unequal houses)
-// Each value is the zodiac degree of the house cusp.
-const HOUSE_CUSPS = [120, 148, 178, 210, 242, 268, 300, 328, 358, 30, 62, 88];
+const ZODIAC_DATA: Record<string, ZodiacData> = {
+  Aries: { archetype: 'The Pioneer', sunDescription: 'Your core essence — bold, courageous, and a natural leader who blazes new trails.', moonDescription: 'Your emotional world — passionate, impulsive, and fiercely independent.', risingDescription: 'How the world sees you — energetic, direct, and fearlessly authentic.', element: 'fire', degree: 0 },
+  Taurus: { archetype: 'The Builder', sunDescription: 'Your core essence — grounded, sensual, and devoted to creating lasting beauty.', moonDescription: 'Your emotional world — steady, nurturing, and deeply loyal.', risingDescription: 'How the world sees you — calm, reliable, and effortlessly elegant.', element: 'earth', degree: 30 },
+  Gemini: { archetype: 'The Messenger', sunDescription: 'Your core essence — curious, witty, and endlessly adaptable.', moonDescription: 'Your emotional world — intellectually driven, expressive, and ever-changing.', risingDescription: 'How the world sees you — charming, quick-minded, and socially magnetic.', element: 'air', degree: 60 },
+  Cancer: { archetype: 'The Nurturer', sunDescription: 'Your core essence — deeply intuitive, protective, and emotionally rich.', moonDescription: 'Your emotional world — sensitive, caring, and profoundly connected to home.', risingDescription: 'How the world sees you — warm, approachable, and genuinely caring.', element: 'water', degree: 90 },
+  Leo: { archetype: 'The Performer', sunDescription: 'Your core essence — radiant, creative, and born to shine.', moonDescription: 'Your emotional world — generous, dramatic, and fiercely loyal.', risingDescription: 'How the world sees you — confident, magnetic, and impossibly warm.', element: 'fire', degree: 120 },
+  Virgo: { archetype: 'The Healer', sunDescription: 'Your core essence — analytical, devoted, and driven by service.', moonDescription: 'Your emotional world — detail-oriented, helpful, and quietly caring.', risingDescription: 'How the world sees you — composed, intelligent, and refreshingly honest.', element: 'earth', degree: 150 },
+  Libra: { archetype: 'The Harmonizer', sunDescription: 'Your core essence — graceful, fair-minded, and devoted to beauty.', moonDescription: 'Your emotional world — partnership-focused, diplomatic, and aesthetically driven.', risingDescription: 'How the world sees you — charming, balanced, and naturally elegant.', element: 'air', degree: 180 },
+  Scorpio: { archetype: 'The Transformer', sunDescription: 'Your core essence — intense, perceptive, and magnetic. You feel everything at full depth.', moonDescription: 'Your emotional world — passionate, mysterious, and profoundly loyal.', risingDescription: 'How the world sees you — magnetic, intense, and deeply intriguing.', element: 'water', degree: 210 },
+  Sagittarius: { archetype: 'The Explorer', sunDescription: 'Your core essence — adventurous, optimistic, and hungry for truth.', moonDescription: 'Your emotional world — freedom-loving, philosophical, and eternally hopeful.', risingDescription: 'How the world sees you — enthusiastic, open-minded, and infectiously optimistic.', element: 'fire', degree: 240 },
+  Capricorn: { archetype: 'The Achiever', sunDescription: 'Your core essence — ambitious, disciplined, and built for greatness.', moonDescription: 'Your emotional world — responsible, cautious, and quietly determined.', risingDescription: 'How the world sees you — authoritative, reliable, and impressively capable.', element: 'earth', degree: 270 },
+  Aquarius: { archetype: 'The Visionary', sunDescription: 'Your core essence — innovative, humanitarian, and refreshingly unique.', moonDescription: 'Your emotional world — independent, idealistic, and intellectually driven.', risingDescription: 'How the world sees you — original, progressive, and delightfully unconventional.', element: 'air', degree: 300 },
+  Pisces: { archetype: 'The Dreamer', sunDescription: 'Your core essence — compassionate, creative, and spiritually attuned.', moonDescription: 'Your emotional world — intuitive, empathetic, and beautifully imaginative.', risingDescription: 'How the world sees you — gentle, artistic, and mysteriously deep.', element: 'water', degree: 330 },
+};
 
-// ─────────────────────────────────────────────────────────────
-// KEY HIGHLIGHTS (Big Three) — shown below the chart
-// ─────────────────────────────────────────────────────────────
+const ELEMENT_COLORS: Record<string, string> = {
+  fire: colors.fire,
+  earth: colors.earth,
+  air: colors.air,
+  water: colors.water,
+};
 
+// Function to get house cusps based on rising sign (simplified equal houses)
+function getHouseCusps(risingSign: string): number[] {
+  const ascDegree = ZODIAC_DATA[risingSign]?.degree ?? 120;
+  return Array.from({ length: 12 }, (_, i) => (ascDegree + i * 30) % 360);
+}
+
+// Function to build Big Three dynamically
 interface BigThreeHighlight {
   icon: string;
   label: string;
@@ -302,32 +322,17 @@ interface BigThreeHighlight {
   accentColor: string;
 }
 
-const BIG_THREE: BigThreeHighlight[] = [
-  {
-    icon: '☉',
-    label: 'Sun Sign',
-    sign: 'Scorpio',
-    archetype: 'The Transformer',
-    description: 'Your core essence — intense, perceptive, and magnetic. You feel everything at full depth.',
-    accentColor: colors.water,
-  },
-  {
-    icon: '☽',
-    label: 'Moon Sign',
-    sign: 'Pisces',
-    archetype: 'The Dreamer',
-    description: 'Your emotional world — intuitive, empathetic, and beautifully imaginative.',
-    accentColor: colors.water,
-  },
-  {
-    icon: '↑',
-    label: 'Rising Sign',
-    sign: 'Leo',
-    archetype: 'The Performer',
-    description: 'How the world sees you — radiant, confident, and impossibly warm.',
-    accentColor: colors.fire,
-  },
-];
+function getBigThree(sunSign: string, moonSign: string, risingSign: string): BigThreeHighlight[] {
+  const sun = ZODIAC_DATA[sunSign] || ZODIAC_DATA.Aries;
+  const moon = ZODIAC_DATA[moonSign] || ZODIAC_DATA.Aries;
+  const rising = ZODIAC_DATA[risingSign] || ZODIAC_DATA.Aries;
+
+  return [
+    { icon: '☉', label: 'Sun Sign', sign: sunSign, archetype: sun.archetype, description: sun.sunDescription, accentColor: ELEMENT_COLORS[sun.element] },
+    { icon: '☽', label: 'Moon Sign', sign: moonSign, archetype: moon.archetype, description: moon.moonDescription, accentColor: ELEMENT_COLORS[moon.element] },
+    { icon: '↑', label: 'Rising Sign', sign: risingSign, archetype: rising.archetype, description: rising.risingDescription, accentColor: ELEMENT_COLORS[rising.element] },
+  ];
+}
 
 // ─────────────────────────────────────────────────────────────
 // UTILITY: Polar → Cartesian conversion
@@ -649,7 +654,7 @@ function BackButton({ onPress }: { onPress: () => void }) {
 // decorative tick marks at each zodiac boundary.
 // ─────────────────────────────────────────────────────────────
 
-function NatalChartWheel() {
+function NatalChartWheel({ houseCusps }: { houseCusps: number[] }) {
   // ── Animation shared values ──
 
   // Phase 1: Outer ring stroke
@@ -850,7 +855,7 @@ function NatalChartWheel() {
 
   // ── Render helper: House division lines ──
   const renderHouseLines = () => {
-    return HOUSE_CUSPS.map((cuspDegree, i) => {
+    return houseCusps.map((cuspDegree, i) => {
       const outerPoint = polarToCartesian(CHART_CENTER, CHART_CENTER, HOUSE_RING_OUTER, cuspDegree);
       const innerPoint = polarToCartesian(CHART_CENTER, CHART_CENTER, HOUSE_RING_INNER, cuspDegree);
 
@@ -896,8 +901,8 @@ function NatalChartWheel() {
 
   // ── Render helper: House number labels ──
   const renderHouseNumbers = () => {
-    return HOUSE_CUSPS.map((cuspDegree, i) => {
-      const nextCusp = HOUSE_CUSPS[(i + 1) % 12];
+    return houseCusps.map((cuspDegree, i) => {
+      const nextCusp = houseCusps[(i + 1) % 12];
       const midDegree = cuspDegree + (((nextCusp - cuspDegree + 360) % 360) / 2);
       const labelRadius = (HOUSE_RING_OUTER + HOUSE_RING_INNER) / 2;
       const pos = polarToCartesian(CHART_CENTER, CHART_CENTER, labelRadius, midDegree);
@@ -1137,8 +1142,8 @@ function NatalChartWheel() {
 
           {/* ASC / MC labels on cardinal lines */}
           {(() => {
-            const ascPos = polarToCartesian(CHART_CENTER, CHART_CENTER, HOUSE_RING_OUTER + 14, HOUSE_CUSPS[0]);
-            const mcPos = polarToCartesian(CHART_CENTER, CHART_CENTER, HOUSE_RING_OUTER + 14, HOUSE_CUSPS[9]);
+            const ascPos = polarToCartesian(CHART_CENTER, CHART_CENTER, HOUSE_RING_OUTER + 14, houseCusps[0]);
+            const mcPos = polarToCartesian(CHART_CENTER, CHART_CENTER, HOUSE_RING_OUTER + 14, houseCusps[9]);
 
             // On web, use static SvgText; on native, use AnimatedSvgText
             if (IS_WEB) {
@@ -1274,6 +1279,15 @@ export default function ChartRevealScreen() {
   const { data } = useOnboardingStore();
   const userName = data?.name || 'You';
 
+  // Get user's actual signs from onboarding data
+  const sunSign = data?.sunSign || 'Aries';
+  const moonSign = data?.moonSign || 'Aries';
+  const risingSign = data?.risingSign || 'Aries';
+
+  // Dynamic calculations based on user's signs
+  const HOUSE_CUSPS = useMemo(() => getHouseCusps(risingSign), [risingSign]);
+  const BIG_THREE = useMemo(() => getBigThree(sunSign, moonSign, risingSign), [sunSign, moonSign, risingSign]);
+
   // ── CTA button animation ──
   const buttonScale = useSharedValue(1);
   const buttonGlow = useSharedValue(0);
@@ -1393,7 +1407,7 @@ export default function ChartRevealScreen() {
           </Animated.Text>
 
           {/* ── The Natal Chart Wheel ── */}
-          <NatalChartWheel />
+          <NatalChartWheel houseCusps={HOUSE_CUSPS} />
 
           {/* ── Big Three Highlights ── */}
           <View style={styles.highlightsContainer}>
@@ -1686,6 +1700,17 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: typography.sizes.caption * 1.55,
     letterSpacing: 0.15,
+  },
+
+  // ── Cosmic Summary ──
+  cosmicSummary: {
+    fontFamily: typography.fonts.displayRegular,
+    fontSize: typography.sizes.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.lg,
+    marginHorizontal: spacing.md,
+    lineHeight: typography.sizes.body * 1.6,
   },
 
   // ── CTA Button ──

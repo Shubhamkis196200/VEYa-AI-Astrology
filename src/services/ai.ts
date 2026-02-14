@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { supabase } from '../lib/supabase';
+import { trackRequest, getRemainingRequests } from './rateLimiter';
 import {
   VEYA_SYSTEM_PROMPT,
   DAILY_READING_PROMPT,
@@ -371,6 +372,13 @@ export async function chatWithVeya(
   isPremium: boolean = false,
   isVoiceMode: boolean = false,
 ): Promise<string> {
+  // Rate limiting check
+  if (!trackRequest('ai.chat')) {
+    const remaining = getRemainingRequests('ai.chat');
+    console.warn(`[AI] Rate limited. ${remaining} requests remaining.`);
+    return getPersonalizedFallback(message, userProfile.sun_sign, userProfile.name);
+  }
+
   // Build REAL astronomical context with today's actual planetary positions
   const chartData = profileToUserChartData(userProfile);
   const smartCtx = isVoiceMode
@@ -450,6 +458,23 @@ export async function generateCompatibility(
   },
   user1Chart?: BirthChart | null,
 ): Promise<CompatibilityReport> {
+  // Rate limiting check
+  if (!trackRequest('ai.compatibility')) {
+    console.warn('[AI] Compatibility rate limited');
+    return {
+      overall_score: 65,
+      dimensions: {
+        communication: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
+        emotional: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
+        values: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
+        passion: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
+        growth: { score: 65, summary: 'Rate limit reached — try again in a moment.' },
+      },
+      summary: 'Rate limit reached. Please try again in a moment for your personalized compatibility reading.',
+      tips: ['Take a breath and try again shortly'],
+    };
+  }
+
   const user1Context = formatChartContext(user1Profile, user1Chart);
 
   const user2Lines: string[] = [];
