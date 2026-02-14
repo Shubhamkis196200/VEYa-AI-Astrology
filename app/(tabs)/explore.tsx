@@ -1102,6 +1102,10 @@ export default function ExploreTab() {
         <TransitCalendarSection />
         <View style={{ height: 40 }} />
       </ScrollView>
+      <CompatibilityModal
+        visible={showCompatibility}
+        onClose={() => setShowCompatibility(false)}
+      />
     </View>
   );
 }

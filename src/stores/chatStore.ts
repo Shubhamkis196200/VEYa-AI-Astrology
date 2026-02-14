@@ -33,7 +33,7 @@ interface ChatStore {
     userProfile: UserProfile,
     isPremium?: boolean,
     isVoiceMode?: boolean,
-  ) => Promise<void>;
+  ) => Promise<string>;
   loadHistory: (userId: string) => Promise<void>;
   clearChat: () => void;
   setSessionId: (id: string) => void;
@@ -147,6 +147,8 @@ export const useChatStore = create<ChatStore>()(
           } catch {
             // Silent fail
           }
+
+          return response;
         } catch (err) {
           const errorMessage =
             err instanceof Error ? err.message : 'Something went wrong';
@@ -165,6 +167,7 @@ export const useChatStore = create<ChatStore>()(
             isLoading: false,
             error: errorMessage,
           }));
+          return '';
         }
       },
 

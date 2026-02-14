@@ -32,7 +32,7 @@ const OPENAI_BASE = 'https://api.openai.com/v1';
 
 const MODELS = {
   premium: 'gpt-4o',
-  free: 'gpt-4o-mini',
+  free: 'gpt-4o',          // All features unlocked — always use best model
   embedding: 'text-embedding-3-small',
 } as const;
 

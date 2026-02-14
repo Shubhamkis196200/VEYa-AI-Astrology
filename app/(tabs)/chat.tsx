@@ -182,24 +182,33 @@ export default function ChatScreen() {
           setIsTranscribing(true);
           const uri = await stopRecording(recordingRef.current);
           recordingRef.current = null;
+
+          // Transcribe with Whisper
           const transcript = await transcribeAudio(uri);
           setIsTranscribing(false);
+
           if (transcript.trim()) {
-            // Send as voice message + speak response
-            sendMessage(transcript, userProfile, false, true).then(() => {
-              // Speak the last assistant message
-              const currentMessages = useChatStore.getState().messages;
-              const lastAssistant = [...currentMessages].reverse().find(m => m.role === 'assistant');
-              if (lastAssistant) {
-                setIsSpeaking(true);
-                speakText(lastAssistant.content).finally(() => setIsSpeaking(false));
+            // Send as voice message and get the response text directly
+            const responseText = await sendMessage(transcript, userProfile, false, true);
+
+            // Speak VEYa's response
+            if (responseText && responseText.trim()) {
+              setIsSpeaking(true);
+              try {
+                await speakText(responseText);
+              } catch (ttsErr) {
+                console.warn('[Voice] TTS failed:', ttsErr);
+              } finally {
+                setIsSpeaking(false);
               }
-            });
+            }
           }
         }
       } catch (err) {
+        console.warn('[Voice] Full pipeline error:', err);
         setIsVoiceRecording(false);
         setIsTranscribing(false);
+        setIsSpeaking(false);
         recordingRef.current = null;
         Alert.alert('Voice Error', 'Could not process your voice. Please try again.');
       }
