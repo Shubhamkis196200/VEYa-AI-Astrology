@@ -144,7 +144,22 @@ interface CosmicWeatherWidgetProps {
 }
 
 export default function CosmicWeatherWidget({ onPress }: CosmicWeatherWidgetProps) {
-  const weather = useMemo(() => calculateCosmicWeather(), []);
+  const weather = useMemo(() => {
+    try {
+      return calculateCosmicWeather();
+    } catch (e) {
+      console.warn('[CosmicWeather] calculation failed:', e);
+      return {
+        score: 70,
+        label: 'Calm Skies',
+        emoji: '✨',
+        description: 'The cosmic weather is favorable today.',
+        color: '#8B5CF6',
+        moonPhase: 'Moon',
+        dominantPlanet: 'Venus',
+      };
+    }
+  }, []);
 
   // Subtle pulse for the weather emoji
   const pulse = useSharedValue(0);

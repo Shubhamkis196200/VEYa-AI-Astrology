@@ -226,10 +226,22 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
   const viewShotRef = React.useRef<ViewShot>(null);
   const [isSharing, setIsSharing] = useState(false);
 
-  const insight = useMemo(() => 
-    generateDailyInsight(data.sunSign, data.moonSign, data.risingSign, data.name),
-    [data.sunSign, data.moonSign, data.risingSign, data.name]
-  );
+  const insight = useMemo(() => {
+    try {
+      return generateDailyInsight(data.sunSign, data.moonSign, data.risingSign, data.name);
+    } catch (e) {
+      console.warn('[OneInsight] generateDailyInsight failed:', e);
+      return {
+        emoji: '✨',
+        headline: 'Your Cosmic Reading',
+        subheadline: `The stars align in your favor today, ${data.name || 'cosmic traveler'}.`,
+        detail: 'Trust your intuition and embrace the energy around you.',
+        moonPhase: 'Moon',
+        moonSign: 'Aquarius',
+        accent: '#8B5CF6',
+      };
+    }
+  }, [data.sunSign, data.moonSign, data.risingSign, data.name]);
 
   // Animations
   const glowPulse = useSharedValue(0.4);

@@ -161,8 +161,29 @@ type RealRitualContent = ReturnType<typeof getRealRitualContent>;
 type RitualMockData = ReturnType<typeof buildMockData>;
 
 function useRealRitualContent(): RealRitualContent {
-  const moon = useMemo(() => getMoonPhase(), []);
-  const transits = useMemo(() => getCurrentTransits(), []);
+  const moon = useMemo(() => {
+    try {
+      return getMoonPhase();
+    } catch (e) {
+      console.warn('[Rituals] getMoonPhase failed:', e);
+      return {
+        phaseName: 'New Moon',
+        illumination: 0,
+        moonSign: 'Aquarius',
+        daysUntilFullMoon: 14,
+        daysUntilNewMoon: 0,
+        emoji: '🌑',
+      };
+    }
+  }, []);
+  const transits = useMemo(() => {
+    try {
+      return getCurrentTransits();
+    } catch (e) {
+      console.warn('[Rituals] getCurrentTransits failed:', e);
+      return [];
+    }
+  }, []);
   return useMemo(() => getRealRitualContent(moon, transits), [moon, transits]);
 }
 
@@ -1009,7 +1030,14 @@ const WEEKLY_RITUALS = [
 ];
 
 function MoonPhaseDetailsCard() {
-  const moon = useMemo(() => getMoonPhase(), []);
+  const moon = useMemo(() => {
+    try {
+      return getMoonPhase();
+    } catch (e) {
+      console.warn('[MoonPhaseDetails] getMoonPhase failed:', e);
+      return { phaseName: 'Moon', emoji: '🌙', moonSign: 'Calculating...', illumination: 0.5 };
+    }
+  }, []);
 
   return (
     <View style={[styles.card, styles.cosmicInfoCard]}>
@@ -1051,7 +1079,14 @@ function PlanetaryHoursCard() {
 }
 
 function RetrogradeTrackerCard() {
-  const retrogrades = useMemo(() => getCurrentTransits().filter((p) => p.retrograde), []);
+  const retrogrades = useMemo(() => {
+    try {
+      return getCurrentTransits().filter((p) => p.retrograde);
+    } catch (e) {
+      console.warn('[RetrogradeTracker] getCurrentTransits failed:', e);
+      return [];
+    }
+  }, []);
 
   return (
     <View style={[styles.card, styles.cosmicInfoCard]}>

@@ -994,8 +994,22 @@ function MoonWeekStrip({ todayMoon }: { todayMoon: MoonPhaseInfo }) {
 }
 
 function MoonTrackerSection() {
-  // REAL moon data from astronomy-engine
-  const moonData = React.useMemo(() => getMoonPhase(), []);
+  // REAL moon data from astronomy-engine (with safe fallback)
+  const moonData = React.useMemo(() => {
+    try {
+      return getMoonPhase();
+    } catch (e) {
+      console.warn('[MoonTracker] getMoonPhase failed:', e);
+      return {
+        phaseName: 'Moon',
+        illumination: 0.5,
+        moonSign: 'Calculating...',
+        daysUntilFullMoon: 7,
+        daysUntilNewMoon: 14,
+        emoji: '🌙',
+      };
+    }
+  }, []);
   const daysUntilFull = Math.round(moonData.daysUntilFullMoon);
   const daysUntilNew = Math.round(moonData.daysUntilNewMoon);
   const nextEventStr = daysUntilFull <= daysUntilNew
