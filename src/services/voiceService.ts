@@ -1,37 +1,13 @@
 // ============================================================================
-// VEYa Voice Service — Rebuilt for Astrology AI Assistant
+// VEYa Voice Service — Personal Astrology Voice Assistant
 // ============================================================================
-// A simple, focused voice agent that acts as a personal astrologer.
-// Uses OpenAI Whisper for transcription and TTS for speech.
+// Uses OpenAI Whisper for transcription
+// Uses device's native TTS (expo-speech) for reliable voice output
 // ============================================================================
 
 import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
 import * as FileSystem from 'expo-file-system';
-
-// Proper base64 encoding for React Native (handles binary data correctly)
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.length;
-  const base64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  let result = '';
-  
-  for (let i = 0; i < len; i += 3) {
-    const byte1 = bytes[i];
-    const byte2 = i + 1 < len ? bytes[i + 1] : 0;
-    const byte3 = i + 2 < len ? bytes[i + 2] : 0;
-    
-    const enc1 = byte1 >> 2;
-    const enc2 = ((byte1 & 3) << 4) | (byte2 >> 4);
-    const enc3 = ((byte2 & 15) << 2) | (byte3 >> 6);
-    const enc4 = byte3 & 63;
-    
-    result += base64chars[enc1] + base64chars[enc2];
-    result += i + 1 < len ? base64chars[enc3] : '=';
-    result += i + 2 < len ? base64chars[enc4] : '=';
-  }
-  
-  return result;
-}
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -41,7 +17,6 @@ const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
 const OPENAI_BASE = 'https://api.openai.com/v1';
 
 // Voice state
-let currentSound: Audio.Sound | null = null;
 let isRecording = false;
 let isTranscribing = false;
 let isSpeaking = false;
@@ -66,34 +41,19 @@ export function buildAstrologySystemPrompt(userProfile: {
   const moon = userProfile.moonSign || 'unknown';
   const rising = userProfile.risingSign || 'unknown';
   
-  return `You are VEYa, a warm and wise personal astrologer having a VOICE conversation. Your responses will be spoken aloud, so write naturally as if talking.
+  return `You are VEYa, a warm and wise personal astrologer having a voice conversation. Your responses will be spoken aloud.
 
-USER PROFILE:
-- Name: ${name}
-- Sun Sign: ${sun} (core identity, ego, life purpose)
-- Moon Sign: ${moon} (emotions, inner self, needs)
-- Rising Sign: ${rising} (first impression, outer personality, approach to life)
+USER: ${name}
+Sun: ${sun} | Moon: ${moon} | Rising: ${rising}
 
-YOUR PERSONALITY:
-- Warm, compassionate, and encouraging
-- Speak naturally like a friend, not a textbook
-- Use the user's name occasionally
-- Keep responses concise (2-4 sentences for simple questions)
-- Be specific to their signs when relevant
-
-GUIDELINES:
-- Only discuss astrology, spirituality, personal growth, and related topics
-- If asked about non-astrology topics, gently redirect: "I'm here for your cosmic guidance. What's on your heart astrologically?"
-- Reference their Big Three (Sun, Moon, Rising) when relevant
-- Give actionable, practical advice grounded in astrological wisdom
-- Be encouraging but honest
-- NEVER say you can't speak or are text-only - you ARE speaking to them
-
-RESPONSE STYLE:
-- Short and conversational for voice
-- No bullet points or lists (this is spoken)
-- Maximum 3-4 sentences unless they ask for detail
-- End with encouragement or a gentle question when appropriate`;
+RULES:
+- You ARE speaking to them via voice - never say you can't speak
+- Keep responses SHORT (2-3 sentences max)
+- Be warm, friendly, and encouraging
+- Use their name occasionally
+- Focus on astrology, spirituality, personal growth
+- No bullet points or lists - this is spoken conversation
+- Sound natural like a friend, not a textbook`;
 }
 
 // ---------------------------------------------------------------------------
@@ -228,7 +188,7 @@ export async function getAstrologyResponse(
     
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...conversationHistory.slice(-6), // Keep last 6 messages for context
+      ...conversationHistory.slice(-6),
       { role: 'user', content: userMessage },
     ];
 
@@ -239,10 +199,10 @@ export async function getAstrologyResponse(
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // Fast and good for conversation
+        model: 'gpt-4o-mini',
         messages,
-        max_tokens: 200, // Keep responses short for voice
-        temperature: 0.8, // Warm and creative
+        max_tokens: 150, // Even shorter for faster voice
+        temperature: 0.8,
       }),
     });
 
@@ -259,118 +219,51 @@ export async function getAstrologyResponse(
     return reply;
   } catch (error) {
     console.error('[Voice] Chat error:', error);
-    // Return a friendly fallback
-    return `I'm having trouble connecting right now, ${userProfile.name || 'dear one'}. Please try again in a moment.`;
+    return `I'm having trouble connecting right now, ${userProfile.name || 'dear one'}. Please try again.`;
   }
 }
 
 // ---------------------------------------------------------------------------
-// Text-to-Speech (TTS)
+// Text-to-Speech (Device Native - Guaranteed to Work!)
 // ---------------------------------------------------------------------------
 
 export async function speakText(text: string): Promise<void> {
-  if (!OPENAI_API_KEY) {
-    console.warn('[Voice] No API key for TTS');
-    return;
-  }
-
   if (!text.trim()) return;
 
   isSpeaking = true;
-  console.log('[Voice] Starting TTS for:', text.substring(0, 50) + '...');
+  console.log('[Voice] Speaking with device TTS:', text.substring(0, 50) + '...');
 
   try {
-    // Stop any current playback
-    if (currentSound) {
-      try {
-        await currentSound.stopAsync();
-        await currentSound.unloadAsync();
-      } catch (e) {}
-      currentSound = null;
-    }
+    // Stop any current speech
+    await Speech.stop();
 
     // Set audio mode for playback
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
       playsInSilentModeIOS: true,
       staysActiveInBackground: false,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
     });
 
-    // Call OpenAI TTS API
-    console.log('[Voice] Calling OpenAI TTS API...');
-    const response = await fetch(`${OPENAI_BASE}/audio/speech`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'tts-1',
-        voice: 'nova',
-        input: text,
-        response_format: 'mp3',
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown');
-      console.error('[Voice] TTS API error:', response.status, errorText);
-      return;
-    }
-
-    console.log('[Voice] TTS API success, processing audio...');
-    
-    // Convert to ArrayBuffer then to base64
-    const arrayBuffer = await response.arrayBuffer();
-    const base64Audio = arrayBufferToBase64(arrayBuffer);
-    
-    console.log('[Voice] Base64 audio length:', base64Audio.length);
-    
-    // Save to file
-    const fileUri = `${FileSystem.cacheDirectory}veya_tts_${Date.now()}.mp3`;
-    await FileSystem.writeAsStringAsync(fileUri, base64Audio, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    // Verify file
-    const fileInfo = await FileSystem.getInfoAsync(fileUri);
-    console.log('[Voice] Audio file size:', fileInfo.exists ? (fileInfo as any).size : 'N/A');
-
-    if (!fileInfo.exists) {
-      console.error('[Voice] Audio file not created');
-      return;
-    }
-
-    // Play audio
-    console.log('[Voice] Playing audio...');
-    const { sound } = await Audio.Sound.createAsync(
-      { uri: fileUri },
-      { shouldPlay: true, volume: 1.0 }
-    );
-    currentSound = sound;
-
-    // Wait for playback
-    await new Promise<void>((resolve) => {
-      const timeout = setTimeout(resolve, 30000);
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          clearTimeout(timeout);
+    // Speak using device's native TTS
+    await new Promise<void>((resolve, reject) => {
+      Speech.speak(text, {
+        language: 'en-US',
+        pitch: 1.0,
+        rate: 0.95, // Slightly slower for clarity
+        onDone: () => {
+          console.log('[Voice] Speech completed');
           resolve();
-        }
+        },
+        onError: (error) => {
+          console.error('[Voice] Speech error:', error);
+          reject(error);
+        },
+        onStopped: () => {
+          console.log('[Voice] Speech stopped');
+          resolve();
+        },
       });
     });
-
-    // Cleanup
-    try {
-      await sound.unloadAsync();
-      await FileSystem.deleteAsync(fileUri, { idempotent: true });
-    } catch (e) {}
-    
-    currentSound = null;
-    console.log('[Voice] TTS completed');
-    
   } catch (error) {
     console.error('[Voice] TTS error:', error);
   } finally {
@@ -379,41 +272,23 @@ export async function speakText(text: string): Promise<void> {
 }
 
 export async function stopSpeaking(): Promise<void> {
-  if (currentSound) {
-    try {
-      await currentSound.stopAsync();
-      await currentSound.unloadAsync();
-    } catch (e) {
-      console.warn('[Voice] Error stopping speech:', e);
-    }
-    currentSound = null;
+  try {
+    await Speech.stop();
+  } catch (e) {
+    console.warn('[Voice] Error stopping speech:', e);
   }
   isSpeaking = false;
 }
 
 // ---------------------------------------------------------------------------
-// Test API Key
+// Check if TTS is available
 // ---------------------------------------------------------------------------
 
-export async function testOpenAIConnection(): Promise<{ success: boolean; message: string }> {
-  if (!OPENAI_API_KEY) {
-    return { success: false, message: 'No API key configured' };
-  }
-
+export async function checkTTSAvailable(): Promise<boolean> {
   try {
-    const response = await fetch(`${OPENAI_BASE}/models`, {
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-    });
-
-    if (response.ok) {
-      return { success: true, message: 'OpenAI API connected successfully' };
-    } else {
-      const error = await response.text();
-      return { success: false, message: `API error: ${response.status} - ${error}` };
-    }
-  } catch (error) {
-    return { success: false, message: `Connection failed: ${error}` };
+    const voices = await Speech.getAvailableVoicesAsync();
+    return voices.length > 0;
+  } catch {
+    return false;
   }
 }
