@@ -1071,9 +1071,26 @@ function TransitCalendarSection() {
   const month = now.getMonth() + 1; // 1-indexed
   const today = now.getDate();
   const [selectedDay, setSelectedDay] = useState<number | null>(today);
+  const [monthEvents, setMonthEvents] = useState<MonthEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Real transit events from astronomy-engine
-  const monthEvents = React.useMemo(() => getMonthEvents(year, month), [year, month]);
+  // Load events asynchronously to avoid blocking main thread
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        // Use setTimeout to defer heavy computation
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const events = getMonthEvents(year, month);
+        setMonthEvents(events);
+      } catch (e) {
+        console.warn('[TransitCalendar] Failed to load events:', e);
+        setMonthEvents([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadEvents();
+  }, [year, month]);
 
   // Build event map: day → events
   const eventsByDay = React.useMemo(() => {
@@ -1323,7 +1340,40 @@ function getPlanetaryHourGuidance(planet: string): string {
 // ═══════════════════════════════════════════════════════════════
 
 function RetrogradeTrackerSection() {
-  const retroData = React.useMemo(() => getRetrogradeData(), []);
+  const [retroData, setRetroData] = useState<RetrogradeData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load retrograde data asynchronously to avoid blocking main thread
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Use setTimeout to defer heavy computation
+        await new Promise(resolve => setTimeout(resolve, 200));
+        const data = getRetrogradeData();
+        setRetroData(data);
+      } catch (e) {
+        console.warn('[RetrogradeTracker] Failed to load data:', e);
+        setRetroData({
+          currentRetrogrades: [],
+          upcomingRetrogrades: [],
+          retrogradeCount: 0,
+          message: 'Data unavailable',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <Animated.View entering={FadeInDown.duration(600).delay(1200)} style={styles.sectionContainer}>
+        <Text style={styles.sectionLabel}>RETROGRADE TRACKER</Text>
+        <Text style={styles.sectionTitle}>Loading...</Text>
+      </Animated.View>
+    );
+  }
 
   if (!retroData) return null;
 

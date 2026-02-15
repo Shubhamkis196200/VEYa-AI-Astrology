@@ -503,10 +503,11 @@ function getMoonSignEnergy(sign: string): string {
  * Get monthly events for the transit calendar
  */
 export function getMonthEvents(year: number, month: number): MonthEvent[] {
-  const events: MonthEvent[] = [];
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0); // Last day of month
-  const daysInMonth = endDate.getDate();
+  try {
+    const events: MonthEvent[] = [];
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0); // Last day of month
+    const daysInMonth = endDate.getDate();
 
   // Track planet signs to detect ingresses
   const previousSigns: Record<string, string> = {};
@@ -597,6 +598,11 @@ export function getMonthEvents(year: number, month: number): MonthEvent[] {
 
   // Sort by date
   return events.sort((a, b) => a.date.getTime() - b.date.getTime());
+  } catch (error) {
+    console.warn('[AstroEngine] getMonthEvents failed:', error);
+    // Return empty array as safe fallback
+    return [];
+  }
 }
 
 /**
@@ -822,16 +828,17 @@ export interface RetrogradeData {
  * Get comprehensive retrograde information
  */
 export function getRetrogradeData(date: Date = new Date()): RetrogradeData {
-  const planets = getCurrentTransits(date);
-  const currentRetrogrades: RetrogradeInfo[] = [];
-  const upcomingRetrogrades: RetrogradeInfo[] = [];
+  try {
+    const planets = getCurrentTransits(date);
+    const currentRetrogrades: RetrogradeInfo[] = [];
+    const upcomingRetrogrades: RetrogradeInfo[] = [];
 
-  // Retrograde interpretations
-  const retroInterps: Record<string, string> = {
-    Mercury: 'Communication, travel, and technology require extra attention. Review contracts carefully.',
-    Venus: 'Love and relationships under review. Past connections may resurface.',
-    Mars: 'Energy may feel blocked. Avoid starting new physical projects.',
-    Jupiter: 'Inner growth over outer expansion. Reassess beliefs and goals.',
+    // Retrograde interpretations
+    const retroInterps: Record<string, string> = {
+      Mercury: 'Communication, travel, and technology require extra attention. Review contracts carefully.',
+      Venus: 'Love and relationships under review. Past connections may resurface.',
+      Mars: 'Energy may feel blocked. Avoid starting new physical projects.',
+      Jupiter: 'Inner growth over outer expansion. Reassess beliefs and goals.',
     Saturn: 'Restructuring responsibilities. Old limitations surface for healing.',
     Uranus: 'Internal revolution. Unexpected changes to your sense of freedom.',
     Neptune: 'Spiritual introspection. Dreams and intuition intensify.',
@@ -902,4 +909,14 @@ export function getRetrogradeData(date: Date = new Date()): RetrogradeData {
     retrogradeCount: currentRetrogrades.length,
     message,
   };
+  } catch (error) {
+    console.warn('[AstroEngine] getRetrogradeData failed:', error);
+    // Return safe fallback
+    return {
+      currentRetrogrades: [],
+      upcomingRetrogrades: [],
+      retrogradeCount: 0,
+      message: 'Retrograde data unavailable',
+    };
+  }
 }
