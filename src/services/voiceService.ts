@@ -8,35 +8,28 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 
-// Polyfill for base64 encoding in React Native
+// Proper base64 encoding for React Native (handles binary data correctly)
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  // Use global btoa if available, otherwise manual encode
-  if (typeof btoa !== 'undefined') {
-    return btoa(binary);
-  }
-  // Manual base64 encoding
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const len = bytes.length;
+  const base64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   let result = '';
-  let i = 0;
-  while (i < binary.length) {
-    const a = binary.charCodeAt(i++);
-    const b = binary.charCodeAt(i++);
-    const c = binary.charCodeAt(i++);
-    result += chars[a >> 2];
-    result += chars[((a & 3) << 4) | (b >> 4)];
-    result += chars[((b & 15) << 2) | (c >> 6)];
-    result += chars[c & 63];
+  
+  for (let i = 0; i < len; i += 3) {
+    const byte1 = bytes[i];
+    const byte2 = i + 1 < len ? bytes[i + 1] : 0;
+    const byte3 = i + 2 < len ? bytes[i + 2] : 0;
+    
+    const enc1 = byte1 >> 2;
+    const enc2 = ((byte1 & 3) << 4) | (byte2 >> 4);
+    const enc3 = ((byte2 & 15) << 2) | (byte3 >> 6);
+    const enc4 = byte3 & 63;
+    
+    result += base64chars[enc1] + base64chars[enc2];
+    result += i + 1 < len ? base64chars[enc3] : '=';
+    result += i + 2 < len ? base64chars[enc4] : '=';
   }
-  const pad = binary.length % 3;
-  if (pad) {
-    result = result.slice(0, pad - 3);
-    while (result.length % 4) result += '=';
-  }
+  
   return result;
 }
 
@@ -73,7 +66,7 @@ export function buildAstrologySystemPrompt(userProfile: {
   const moon = userProfile.moonSign || 'unknown';
   const rising = userProfile.risingSign || 'unknown';
   
-  return `You are VEYa, a warm and wise personal astrologer. You speak like a trusted friend who happens to be deeply knowledgeable about astrology.
+  return `You are VEYa, a warm and wise personal astrologer having a VOICE conversation. Your responses will be spoken aloud, so write naturally as if talking.
 
 USER PROFILE:
 - Name: ${name}
@@ -94,6 +87,7 @@ GUIDELINES:
 - Reference their Big Three (Sun, Moon, Rising) when relevant
 - Give actionable, practical advice grounded in astrological wisdom
 - Be encouraging but honest
+- NEVER say you can't speak or are text-only - you ARE speaking to them
 
 RESPONSE STYLE:
 - Short and conversational for voice
