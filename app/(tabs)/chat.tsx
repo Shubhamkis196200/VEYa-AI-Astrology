@@ -54,11 +54,50 @@ const COLORS = {
   aiBubbleBorder: 'rgba(212, 165, 71, 0.12)',
 };
 
+// Feature Discovery: Suggested Questions organized by category
+const SUGGESTED_CATEGORIES = [
+  {
+    title: 'Daily Guidance',
+    emoji: '☀️',
+    questions: [
+      "What does today hold for me?",
+      "What should I focus on this week?",
+    ],
+  },
+  {
+    title: 'Love & Relationships',
+    emoji: '💕',
+    questions: [
+      "Tell me about my love life",
+      "What's my compatibility with Libra?",
+    ],
+  },
+  {
+    title: 'Career & Purpose',
+    emoji: '🚀',
+    questions: [
+      "Career guidance please",
+      "What are my natural talents?",
+    ],
+  },
+  {
+    title: 'Self Discovery',
+    emoji: '✨',
+    questions: [
+      "Explain my birth chart",
+      "Tell me about my rising sign",
+    ],
+  },
+];
+
+// Flat list for quick access
 const SUGGESTED = [
   '✨ What does today hold for me?',
   '💜 Tell me about my love life',
   '🚀 Career guidance please',
   '🌙 What should I focus on this week?',
+  '⭐ Explain my birth chart',
+  '💫 Tell me about my moon sign',
 ];
 
 function TypingIndicator() {
@@ -259,15 +298,31 @@ export default function ChatScreen() {
           <View style={styles.emptyIconCircle}>
             <Text style={styles.emptyEmoji}>✨</Text>
           </View>
-          <Text style={styles.emptyTitle}>Ask me anything</Text>
-          <Text style={styles.emptySubtitle}>About your stars, your path, your purpose</Text>
+          <Text style={styles.emptyTitle}>Ask VEYa Anything</Text>
+          <Text style={styles.emptySubtitle}>Your personal AI astrologer — ask about your stars, your path, your purpose</Text>
           {sunSign && <View style={styles.signBadge}><Text style={styles.signBadgeText}>☉ {sunSign}</Text></View>}
+          
+          {/* Feature Discovery: How VEYa Can Help */}
+          <View style={styles.featureDiscovery}>
+            <Text style={styles.featureDiscoveryTitle}>💬 How can VEYa help?</Text>
+            <Text style={styles.featureDiscoveryDesc}>
+              Ask about daily insights, compatibility, career guidance, or dive deep into your birth chart. Tap a suggestion or type your own question.
+            </Text>
+          </View>
+          
+          {/* Suggested Questions */}
           <View style={styles.suggestions}>
-            {SUGGESTED.map((s, i) => (
+            <Text style={styles.suggestionsTitle}>Try asking:</Text>
+            {SUGGESTED.slice(0, 4).map((s, i) => (
               <Pressable key={i} onPress={() => handleSend(s.replace(/^[^\w]*/, ''))} style={({ pressed }) => [styles.suggestion, pressed && styles.suggestionPressed]}>
                 <Text style={styles.suggestionText}>{s}</Text>
               </Pressable>
             ))}
+          </View>
+          
+          {/* Voice Feature Hint */}
+          <View style={styles.voiceHint}>
+            <Text style={styles.voiceHintText}>🎙️ Tap the mic to talk to VEYa</Text>
           </View>
         </View>
       ) : (
@@ -346,13 +401,19 @@ const styles = StyleSheet.create({
   emptyIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.goldLight, borderWidth: 1, borderColor: COLORS.goldBorder, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   emptyEmoji: { fontSize: 36 },
   emptyTitle: { fontSize: 22, fontFamily: 'PlayfairDisplay-Bold', color: COLORS.textPrimary, marginBottom: 8 },
-  emptySubtitle: { fontSize: 14, fontFamily: 'Inter-Regular', color: COLORS.textSecondary, textAlign: 'center' },
+  emptySubtitle: { fontSize: 14, fontFamily: 'Inter-Regular', color: COLORS.textSecondary, textAlign: 'center', lineHeight: 20, paddingHorizontal: 16 },
+  featureDiscovery: { marginTop: 20, backgroundColor: COLORS.goldLight, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.goldBorder, width: '100%' },
+  featureDiscoveryTitle: { fontSize: 15, fontFamily: 'Inter-SemiBold', color: COLORS.textPrimary, marginBottom: 6 },
+  featureDiscoveryDesc: { fontSize: 13, fontFamily: 'Inter-Regular', color: COLORS.textSecondary, lineHeight: 19 },
   signBadge: { backgroundColor: COLORS.goldLight, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6, borderWidth: 1, borderColor: COLORS.goldBorder, marginTop: 12 },
   signBadgeText: { fontSize: 13, fontFamily: 'Inter-SemiBold', color: COLORS.gold },
-  suggestions: { marginTop: 24, width: '100%' },
+  suggestions: { marginTop: 20, width: '100%' },
+  suggestionsTitle: { fontSize: 13, fontFamily: 'Inter-SemiBold', color: COLORS.textMuted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
   suggestion: { backgroundColor: COLORS.white, borderRadius: 16, paddingHorizontal: 18, paddingVertical: 14, marginBottom: 10, borderWidth: 1, borderColor: COLORS.goldBorder },
   suggestionPressed: { backgroundColor: COLORS.goldLight },
   suggestionText: { fontSize: 15, fontFamily: 'Inter-Medium', color: COLORS.textPrimary },
+  voiceHint: { marginTop: 16, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: COLORS.primaryLight, borderRadius: 20 },
+  voiceHintText: { fontSize: 13, fontFamily: 'Inter-Medium', color: COLORS.primary },
   messageList: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   messageRow: { flexDirection: 'row', marginBottom: 16, alignItems: 'flex-end' },
   messageRowUser: { justifyContent: 'flex-end' },

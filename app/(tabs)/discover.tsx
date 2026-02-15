@@ -291,7 +291,7 @@ function StardustParticle({ config }: { config: ParticleConfig }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SECTION 1: HEADER
+// SECTION 1: HEADER WITH FEATURE DISCOVERY
 // ═══════════════════════════════════════════════════════════════
 
 function ExploreHeader() {
@@ -299,6 +299,38 @@ function ExploreHeader() {
     <Animated.View entering={FadeIn.duration(700).delay(100)} style={styles.headerContainer}>
       <Text style={styles.headerTitle}>Discover</Text>
       <Text style={styles.headerSubtext}>Uncover your cosmic story</Text>
+      
+      {/* Feature Discovery Guide */}
+      <View style={styles.featureGuide}>
+        <Text style={styles.featureGuideTitle}>✨ Explore VEYa's Features</Text>
+        <View style={styles.featureGuideGrid}>
+          <View style={styles.featureGuideItem}>
+            <Text style={styles.featureGuideEmoji}>⭐</Text>
+            <Text style={styles.featureGuideLabel}>Birth Chart</Text>
+          </View>
+          <View style={styles.featureGuideItem}>
+            <Text style={styles.featureGuideEmoji}>💕</Text>
+            <Text style={styles.featureGuideLabel}>Compatibility</Text>
+          </View>
+          <View style={styles.featureGuideItem}>
+            <Text style={styles.featureGuideEmoji}>🃏</Text>
+            <Text style={styles.featureGuideLabel}>Tarot</Text>
+          </View>
+          <View style={styles.featureGuideItem}>
+            <Text style={styles.featureGuideEmoji}>🌙</Text>
+            <Text style={styles.featureGuideLabel}>Moon Tracker</Text>
+          </View>
+          <View style={styles.featureGuideItem}>
+            <Text style={styles.featureGuideEmoji}>📅</Text>
+            <Text style={styles.featureGuideLabel}>Transits</Text>
+          </View>
+          <View style={styles.featureGuideItem}>
+            <Text style={styles.featureGuideEmoji}>🎵</Text>
+            <Text style={styles.featureGuideLabel}>Soundscapes</Text>
+          </View>
+        </View>
+        <Text style={styles.featureGuideHint}>Scroll down to explore each feature</Text>
+      </View>
     </Animated.View>
   );
 }
@@ -1225,6 +1257,50 @@ const styles = StyleSheet.create({
   headerSubtext: {
     fontFamily: typography.fonts.displayItalic, fontSize: typography.sizes.bodySmall,
     color: colors.textMuted, letterSpacing: 0.3,
+  },
+  
+  // Feature Discovery Guide
+  featureGuide: {
+    marginTop: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  featureGuideTitle: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.bodySmall,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  featureGuideGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    gap: spacing.xs,
+  },
+  featureGuideItem: {
+    alignItems: 'center',
+    width: '30%',
+    paddingVertical: spacing.xs,
+  },
+  featureGuideEmoji: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  featureGuideLabel: {
+    fontFamily: typography.fonts.bodyMedium,
+    fontSize: typography.sizes.tiny,
+    color: colors.textSecondary,
+  },
+  featureGuideHint: {
+    fontFamily: typography.fonts.displayItalic,
+    fontSize: typography.sizes.tiny,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 
   // Shared section

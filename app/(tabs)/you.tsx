@@ -139,6 +139,41 @@ async function hapticMedium() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// COMPONENT: What's Here Section (Feature Discovery)
+// ─────────────────────────────────────────────────────────────
+
+function WhatsHereSection() {
+  return (
+    <Animated.View entering={FadeInDown.duration(500).delay(200)}>
+      <View style={[styles.card, styles.whatsHereCard]}>
+        <Text style={styles.whatsHereTitle}>👤 Your Profile</Text>
+        <Text style={styles.whatsHereDesc}>
+          This is your cosmic home — view your chart, track your stats, manage rituals, and customize your VEYa experience.
+        </Text>
+        <View style={styles.whatsHereFeatures}>
+          <View style={styles.whatsHereFeatureItem}>
+            <Text style={styles.whatsHereFeatureEmoji}>📊</Text>
+            <Text style={styles.whatsHereFeatureLabel}>Stats</Text>
+          </View>
+          <View style={styles.whatsHereFeatureItem}>
+            <Text style={styles.whatsHereFeatureEmoji}>⭐</Text>
+            <Text style={styles.whatsHereFeatureLabel}>Chart</Text>
+          </View>
+          <View style={styles.whatsHereFeatureItem}>
+            <Text style={styles.whatsHereFeatureEmoji}>🌙</Text>
+            <Text style={styles.whatsHereFeatureLabel}>Rituals</Text>
+          </View>
+          <View style={styles.whatsHereFeatureItem}>
+            <Text style={styles.whatsHereFeatureEmoji}>⚙️</Text>
+            <Text style={styles.whatsHereFeatureLabel}>Settings</Text>
+          </View>
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // COMPONENT: Profile Header
 // ─────────────────────────────────────────────────────────────
 
@@ -649,6 +684,7 @@ export default function ProfileScreen() {
         bounces={true}
       >
         <ProfileHeader userName={userName} sunSign={sunSign} moonSign={moonSign} risingSign={risingSign} />
+        <WhatsHereSection />
         <CosmicStatsCard />
         <MyChartSummary birthDate={birthDate} birthPlace={birthPlace} sunSign={sunSign} moonSign={moonSign} risingSign={risingSign} />
         <RitualsContentSection />
@@ -702,6 +738,15 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
     }),
   },
+  
+  // What's Here (Feature Discovery)
+  whatsHereCard: { padding: spacing.md, marginBottom: spacing.md },
+  whatsHereTitle: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.body, color: colors.textPrimary, marginBottom: spacing.xs },
+  whatsHereDesc: { fontFamily: typography.fonts.body, fontSize: typography.sizes.caption, color: colors.textSecondary, lineHeight: 18, marginBottom: spacing.md },
+  whatsHereFeatures: { flexDirection: 'row', justifyContent: 'space-around' },
+  whatsHereFeatureItem: { alignItems: 'center' },
+  whatsHereFeatureEmoji: { fontSize: 20, marginBottom: 4 },
+  whatsHereFeatureLabel: { fontFamily: typography.fonts.bodyMedium, fontSize: typography.sizes.tiny, color: colors.textMuted },
 
   // Stats
   statsCard: { padding: spacing.lg, marginBottom: spacing.md },

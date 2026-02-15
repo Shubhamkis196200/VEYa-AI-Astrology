@@ -1,181 +1,223 @@
-# VEYa V4 - Overnight Production Build Plan
-## Date: February 15, 2026 (Overnight)
+# VEYa V4 Overnight Build Plan
+## Mission: Production-Ready App by Morning
+
+**Started:** 2026-02-15 03:30 UTC
+**Target:** 2026-02-15 09:00 UTC (6 hours)
+**Owner:** Shubham Kishore
 
 ---
 
-## 🎯 MISSION
-Transform VEYa into a **production-ready app** by morning with:
-- All features working (except payment & auth)
-- Beautiful, consistent design
-- Intuitive navigation with "wow effect"
-- Full QA passed
+## CRITICAL REQUIREMENTS
+
+### DO NOT IMPLEMENT:
+- ❌ Payment/Subscription
+- ❌ Authentication/Login
+
+### MUST FIX:
+- ✅ Design consistency across ALL screens
+- ✅ Navigation — features MUST be easy to find
+- ✅ "Wow effect" — users should be delighted discovering features
+- ✅ All features must ACTUALLY WORK (not just exist)
+- ✅ Visual polish — looks professional, not prototype
 
 ---
 
-## ❌ DO NOT IMPLEMENT
-- Payment/subscription system
-- Authentication (keep current simple flow)
+## DESIGN PRINCIPLES (from UX research)
+
+### 1. Navigation Hierarchy
+```
+TODAY (Home) — Daily essentials, entry point
+├── Stories carousel (top)
+├── Main insight card (prominent)
+├── Quick actions (clearly labeled)
+├── Weather + Moon (glanceable)
+└── Voice button (floating, obvious)
+
+DISCOVER — Exploration hub
+├── Birth Chart (hero section)
+├── Tools grid (Tarot, Compatibility, etc.)
+├── Transit Calendar
+└── Learning content
+
+CHAT — AI Companion
+├── Full-screen chat
+├── Suggested prompts
+└── Voice input option
+
+PROFILE — Personal space
+├── User info + chart summary
+├── Journal entries
+├── Achievements/Progress
+├── Settings
+```
+
+### 2. Feature Discoverability
+- Every feature needs a CLEAR entry point
+- Use cards with icons + titles + brief descriptions
+- Group related features together
+- Add subtle animations to draw attention
+
+### 3. Visual Consistency
+- Color palette: Deep purple (#1a1a2e) base, gold (#FFD700) accents
+- Typography: Playfair for headers, Inter for body
+- Spacing: 16px base unit
+- Border radius: 16px for cards, 24px for modals
+- Gradients: Purple to indigo for backgrounds
+
+### 4. The "Wow Effect"
+- Smooth transitions between screens
+- Micro-animations on interactions
+- Particle effects for cosmic theme
+- Haptic feedback on key actions
+- Progressive disclosure of features
 
 ---
 
-## 📋 PHASE 1: AUDIT & PLANNING (First)
-**Goal**: Understand current state, identify ALL issues
+## PHASES
 
-### Tasks:
-1. [ ] List all screens and their current state
-2. [ ] Identify broken/non-working features
-3. [ ] Document navigation issues
-4. [ ] Note design inconsistencies
-5. [ ] Create prioritized fix list
+### Phase 1: UX Research & Architecture (30 min)
+- [ ] Analyze top astrology apps (Co-Star, Pattern, Sanctuary)
+- [ ] Document their navigation patterns
+- [ ] Create feature map for VEYa
+- [ ] Plan information architecture
 
----
+### Phase 2: Navigation Overhaul (1 hour)
+- [ ] Redesign tab bar with clear icons + labels
+- [ ] Create feature discovery sections on each tab
+- [ ] Add section headers and descriptions
+- [ ] Implement smooth tab transitions
+- [ ] Add onboarding tooltips for features
 
-## 📋 PHASE 2: NAVIGATION OVERHAUL
-**Goal**: Make features EASY to find with "wow effect"
+### Phase 3: Today Tab Polish (1 hour)
+- [ ] Hero greeting card with personalization
+- [ ] Stories carousel (working, tappable)
+- [ ] Daily insight card (prominent, shareable)
+- [ ] Cosmic weather widget (clear, informative)
+- [ ] Moon phase display (beautiful, accurate)
+- [ ] Quick actions bar (Voice, Journal, Share)
+- [ ] Moment capture (easy to find)
 
-### Research:
-- How top astrology apps (Co-Star, The Pattern, Sanctuary) organize features
-- Best practices for mobile navigation
-- How to create discovery moments
+### Phase 4: Discover Tab Complete (1.5 hours)
+- [ ] Birth chart viewer (interactive, zoomable)
+- [ ] House system toggle (visible, working)
+- [ ] "Explain My Chart" button (prominent)
+- [ ] Feature cards grid:
+  - Tarot Reading
+  - Compatibility Checker
+  - Transit Calendar
+  - Planetary Hours
+  - Retrograde Tracker
+- [ ] Each feature: icon, title, description, tap to open
 
-### Implementation:
-1. [ ] Redesign tab structure (keep 4 tabs but optimize)
-2. [ ] Add feature discovery cards on home
-3. [ ] Create clear section headers
-4. [ ] Add tooltips/hints for new users
-5. [ ] Ensure every feature is max 2 taps away
+### Phase 5: Chat Tab Enhancement (45 min)
+- [ ] Clean chat interface
+- [ ] Suggested conversation starters
+- [ ] AI responds with astrology context
+- [ ] Message history persists
+- [ ] Voice input button
+- [ ] Typing indicator
 
----
+### Phase 6: Profile Tab Complete (45 min)
+- [ ] User profile header with signs
+- [ ] Birth chart summary card
+- [ ] Journal section with entries list
+- [ ] Create journal entry flow
+- [ ] Achievements/badges display
+- [ ] Cosmic Year Timeline
+- [ ] Settings (notifications, preferences)
 
-## 📋 PHASE 3: DESIGN CONSISTENCY
-**Goal**: Unified, beautiful visual language
+### Phase 7: Cross-Feature Polish (1 hour)
+- [ ] Consistent card designs
+- [ ] Unified color scheme
+- [ ] Typography hierarchy
+- [ ] Loading states
+- [ ] Error states
+- [ ] Empty states
+- [ ] Animations and transitions
 
-### Tasks:
-1. [ ] Audit all screens for color consistency
-2. [ ] Ensure unified typography
-3. [ ] Consistent spacing/padding
-4. [ ] Consistent button styles
-5. [ ] Consistent card styles
-6. [ ] Ensure light theme (#FDFBF7) everywhere
-
----
-
-## 📋 PHASE 4: FEATURE FIXES
-**Goal**: Make EVERY feature work properly
-
-### Today Tab Features:
-- [ ] Cosmic Stories - clickable, viewable
-- [ ] One Insight Card - real data, AI explanation
-- [ ] Daily Affirmation - personalized
-- [ ] Cosmic Weather Widget - real transits
-- [ ] Moon Phase - accurate
-- [ ] Voice Agent - working with good voice
-- [ ] Moment Capture - saves properly
-
-### Chat Tab Features:
-- [ ] AI Chat - responsive, personalized
-- [ ] Conversation history
-- [ ] Voice input option
-
-### Discover Tab Features:
-- [ ] Birth Chart - interactive, accurate
-- [ ] House System Toggle - works
-- [ ] Transit Calendar
-- [ ] Compatibility checker
-- [ ] Tarot readings
-
-### You Tab Features:
-- [ ] Profile display
-- [ ] Journal entries
-- [ ] Achievements
-- [ ] Settings
+### Phase 8: Full QA & Deploy (30 min)
+- [ ] Test every feature systematically
+- [ ] Fix any broken features
+- [ ] Remove debug code
+- [ ] Deploy to Expo
+- [ ] Create summary report
 
 ---
 
-## 📋 PHASE 5: QA CHECKLIST
-**Goal**: Verify EVERYTHING works
+## QA CHECKLIST
 
-### For Each Feature:
-1. Does it load without errors?
-2. Does it show real data (not mock)?
-3. Is the UI consistent with design system?
-4. Is it easy to find/navigate to?
-5. Does it respond to user interaction?
-6. Is the text readable and well-formatted?
+### Today Tab
+- [ ] App loads without crash
+- [ ] Greeting shows correct time + name
+- [ ] Stories carousel scrolls and taps work
+- [ ] Insight card shows real transit data
+- [ ] Weather widget updates correctly
+- [ ] Moon phase is astronomically accurate
+- [ ] Voice button opens voice interface
+- [ ] Moment capture saves correctly
 
----
+### Discover Tab
+- [ ] Birth chart renders with real data
+- [ ] House toggle switches view
+- [ ] Explain chart calls AI
+- [ ] Tarot: card selection + interpretation
+- [ ] Compatibility: input + results
+- [ ] Transit calendar shows events
+- [ ] All features accessible within 2 taps
 
-## 📋 PHASE 6: FINAL POLISH
-**Goal**: Production-ready state
+### Chat Tab
+- [ ] Can send messages
+- [ ] AI responds appropriately
+- [ ] History persists across sessions
+- [ ] Voice input works
 
-### Tasks:
-1. [ ] Remove all console.logs
-2. [ ] Remove any debug UI
-3. [ ] Test on different screen sizes
-4. [ ] Ensure smooth animations
-5. [ ] Final navigation flow test
-6. [ ] Performance check
+### Profile Tab
+- [ ] Profile info displays correctly
+- [ ] Can create journal entry
+- [ ] Can view journal entries
+- [ ] Achievements show progress
+- [ ] Settings options work
 
----
-
-## 🤖 AGENT ASSIGNMENTS
-
-### OMEGA (Orchestrator)
-- Overall coordination
-- Final QA approval
-- Decision making
-
-### ALPHA (Full-Stack Builder)
-- Fix broken features
-- Implement missing functionality
-- Navigation improvements
-
-### BETA (Research & QA)
-- Research best practices
-- QA testing each phase
-- Bug documentation
-
-### GAMMA (Designer)
-- Design consistency audit
-- UI improvements
-- Visual polish
+### Global
+- [ ] No crashes on any screen
+- [ ] No infinite loading states
+- [ ] Consistent design language
+- [ ] Smooth transitions
+- [ ] Features easy to find
 
 ---
 
-## ⏰ SCHEDULE
+## STATUS UPDATES
 
-| Time | Phase | Agent |
-|------|-------|-------|
-| 00:45 | Audit & Planning | BETA |
-| 01:30 | Navigation Research | BETA |
-| 02:00 | Navigation Implementation | ALPHA |
-| 03:00 | Design Consistency | GAMMA |
-| 04:00 | Feature Fixes (Today) | ALPHA |
-| 05:00 | Feature Fixes (Other) | ALPHA |
-| 06:00 | QA Testing | BETA |
-| 07:00 | Final Polish | GAMMA |
-| 08:00 | Production Deploy | OMEGA |
+Format for 15-minute updates:
+```
+🔄 VEYa Build Update [TIME]
+Phase: X/8 - [Phase Name]
+Progress: X%
+Currently: [What's being worked on]
+Completed: [Recent completions]
+Issues: [Any blockers]
+```
 
 ---
 
-## 🛡️ SAFETY RULES
+## LOOP PROTECTION
 
-1. **Max 10-12 retries** per issue before moving on
-2. **Don't burn API tokens** - be efficient
-3. **Commit frequently** - save progress
-4. **Document blockers** - note what couldn't be fixed
-5. **Test after each change** - don't break working features
+- Max 10 retries per feature fix
+- If stuck, document in QA_RESULTS.md and move on
+- Prioritize working features over perfect features
+- Deploy incrementally (after each phase)
 
 ---
 
-## 📊 SUCCESS CRITERIA
+## AGENT ASSIGNMENTS
 
-By morning, Shubham should see:
-- [ ] App loads without errors
-- [ ] All 4 tabs work perfectly
-- [ ] Every feature is findable in ≤2 taps
-- [ ] Consistent beautiful design
-- [ ] Voice agent speaks naturally
-- [ ] Real astronomical data everywhere
-- [ ] Smooth, delightful UX
-- [ ] "Wow, this is a real app!" feeling
+| Agent | Responsibility |
+|-------|---------------|
+| OMEGA | Orchestration, architecture decisions |
+| ALPHA | UI implementation, component building |
+| BETA | QA testing, bug finding |
+| GAMMA | Design consistency, visual polish |
+| DELTA | Deployment, build management |
+
+Agents communicate via task-queue.json and output files.
