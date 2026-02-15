@@ -245,27 +245,34 @@ export async function getAstrologyResponse(
 
 export async function speakText(text: string): Promise<void> {
   if (!OPENAI_API_KEY) {
-    throw new Error('OpenAI API key not configured');
+    console.warn('[Voice] No API key for TTS');
+    return; // Don't throw, just skip
   }
 
   if (!text.trim()) return;
 
   isSpeaking = true;
-  console.log('[Voice] Speaking:', text.substring(0, 50) + '...');
+  console.log('[Voice] Starting TTS for:', text.substring(0, 50) + '...');
 
   try {
     // Stop any current playback
     if (currentSound) {
-      await currentSound.stopAsync();
-      await currentSound.unloadAsync();
+      try {
+        await currentSound.stopAsync();
+        await currentSound.unloadAsync();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
       currentSound = null;
     }
 
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
       playsInSilentModeIOS: true,
+      staysActiveInBackground: false,
     });
 
+    console.log('[Voice] Calling OpenAI TTS API...');
     const response = await fetch(`${OPENAI_BASE}/audio/speech`, {
       method: 'POST',
       headers: {
@@ -273,8 +280,8 @@ export async function speakText(text: string): Promise<void> {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'tts-1', // Use standard for faster response
-        voice: 'nova', // Warm, friendly female voice
+        model: 'tts-1',
+        voice: 'nova',
         input: text,
         speed: 1.0,
       }),
@@ -283,39 +290,59 @@ export async function speakText(text: string): Promise<void> {
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
       console.error('[Voice] TTS API error:', response.status, errorText);
-      throw new Error(`TTS failed: ${response.status}`);
+      // Don't throw - gracefully fail
+      return;
     }
 
+    console.log('[Voice] TTS API success, processing audio...');
     const arrayBuffer = await response.arrayBuffer();
     const base64Audio = Buffer.from(arrayBuffer).toString('base64');
     
-    const fileUri = `${FileSystem.documentDirectory}veya_speech_${Date.now()}.mp3`;
+    // Use cacheDirectory as fallback if documentDirectory is null
+    const baseDir = FileSystem.documentDirectory || FileSystem.cacheDirectory || '';
+    if (!baseDir) {
+      console.error('[Voice] No writable directory available');
+      return;
+    }
+    
+    const fileUri = `${baseDir}veya_tts_${Date.now()}.mp3`;
+    console.log('[Voice] Saving audio to:', fileUri);
+    
     await FileSystem.writeAsStringAsync(fileUri, base64Audio, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: 'base64' as any,
     });
 
+    console.log('[Voice] Audio saved, playing...');
     const { sound } = await Audio.Sound.createAsync(
       { uri: fileUri },
       { shouldPlay: true }
     );
     currentSound = sound;
 
-    // Wait for playback to complete
+    // Wait for playback to complete with timeout
     await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => {
+        console.log('[Voice] Playback timeout, resolving');
+        resolve();
+      }, 30000); // 30 second max
+
       sound.setOnPlaybackStatusUpdate((status) => {
         if (!status.isLoaded) return;
         if (status.didJustFinish) {
+          clearTimeout(timeout);
           resolve();
         }
       });
     });
 
-    await sound.unloadAsync();
+    try {
+      await sound.unloadAsync();
+    } catch (e) {}
     currentSound = null;
-    console.log('[Voice] Speech completed');
+    console.log('[Voice] Speech completed successfully');
   } catch (error) {
     console.error('[Voice] TTS error:', error);
-    throw error;
+    // Don't re-throw - let the UI continue
   } finally {
     isSpeaking = false;
   }

@@ -208,9 +208,14 @@ export default function VoiceInterface({ onClose }: VoiceInterfaceProps) {
         { role: 'assistant', content: aiResponse },
       ]);
       
-      // Speak the response
+      // Try to speak the response (don't fail if TTS errors)
       setStatus('speaking');
-      await speakText(aiResponse);
+      try {
+        await speakText(aiResponse);
+      } catch (ttsError) {
+        console.warn('[Voice] TTS failed, but response shown:', ttsError);
+        // TTS failed but we have the text response, so don't show error
+      }
       
       setStatus('idle');
     } catch (err: any) {
