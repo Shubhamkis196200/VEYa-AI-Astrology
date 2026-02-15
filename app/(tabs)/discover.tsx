@@ -46,6 +46,7 @@ import Animated, {
   FadeInUp,
   FadeInRight,
   SlideInRight,
+  cancelAnimation,
   type SharedValue,
 } from 'react-native-reanimated';
 import Svg, {
@@ -253,7 +254,7 @@ function generateParticles(count: number): ParticleConfig[] {
   return particles;
 }
 
-const PARTICLES = generateParticles(10);
+const PARTICLES = generateParticles(4); // Reduced from 10 to 4 for performance
 
 function StardustParticle({ config }: { config: ParticleConfig }) {
   const translateX = useSharedValue(0);
@@ -276,6 +277,13 @@ function StardustParticle({ config }: { config: ParticleConfig }) {
         withTiming(config.opacity, { duration: config.duration * 0.5 }),
         withTiming(config.opacity * 0.15, { duration: config.duration * 0.5 })
       ), -1, true));
+    
+    // CRITICAL: Cancel animations on unmount to prevent memory leaks and CPU drain
+    return () => {
+      cancelAnimation(translateX);
+      cancelAnimation(translateY);
+      cancelAnimation(opacity);
+    };
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({

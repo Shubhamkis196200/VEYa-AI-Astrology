@@ -18,6 +18,7 @@ import Animated, {
   withTiming,
   withSpring,
   Easing,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -147,6 +148,10 @@ export default function DailyAffirmation({ sunSign = 'Aries', onShare }: DailyAf
       -1,
       false
     );
+    
+    return () => {
+      cancelAnimation(shimmer);
+    };
   }, []);
 
   const shimmerStyle = useAnimatedStyle(() => ({

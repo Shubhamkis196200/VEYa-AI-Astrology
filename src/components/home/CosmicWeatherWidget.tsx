@@ -11,6 +11,7 @@ import Animated, {
   withRepeat,
   withTiming,
   Easing,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -153,6 +154,10 @@ export default function CosmicWeatherWidget({ onPress }: CosmicWeatherWidgetProp
       -1,
       true
     );
+    
+    return () => {
+      cancelAnimation(pulse);
+    };
   }, []);
 
   const pulseStyle = useAnimatedStyle(() => ({

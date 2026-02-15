@@ -27,6 +27,7 @@ import Animated, {
   Easing,
   FadeIn,
   FadeOut,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -140,6 +141,12 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
       -1,
       true
     );
+    
+    // Cancel animations on unmount
+    return () => {
+      cancelAnimation(pulse);
+      cancelAnimation(glow);
+    };
   }, []);
 
   const buttonStyle = useAnimatedStyle(() => ({

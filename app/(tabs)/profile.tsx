@@ -33,6 +33,7 @@ import Animated, {
   Easing,
   FadeIn,
   FadeInDown,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import Svg, {
   Circle,
@@ -184,6 +185,11 @@ function ProfileHeader({ userName, birthDate, sunSign, moonSign, risingSign }: P
       false
     );
     memoryCounterScale.value = withDelay(800, withSpring(1, { damping: 10, stiffness: 120, mass: 0.8 }));
+    
+    // Cancel animations on unmount to prevent memory leaks
+    return () => {
+      cancelAnimation(borderRotate);
+    };
   }, []);
 
   const borderAnimatedStyle = useAnimatedStyle(() => ({
@@ -743,7 +749,7 @@ function generateParticles(count: number): ParticleConfig[] {
   return particles;
 }
 
-const PARTICLES = generateParticles(8);
+const PARTICLES = generateParticles(3); // Reduced from 8 to 3 for performance
 
 function StardustParticle({ config }: { config: ParticleConfig }) {
   const translateX = useSharedValue(0);
@@ -784,6 +790,13 @@ function StardustParticle({ config }: { config: ParticleConfig }) {
         true
       )
     );
+    
+    // Cancel animations on unmount to prevent memory leaks
+    return () => {
+      cancelAnimation(translateX);
+      cancelAnimation(translateY);
+      cancelAnimation(opacity);
+    };
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({

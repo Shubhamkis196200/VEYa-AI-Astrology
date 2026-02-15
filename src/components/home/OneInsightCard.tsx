@@ -27,6 +27,7 @@ import Animated, {
   Easing,
   FadeIn,
   FadeInUp,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -249,6 +250,11 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
       -1,
       false
     );
+    
+    return () => {
+      cancelAnimation(glowPulse);
+      cancelAnimation(shimmer);
+    };
   }, []);
 
   const glowStyle = useAnimatedStyle(() => ({

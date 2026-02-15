@@ -13,6 +13,7 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { colors } from '@/theme/colors';
 
@@ -38,6 +39,10 @@ export default function StreakCounter({ currentStreak, isLoading }: StreakCounte
       -1,
       true,
     );
+    
+    return () => {
+      cancelAnimation(flamePulse);
+    };
   }, []);
 
   useEffect(() => {

@@ -22,6 +22,7 @@ import Animated, {
   withRepeat,
   withSequence,
   Easing,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import Svg, {
   Circle,
@@ -202,6 +203,12 @@ export default function NatalChart({
         ),
       );
     }
+    
+    // Cancel animations on unmount to prevent memory leaks
+    return () => {
+      cancelAnimation(breatheScale);
+      cancelAnimation(ringProgress);
+    };
   }, [breathe]);
 
   const outerCircumference = 2 * Math.PI * OUTER_RADIUS;
