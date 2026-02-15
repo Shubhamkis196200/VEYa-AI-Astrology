@@ -4,7 +4,7 @@
  * Reads from onboarding store for user data.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -47,8 +47,12 @@ async function hapticImpact(style: 'Light' | 'Medium' = 'Light') {
   } catch {}
 }
 import { useOnboardingStore } from '../../src/stores/onboardingStore';
+import { useJournalStore } from '../../src/stores/journalStore';
+import { useAchievementStore, ACHIEVEMENTS } from '../../src/stores/achievementStore';
+import { useStreakStore } from '../../src/stores/streakStore';
+import { useRouter } from 'expo-router';
 import AnimatedPressable from '@/components/ui/AnimatedPressable';
-import { RitualsContentSection } from './rituals';
+// Rituals section moved to dedicated Rituals tab
 import { 
   colors as themeColors, 
   typography as themeTypography, 
@@ -360,6 +364,107 @@ function MyChartSummary({ birthDate, birthPlace, sunSign, moonSign, risingSign }
             <Text style={styles.chartBirthValue}>{displayPlace}</Text>
           </View>
         </View>
+      </View>
+    </Animated.View>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// COMPONENT: Journal Section
+// ─────────────────────────────────────────────────────────────
+
+function getPreview(text: string, max = 72) {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  return clean.length > max ? `${clean.slice(0, max)}...` : clean;
+}
+
+function JournalSection() {
+  const entries = useJournalStore((s) => s.entries);
+  const router = useRouter();
+  const recentEntries = entries.slice(0, 3);
+
+  return (
+    <Animated.View entering={FadeInDown.duration(600).delay(900)} style={styles.sectionBlock}>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionTitle}>Journal</Text>
+        <Pressable onPress={() => router.push('/(tabs)/rituals')} style={styles.sectionActionPill}>
+          <Text style={styles.sectionActionText}>Write</Text>
+        </Pressable>
+      </View>
+
+      {recentEntries.length === 0 ? (
+        <View style={styles.emptyStateCard}>
+          <Text style={styles.emptyStateEmoji}>📓</Text>
+          <Text style={styles.emptyStateText}>Start a reflection and track your cosmic growth.</Text>
+        </View>
+      ) : (
+        <View style={styles.journalList}>
+          {recentEntries.map((entry) => (
+            <View key={entry.id} style={styles.journalCard}>
+              <View style={styles.journalCardHeader}>
+                <Text style={styles.journalDate}>{entry.dateLabel}</Text>
+                <Text style={styles.journalMood}>{entry.mood}</Text>
+              </View>
+              <Text style={styles.journalPreview}>{getPreview(entry.text)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </Animated.View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// COMPONENT: Achievement Badges
+// ─────────────────────────────────────────────────────────────
+
+function AchievementsSection() {
+  const { progress } = useAchievementStore();
+  const { currentStreak, totalCheckIns } = useStreakStore();
+
+  const featuredAchievements = useMemo(() => {
+    const ids = ['first_reflection', 'cosmic_curious', 'morning_star'];
+    return ids.map((id) => ACHIEVEMENTS.find((a) => a.id === id)).filter(Boolean);
+  }, []);
+
+  return (
+    <Animated.View entering={FadeInDown.duration(600).delay(1050)} style={styles.sectionBlock}>
+      <Text style={styles.sectionTitle}>Achievement Badges</Text>
+      <View style={styles.progressCard}>
+        <View style={styles.progressRow}>
+          <Text style={styles.progressLabel}>Days with VEYa</Text>
+          <Text style={styles.progressValue}>{totalCheckIns}</Text>
+        </View>
+        <View style={styles.progressBarTrack}>
+          <View style={[styles.progressBarFill, { width: `${Math.min(totalCheckIns / 30, 1) * 100}%` }]} />
+        </View>
+        <View style={styles.progressRow}>
+          <Text style={styles.progressLabel}>Current streak</Text>
+          <Text style={styles.progressValue}>{currentStreak} days</Text>
+        </View>
+        <View style={styles.progressBarTrack}>
+          <View style={[styles.progressBarFill, { width: `${Math.min(currentStreak / 14, 1) * 100}%` }]} />
+        </View>
+      </View>
+
+      <View style={styles.badgesRow}>
+        {featuredAchievements.map((achievement) => {
+          if (!achievement) return null;
+          const current = progress[achievement.id]?.current || 0;
+          const unlocked = progress[achievement.id]?.unlocked || false;
+          const percent = Math.min((current / achievement.requirement) * 100, 100);
+          return (
+            <View key={achievement.id} style={styles.badgeCard}>
+              <Text style={styles.badgeEmoji}>{achievement.emoji}</Text>
+              <Text style={styles.badgeTitle}>{achievement.name}</Text>
+              <Text style={styles.badgeSubtitle}>{unlocked ? 'Unlocked' : `${current}/${achievement.requirement}`}</Text>
+              <View style={styles.badgeProgressTrack}>
+                <View style={[styles.badgeProgressFill, { width: `${percent}%` }]} />
+              </View>
+            </View>
+          );
+        })}
       </View>
     </Animated.View>
   );
@@ -678,10 +783,9 @@ export default function ProfileScreen() {
         bounces={true}
       >
         <ProfileHeader userName={userName} sunSign={sunSign} moonSign={moonSign} risingSign={risingSign} />
-        <WhatsHereSection />
-        <CosmicStatsCard />
         <MyChartSummary birthDate={birthDate} birthPlace={birthPlace} sunSign={sunSign} moonSign={moonSign} risingSign={risingSign} />
-        <RitualsContentSection />
+        <JournalSection />
+        <AchievementsSection />
         {/* SubscriptionCard hidden — all features unlocked */}
         <SettingsSection focusAreas={focusAreas} />
         <View style={{ height: 40 }} />
@@ -769,6 +873,36 @@ const styles = StyleSheet.create({
   chartBirthLabel: { fontFamily: typography.fonts.bodyMedium, fontSize: typography.sizes.caption, color: colors.textMuted, width: 44 },
   chartBirthValue: { fontFamily: typography.fonts.body, fontSize: typography.sizes.caption, color: colors.textSecondary, flex: 1 },
 
+
+
+  // Journal + Achievements
+  sectionBlock: { marginBottom: spacing.md },
+  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  sectionTitle: { fontFamily: typography.fonts.displaySemiBold, fontSize: typography.sizes.heading3, color: colors.textPrimary, letterSpacing: 0.2 },
+  sectionActionPill: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: borderRadius.full, backgroundColor: colors.primaryLight },
+  sectionActionText: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.tiny, color: colors.primary },
+  emptyStateCard: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder },
+  emptyStateEmoji: { fontSize: 26, marginBottom: spacing.xs },
+  emptyStateText: { fontFamily: typography.fonts.body, fontSize: typography.sizes.caption, color: colors.textSecondary, textAlign: 'center', lineHeight: 18 },
+  journalList: { gap: spacing.sm },
+  journalCard: { backgroundColor: colors.white, borderRadius: borderRadius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder },
+  journalCardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
+  journalDate: { fontFamily: typography.fonts.bodyMedium, fontSize: typography.sizes.caption, color: colors.textMuted },
+  journalMood: { fontSize: 16 },
+  journalPreview: { fontFamily: typography.fonts.body, fontSize: typography.sizes.bodySmall, color: colors.textSecondary, lineHeight: 18 },
+  progressCard: { backgroundColor: colors.white, borderRadius: borderRadius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.sm },
+  progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
+  progressLabel: { fontFamily: typography.fonts.body, fontSize: typography.sizes.caption, color: colors.textMuted },
+  progressValue: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.caption, color: colors.textPrimary },
+  progressBarTrack: { height: 6, backgroundColor: colors.surfaceAlt, borderRadius: 999, marginBottom: spacing.sm },
+  progressBarFill: { height: 6, backgroundColor: colors.primary, borderRadius: 999 },
+  badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  badgeCard: { width: (CARD_WIDTH - spacing.sm) / 2, backgroundColor: colors.white, borderRadius: borderRadius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder },
+  badgeEmoji: { fontSize: 24, marginBottom: spacing.xs },
+  badgeTitle: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.bodySmall, color: colors.textPrimary, marginBottom: 2 },
+  badgeSubtitle: { fontFamily: typography.fonts.body, fontSize: typography.sizes.tiny, color: colors.textMuted, marginBottom: spacing.xs },
+  badgeProgressTrack: { height: 6, backgroundColor: colors.surfaceAlt, borderRadius: 999 },
+  badgeProgressFill: { height: 6, backgroundColor: colors.accentGold, borderRadius: 999 },
   // Subscription
   subscriptionCard: { marginBottom: spacing.md, overflow: 'hidden' },
   subscriptionGradientStrip: { height: 3, width: '100%' },

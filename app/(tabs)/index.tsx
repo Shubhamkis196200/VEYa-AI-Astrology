@@ -41,7 +41,7 @@ import { useStreakStore } from '@/stores/streakStore';
 import type { ZodiacSign } from '@/types';
 import OneInsightCard from '@/components/home/OneInsightCard';
 import DailyBriefingCard from '@/components/home/DailyBriefingCard';
-import StreakCounter from '@/components/home/StreakCounter';
+// StreakCounter removed to avoid duplication
 import EnergyMeter from '@/components/home/EnergyMeter';
 import DoAndDontCard from '@/components/home/DoAndDontCard';
 import TransitHighlights from '@/components/home/TransitHighlights';
@@ -53,7 +53,7 @@ import AstroStories from '@/components/stories/AstroStories';
 import { StoryViewer } from '@/components/stories/StoryViewer';
 import { shareReading, captureAndShare } from '@/services/shareService';
 import { getMoonPhase } from '@/services/astroEngine';
-import MomentCaptureButton from '@/components/shared/MomentCaptureButton';
+// MomentCaptureButton rendered globally in app/_layout
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 import { borderRadius } from '@/theme/borderRadius';
@@ -409,44 +409,6 @@ export default function TodayScreen() {
         </Animated.View>
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* QUICK ACTIONS BAR — Most used features at top */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        <QuickActionsBar onOpenVoice={handleOpenVoice} />
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* ASTRO STORIES — Instagram-style daily content */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        <AstroStories />
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* STREAK & ENGAGEMENT */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        <StreakCounter currentStreak={currentStreak} isLoading={streakLoading} />
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* HERO SECTION — Talk to VEYa CTA */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        <Animated.View entering={FadeInDown.duration(500).delay(100)}>
-          <Pressable onPress={handleOpenVoice} style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
-            <LinearGradient
-              colors={['#8B5CF6', '#6D28D9', '#5B21B6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.talkCard}
-            >
-              <View style={styles.talkCardContent}>
-                <Ionicons name="mic" size={28} color="#FFFFFF" />
-                <View style={styles.talkCardText}>
-                  <Text style={styles.talkCardTitle}>Talk to VEYa ✨</Text>
-                  <Text style={styles.talkCardSubtitle}>Your AI astrologer is ready to chat</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
-              </View>
-            </LinearGradient>
-          </Pressable>
-        </Animated.View>
-
-        {/* ─────────────────────────────────────────────────────────── */}
         {/* TODAY'S INSIGHT SECTION */}
         {/* ─────────────────────────────────────────────────────────── */}
         <SectionHeader
@@ -455,6 +417,45 @@ export default function TodayScreen() {
           subtitle="Your personalized cosmic reading"
         />
         <OneInsightCard />
+
+        {/* ─────────────────────────────────────────────────────────── */}
+        {/* LOADING STATE */}
+        {/* ─────────────────────────────────────────────────────────── */}
+        {readingLoading && !r && (
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="small" color="#8B5CF6" />
+            <Text style={styles.loadingText}>Consulting the stars...</Text>
+          </View>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────── */}
+        {/* TRANSIT HIGHLIGHTS */}
+        {/* ─────────────────────────────────────────────────────────── */}
+        {r?.transits && (
+          <>
+            <SectionHeader
+              icon="🪐"
+              title="Active Transits"
+              subtitle="Planetary movements affecting you"
+              action={{ label: 'Full calendar', onPress: () => router.push('/(tabs)/discover') }}
+            />
+            <TransitHighlights transits={r.transits} />
+          </>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────── */}
+        {/* DO'S AND DON'TS */}
+        {/* ─────────────────────────────────────────────────────────── */}
+        {r?.dos && r?.donts && (
+          <>
+            <SectionHeader
+              icon="✅"
+              title="Do's & Don'ts"
+              subtitle="Navigate today wisely"
+            />
+            <DoAndDontCard dos={r.dos} donts={r.donts} />
+          </>
+        )}
 
         {/* ─────────────────────────────────────────────────────────── */}
         {/* COSMIC WEATHER */}
@@ -467,29 +468,9 @@ export default function TodayScreen() {
         <CosmicWeatherWidget />
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* FEATURE HUB — All features in one place */}
+        {/* ASTRO STORIES — Instagram-style daily content */}
         {/* ─────────────────────────────────────────────────────────── */}
-        <FeatureHub onOpenVoice={handleOpenVoice} moonPhase={currentMoon || undefined} />
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* DAILY AFFIRMATION */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        <SectionHeader
-          icon="💫"
-          title="Daily Affirmation"
-          subtitle="Words to carry with you"
-        />
-        <DailyAffirmation sunSign={sunSign} />
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* LOADING STATE */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        {readingLoading && !r && (
-          <View style={styles.loadingCard}>
-            <ActivityIndicator size="small" color="#8B5CF6" />
-            <Text style={styles.loadingText}>Consulting the stars...</Text>
-          </View>
-        )}
+        <AstroStories />
 
         {/* ─────────────────────────────────────────────────────────── */}
         {/* MOON PHASE BADGE */}
@@ -531,6 +512,44 @@ export default function TodayScreen() {
         )}
 
         {/* ─────────────────────────────────────────────────────────── */}
+        {/* DAILY AFFIRMATION */}
+        {/* ─────────────────────────────────────────────────────────── */}
+        <SectionHeader
+          icon="💫"
+          title="Daily Affirmation"
+          subtitle="Words to carry with you"
+        />
+        <DailyAffirmation sunSign={sunSign} />
+
+        {/* ─────────────────────────────────────────────────────────── */}
+        {/* FEATURE HUB — All features in one place */}
+        {/* ─────────────────────────────────────────────────────────── */}
+        <FeatureHub onOpenVoice={handleOpenVoice} moonPhase={currentMoon || undefined} />
+
+        {/* ─────────────────────────────────────────────────────────── */}
+        {/* HERO SECTION — Talk to VEYa CTA */}
+        {/* ─────────────────────────────────────────────────────────── */}
+        <Animated.View entering={FadeInDown.duration(500).delay(100)}>
+          <Pressable onPress={handleOpenVoice} style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
+            <LinearGradient
+              colors={['#8B5CF6', '#6D28D9', '#5B21B6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.talkCard}
+            >
+              <View style={styles.talkCardContent}>
+                <Ionicons name="mic" size={28} color="#FFFFFF" />
+                <View style={styles.talkCardText}>
+                  <Text style={styles.talkCardTitle}>Talk to VEYa ✨</Text>
+                  <Text style={styles.talkCardSubtitle}>Your AI astrologer is ready to chat</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
+              </View>
+            </LinearGradient>
+          </Pressable>
+        </Animated.View>
+
+        {/* ─────────────────────────────────────────────────────────── */}
         {/* DAILY BRIEFING */}
         {/* ─────────────────────────────────────────────────────────── */}
         {r?.briefing && (
@@ -545,35 +564,6 @@ export default function TodayScreen() {
               briefing={r.briefing}
               onShare={shareData ? handleShare : undefined}
             />
-          </>
-        )}
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* DO'S AND DON'TS */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        {r?.dos && r?.donts && (
-          <>
-            <SectionHeader
-              icon="✅"
-              title="Do's & Don'ts"
-              subtitle="Navigate today wisely"
-            />
-            <DoAndDontCard dos={r.dos} donts={r.donts} />
-          </>
-        )}
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* TRANSIT HIGHLIGHTS */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        {r?.transits && (
-          <>
-            <SectionHeader
-              icon="🪐"
-              title="Active Transits"
-              subtitle="Planetary movements affecting you"
-              action={{ label: 'Full calendar', onPress: () => router.push('/(tabs)/discover') }}
-            />
-            <TransitHighlights transits={r.transits} />
           </>
         )}
 
@@ -636,8 +626,7 @@ export default function TodayScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Floating Moment Capture Button */}
-      <MomentCaptureButton />
+      {/* Moment capture button is rendered globally */}
     </View>
   );
 }

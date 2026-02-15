@@ -986,6 +986,119 @@ function StardustParticle({ config }: { config: ParticleConfig }) {
   );
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// COMPONENTS: Lunar & Cosmic Tracking
+// ─────────────────────────────────────────────────────────────
+
+const PLANETARY_HOURS = [
+  { label: 'Sunrise', planet: 'Sun', time: '6:42 AM' },
+  { label: 'Midday', planet: 'Mars', time: '12:08 PM' },
+  { label: 'Sunset', planet: 'Venus', time: '6:11 PM' },
+  { label: 'Night Watch', planet: 'Saturn', time: '10:33 PM' },
+];
+
+const DAILY_RITUALS = [
+  { icon: '✨', title: 'Morning intention', detail: 'Set one guiding intention for the day.' },
+  { icon: '🕯️', title: 'Evening release', detail: 'Release one thought before sleep.' },
+];
+
+const WEEKLY_RITUALS = [
+  { icon: '🌙', title: 'Moon check-in', detail: 'Align your week with the lunar phase.' },
+  { icon: '📓', title: 'Weekly reflection', detail: 'Capture highlights and lessons.' },
+];
+
+function MoonPhaseDetailsCard() {
+  const moon = useMemo(() => getMoonPhase(), []);
+
+  return (
+    <View style={[styles.card, styles.cosmicInfoCard]}>
+      <View style={styles.cosmicHeaderRow}>
+        <Text style={styles.sectionTitle}>Moon Phase Details</Text>
+        <Text style={styles.moonPhaseEmoji}>{moon.emoji}</Text>
+      </View>
+      <View style={styles.infoRow}>
+        <Text style={styles.infoLabel}>Phase</Text>
+        <Text style={styles.infoValue}>{moon.phaseName}</Text>
+      </View>
+      <View style={styles.infoRow}>
+        <Text style={styles.infoLabel}>Moon sign</Text>
+        <Text style={styles.infoValue}>{moon.moonSign}</Text>
+      </View>
+      <View style={styles.infoRow}>
+        <Text style={styles.infoLabel}>Illumination</Text>
+        <Text style={styles.infoValue}>{moon.illumination}%</Text>
+      </View>
+    </View>
+  );
+}
+
+function PlanetaryHoursCard() {
+  return (
+    <View style={[styles.card, styles.cosmicInfoCard]}>
+      <Text style={styles.sectionTitle}>Planetary Hours</Text>
+      {PLANETARY_HOURS.map((hour) => (
+        <View key={hour.label} style={styles.hourRow}>
+          <View style={styles.hourLeft}>
+            <Text style={styles.hourLabel}>{hour.label}</Text>
+            <Text style={styles.hourPlanet}>{hour.planet}</Text>
+          </View>
+          <Text style={styles.hourTime}>{hour.time}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function RetrogradeTrackerCard() {
+  const retrogrades = useMemo(() => getCurrentTransits().filter((p) => p.retrograde), []);
+
+  return (
+    <View style={[styles.card, styles.cosmicInfoCard]}>
+      <Text style={styles.sectionTitle}>Retrograde Tracker</Text>
+      {retrogrades.length === 0 ? (
+        <Text style={styles.infoMuted}>No major retrogrades right now — forward momentum ahead.</Text>
+      ) : (
+        <View style={styles.retrogradeRow}>
+          {retrogrades.map((retro) => (
+            <View key={retro.name} style={styles.retrogradeTag}>
+              <Text style={styles.retrogradeTagText}>{retro.name} Rx</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function DailyWeeklyRitualsCard() {
+  return (
+    <View style={[styles.card, styles.cosmicInfoCard]}>
+      <Text style={styles.sectionTitle}>Daily & Weekly Rituals</Text>
+      <Text style={styles.ritualGroupTitle}>Daily</Text>
+      {DAILY_RITUALS.map((ritual) => (
+        <View key={ritual.title} style={styles.ritualRow}>
+          <Text style={styles.ritualRowIcon}>{ritual.icon}</Text>
+          <View style={styles.ritualRowContent}>
+            <Text style={styles.ritualRowTitle}>{ritual.title}</Text>
+            <Text style={styles.ritualRowDetail}>{ritual.detail}</Text>
+          </View>
+        </View>
+      ))}
+      <Text style={[styles.ritualGroupTitle, { marginTop: spacing.sm }]}>Weekly</Text>
+      {WEEKLY_RITUALS.map((ritual) => (
+        <View key={ritual.title} style={styles.ritualRow}>
+          <Text style={styles.ritualRowIcon}>{ritual.icon}</Text>
+          <View style={styles.ritualRowContent}>
+            <Text style={styles.ritualRowTitle}>{ritual.title}</Text>
+            <Text style={styles.ritualRowDetail}>{ritual.detail}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────
 // MAIN: RitualsScreen
 // ─────────────────────────────────────────────────────────────
@@ -1001,6 +1114,10 @@ export function RitualsContentSection() {
         <Text style={styles.ritualsSectionTitle}>Your Rituals</Text>
         <MorningRitualFlow />
         <PracticeHeader />
+        <MoonPhaseDetailsCard />
+        <PlanetaryHoursCard />
+        <RetrogradeTrackerCard />
+        <DailyWeeklyRitualsCard />
         <MorningRitualCard />
         <EveningRitualCard />
         <CosmicJournalSection onWrite={() => setJournalVisible(true)} />
@@ -1041,6 +1158,10 @@ export default function RitualsScreen() {
         >
           <MorningRitualFlow />
           <PracticeHeader />
+          <MoonPhaseDetailsCard />
+          <PlanetaryHoursCard />
+          <RetrogradeTrackerCard />
+          <DailyWeeklyRitualsCard />
           <MorningRitualCard />
           <EveningRitualCard />
           <CosmicJournalSection onWrite={() => setJournalVisible(true)} />
@@ -1296,6 +1417,28 @@ const styles = StyleSheet.create({
   // Journal
   journalSection: { marginBottom: spacing.lg },
   sectionTitle: { fontFamily: typography.fonts.displaySemiBold, fontSize: typography.sizes.heading3, color: colors.textPrimary, letterSpacing: 0.2, marginBottom: spacing.sm },
+
+  cosmicInfoCard: { marginBottom: spacing.md, padding: spacing.lg },
+  cosmicHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  moonPhaseEmoji: { fontSize: 24 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  infoLabel: { fontFamily: typography.fonts.bodyMedium, fontSize: typography.sizes.caption, color: colors.textMuted },
+  infoValue: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.caption, color: colors.textPrimary },
+  infoMuted: { fontFamily: typography.fonts.body, fontSize: typography.sizes.caption, color: colors.textMuted, lineHeight: 18 },
+  hourRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(0, 0, 0, 0.04)' },
+  hourLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  hourLabel: { fontFamily: typography.fonts.bodyMedium, fontSize: typography.sizes.caption, color: colors.textSecondary },
+  hourPlanet: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.caption, color: colors.primary },
+  hourTime: { fontFamily: typography.fonts.body, fontSize: typography.sizes.caption, color: colors.textMuted },
+  retrogradeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs },
+  retrogradeTag: { backgroundColor: colors.surface, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: borderRadius.full, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.15)' },
+  retrogradeTagText: { fontFamily: typography.fonts.bodyMedium, fontSize: typography.sizes.tiny, color: colors.primary },
+  ritualGroupTitle: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.caption, color: colors.textMuted, textTransform: 'uppercase' as const, letterSpacing: 0.4, marginBottom: spacing.xs },
+  ritualRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.sm },
+  ritualRowIcon: { fontSize: 18, marginTop: 2 },
+  ritualRowContent: { flex: 1 },
+  ritualRowTitle: { fontFamily: typography.fonts.bodySemiBold, fontSize: typography.sizes.bodySmall, color: colors.textPrimary },
+  ritualRowDetail: { fontFamily: typography.fonts.body, fontSize: typography.sizes.caption, color: colors.textSecondary, lineHeight: 18 },
   journalPromptCard: { marginBottom: spacing.md, overflow: 'hidden', position: 'relative' as const },
   journalNotebookLines: { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-evenly' as const, paddingVertical: spacing.xxl },
   journalLine: { height: 1, backgroundColor: 'rgba(212, 165, 71, 0.06)', marginHorizontal: spacing.lg },

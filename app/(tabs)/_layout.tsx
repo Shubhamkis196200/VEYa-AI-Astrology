@@ -151,6 +151,30 @@ function DiscoverIcon({ color, focused }: { color: string; focused: boolean }) {
   );
 }
 
+function RitualsIcon({ color, focused }: { color: string; focused: boolean }) {
+  return (
+    <AnimatedTabIcon focused={focused} label="Rituals">
+      <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+        <Defs>
+          <LinearGradient id="moonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={colors.primary} />
+            <Stop offset="100%" stopColor={colors.accentGold} />
+          </LinearGradient>
+        </Defs>
+        <Path
+          d="M20 14.5C18.7 16.2 16.7 17.3 14.4 17.3C10.5 17.3 7.3 14.1 7.3 10.2C7.3 7.9 8.4 5.9 10.1 4.6C6.5 4.9 3.7 7.9 3.7 11.5C3.7 15.3 6.8 18.4 10.6 18.4C14.3 18.4 17.4 15.7 17.7 12C18.7 12.3 19.4 13.2 20 14.5Z"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill={focused ? "url(#moonGrad)" : "none"}
+          fillOpacity={focused ? 0.2 : 0}
+        />
+      </Svg>
+    </AnimatedTabIcon>
+  );
+}
+
 function ChatIcon({ color, focused }: { color: string; focused: boolean }) {
   return (
     <AnimatedTabIcon focused={focused} label="Chat">
@@ -355,6 +379,16 @@ export default function TabLayout() {
             tabBarLabel: ({ focused }) => <TabLabel label="Discover" focused={focused} />,
           }}
         />
+
+        {/* Rituals Tab - Daily practices */}
+        <Tabs.Screen
+          name="rituals"
+          options={{
+            title: 'Rituals',
+            tabBarIcon: ({ color, focused }) => <RitualsIcon color={color} focused={focused} />,
+            tabBarLabel: ({ focused }) => <TabLabel label="Rituals" focused={focused} />,
+          }}
+        />
         
         {/* Chat Tab - Talk to VEYa AI */}
         <Tabs.Screen
@@ -385,12 +419,6 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="profile"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="rituals"
           options={{
             href: null,
           }}
