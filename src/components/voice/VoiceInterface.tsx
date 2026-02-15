@@ -1,25 +1,24 @@
 // ============================================================================
-// VEYa Voice Interface — Fullscreen Cosmic Overlay
+// VEYa Voice Interface — Personal Astrology Voice Assistant
 // ============================================================================
 
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
   Pressable,
   StyleSheet,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
-  Easing,
-  FadeInUp,
-  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSequence,
   withTiming,
+  withSequence,
+  Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -28,443 +27,469 @@ import {
   startRecording,
   stopRecording,
   transcribeAudio,
+  getAstrologyResponse,
   speakText,
   stopSpeaking,
+  testOpenAIConnection,
 } from '../../services/voiceService';
-import { useVoiceStore } from '../../stores/voiceStore';
 import { useOnboardingStore } from '../../stores/onboardingStore';
-import { chatWithVeya } from '../../services/ai';
-import { VEYA_VOICE_SYSTEM_PROMPT } from '../../constants/veyaVoicePrompt';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const STATUS_LABELS = {
-  idle: 'Tap to speak',
-  listening: 'Listening...',
-  processing: 'Understanding...',
-  speaking: 'VEYa is speaking...',
-};
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-const COLOR_STOPS = {
-  idle: '#7C3AED',
-  listening: '#3B82F6',
-  processing: '#6D28D9',
-  speaking: '#F5C16C',
-};
+type VoiceStatus = 'idle' | 'listening' | 'processing' | 'speaking';
+
+interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 interface VoiceInterfaceProps {
   onClose: () => void;
-  /** If provided, transcribed text is sent to parent instead of handled internally */
-  onTranscript?: (text: string) => void;
-  /** External response text (from parent chat) */
-  responseText?: string | null;
 }
 
-export default function VoiceInterface({
-  onClose,
-  onTranscript,
-  responseText: externalResponse,
-}: VoiceInterfaceProps) {
+// ---------------------------------------------------------------------------
+// Status Labels
+// ---------------------------------------------------------------------------
+
+const STATUS_CONFIG: Record<VoiceStatus, { label: string; color: string }> = {
+  idle: { label: 'Tap the orb to speak', color: '#8B5CF6' },
+  listening: { label: 'Listening...', color: '#3B82F6' },
+  processing: { label: 'Thinking...', color: '#6D28D9' },
+  speaking: { label: 'Speaking...', color: '#D4A547' },
+};
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function VoiceInterface({ onClose }: VoiceInterfaceProps) {
+  const { data } = useOnboardingStore();
+  
+  // State
+  const [status, setStatus] = useState<VoiceStatus>('idle');
+  const [transcript, setTranscript] = useState<string | null>(null);
+  const [response, setResponse] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
+  
+  // Refs
   const recordingRef = useRef<Audio.Recording | null>(null);
-  const [internalResponse, setInternalResponse] = useState<string | null>(null);
-  const [displayedResponse, setDisplayedResponse] = useState<string>('');
-  const [lastSpokenText, setLastSpokenText] = useState<string | null>(null);
-  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // User profile for context
+  const userProfile = {
+    name: data?.name || 'friend',
+    sunSign: data?.sunSign,
+    moonSign: data?.moonSign,
+    risingSign: data?.risingSign,
+    birthDate: data?.birthDate,
+  };
 
-  const responseText = externalResponse ?? internalResponse;
+  // Animation values
+  const pulseScale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.3);
 
-  const {
-    isRecording,
-    isTranscribing,
-    isSpeaking,
-    currentTranscript,
-    setRecording,
-    setTranscribing,
-    setSpeaking,
-    setTranscript,
-  } = useVoiceStore();
-
-  // Get real user profile from onboarding store
-  const { data: onboardingData } = useOnboardingStore();
-  const userProfile = useMemo(() => ({
-    user_id: 'user-' + Date.now(),
-    name: onboardingData?.name || 'Friend',
-    sun_sign: onboardingData?.sunSign || 'Aries',
-    moon_sign: onboardingData?.moonSign || 'Aries',
-    rising_sign: onboardingData?.risingSign || 'Aries',
-  }), [onboardingData]);
-
-  const status: keyof typeof STATUS_LABELS = isRecording
-    ? 'listening'
-    : isTranscribing
-      ? 'processing'
-      : isSpeaking
-        ? 'speaking'
-        : 'idle';
-
-  // --- Typewriter effect for response ---
-  useEffect(() => {
-    if (typewriterRef.current) {
-      clearInterval(typewriterRef.current);
-      typewriterRef.current = null;
-    }
-
-    if (responseText) {
-      const words = responseText.split(' ');
-      let index = 0;
-      setDisplayedResponse('');
-      typewriterRef.current = setInterval(() => {
-        index++;
-        setDisplayedResponse(words.slice(0, index).join(' '));
-        if (index >= words.length) {
-          if (typewriterRef.current) clearInterval(typewriterRef.current);
-        }
-      }, 80);
-    } else {
-      setDisplayedResponse('');
-    }
-
-    return () => {
-      if (typewriterRef.current) clearInterval(typewriterRef.current);
-    };
-  }, [responseText]);
-
-  useEffect(() => {
-    if (!externalResponse || !onTranscript) return;
-    if (lastSpokenText === externalResponse) return;
-
-    const speak = async () => {
-      setLastSpokenText(externalResponse);
-      setSpeaking(true);
-      try {
-        await speakText(externalResponse);
-      } catch {
-        // Silent fail
-      } finally {
-        setSpeaking(false);
-      }
-    };
-
-    speak();
-  }, [externalResponse, lastSpokenText, onTranscript, setSpeaking]);
-
-  // --- Animations ---
-  const pulse = useSharedValue(1);
-  const rotation = useSharedValue(0);
-  const colorShift = useSharedValue(0);
-  const wave1 = useSharedValue(0.4);
-  const wave2 = useSharedValue(0.6);
-  const wave3 = useSharedValue(0.5);
-
+  // Animations
   useEffect(() => {
     if (status === 'idle') {
-      pulse.value = withRepeat(
-        withSequence(withTiming(1.05, { duration: 1400 }), withTiming(1, { duration: 1400 })),
-        -1, true,
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        true
       );
-      rotation.value = 0;
-      colorShift.value = withTiming(0, { duration: 400 });
-    }
-    if (status === 'listening') {
-      pulse.value = withRepeat(
-        withSequence(withTiming(1.15, { duration: 700 }), withTiming(1, { duration: 700 })),
-        -1, true,
+      glowOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.5, { duration: 2000 }),
+          withTiming(0.3, { duration: 2000 })
+        ),
+        -1,
+        true
       );
-      rotation.value = 0;
-      colorShift.value = withTiming(1, { duration: 300 });
-    }
-    if (status === 'processing') {
-      pulse.value = withRepeat(
-        withSequence(withTiming(1.1, { duration: 800 }), withTiming(1, { duration: 800 })),
-        -1, true,
+    } else if (status === 'listening') {
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.15, { duration: 400 }),
+          withTiming(1, { duration: 400 })
+        ),
+        -1,
+        true
       );
-      rotation.value = withRepeat(
-        withTiming(360, { duration: 2000, easing: Easing.linear }),
-        -1, false,
+    } else if (status === 'processing') {
+      pulseScale.value = withRepeat(
+        withTiming(1.1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true
       );
-      colorShift.value = withTiming(2, { duration: 300 });
-    }
-    if (status === 'speaking') {
-      pulse.value = withRepeat(
-        withSequence(withTiming(1.1, { duration: 1400 }), withTiming(1, { duration: 1400 })),
-        -1, true,
+    } else if (status === 'speaking') {
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.08, { duration: 600 }),
+          withTiming(1, { duration: 600 })
+        ),
+        -1,
+        true
       );
-      rotation.value = 0;
-      colorShift.value = withTiming(3, { duration: 300 });
     }
   }, [status]);
 
-  useEffect(() => {
-    if (isRecording) {
-      wave1.value = withRepeat(withSequence(withTiming(1, { duration: 300 }), withTiming(0.3, { duration: 300 })), -1, true);
-      wave2.value = withRepeat(withSequence(withTiming(0.8, { duration: 280 }), withTiming(0.2, { duration: 280 })), -1, true);
-      wave3.value = withRepeat(withSequence(withTiming(0.9, { duration: 320 }), withTiming(0.25, { duration: 320 })), -1, true);
-    } else {
-      wave1.value = 0.4;
-      wave2.value = 0.6;
-      wave3.value = 0.5;
-    }
-  }, [isRecording]);
-
   const orbStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulse.value }, { rotate: `${rotation.value}deg` }],
-    backgroundColor: interpolateColor(
-      colorShift.value,
-      [0, 1, 2, 3],
-      [COLOR_STOPS.idle, COLOR_STOPS.listening, COLOR_STOPS.processing, COLOR_STOPS.speaking],
-    ),
+    transform: [{ scale: pulseScale.value }],
   }));
 
-  const wave1Style = useAnimatedStyle(() => ({ transform: [{ scaleY: wave1.value }] }));
-  const wave2Style = useAnimatedStyle(() => ({ transform: [{ scaleY: wave2.value }] }));
-  const wave3Style = useAnimatedStyle(() => ({ transform: [{ scaleY: wave3.value }] }));
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
 
-  const stars = useMemo(
-    () => Array.from({ length: 26 }).map((_, i) => ({
-      key: `star-${i}`,
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
-      size: Math.random() * 2 + 1,
-      opacity: Math.random() * 0.7 + 0.2,
-    })),
-    [],
-  );
-
-  // --- Handlers ---
-  const handleStart = async () => {
-    if (isRecording || isTranscribing) return;
+  // Handle recording start
+  const handleStartRecording = useCallback(async () => {
+    if (status !== 'idle') return;
+    
+    setError(null);
     setTranscript(null);
-    setInternalResponse(null);
-    setDisplayedResponse('');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     try {
-      setRecording(true);
-      recordingRef.current = await startRecording();
-    } catch {
-      setRecording(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setStatus('listening');
+      
+      const recording = await startRecording();
+      recordingRef.current = recording;
+    } catch (err: any) {
+      console.error('[Voice] Start recording error:', err);
+      setError('Could not start recording. Please check microphone permissions.');
+      setStatus('idle');
     }
-  };
+  }, [status]);
 
-  const handleStop = async () => {
-    if (!recordingRef.current) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setRecording(false);
-    setTranscribing(true);
+  // Handle recording stop and process
+  const handleStopRecording = useCallback(async () => {
+    if (status !== 'listening' || !recordingRef.current) return;
+    
     try {
-      const uri = await stopRecording(recordingRef.current);
-      const transcript = await transcribeAudio(uri);
-      setTranscript(transcript || null);
-      if (transcript?.trim()) {
-        if (onTranscript) {
-          // Parent handles the response (chat integration)
-          onTranscript(transcript.trim());
-        } else {
-          // Standalone mode — call AI directly with voice prompt using real user profile
-          const reply = await chatWithVeya(
-            transcript.trim(),
-            [{ role: 'system', content: VEYA_VOICE_SYSTEM_PROMPT }],
-            userProfile as any,
-            [],
-            false,
-          );
-          setInternalResponse(reply);
-          setLastSpokenText(reply);
-          setSpeaking(true);
-          try {
-            await speakText(reply);
-          } catch { /* silent */ }
-          setSpeaking(false);
-        }
-      }
-    } catch {
-      // Silent fail
-    } finally {
-      setTranscribing(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setStatus('processing');
+      
+      // Stop recording
+      const audioUri = await stopRecording(recordingRef.current);
       recordingRef.current = null;
+      
+      // Transcribe
+      const transcribedText = await transcribeAudio(audioUri);
+      
+      if (!transcribedText.trim()) {
+        setError('Could not hear you. Please try again.');
+        setStatus('idle');
+        return;
+      }
+      
+      setTranscript(transcribedText);
+      
+      // Add to conversation history
+      const newConversation: ConversationMessage[] = [
+        ...conversation,
+        { role: 'user', content: transcribedText },
+      ];
+      
+      // Get AI response
+      const aiResponse = await getAstrologyResponse(
+        transcribedText,
+        userProfile,
+        conversation
+      );
+      
+      setResponse(aiResponse);
+      setConversation([
+        ...newConversation,
+        { role: 'assistant', content: aiResponse },
+      ]);
+      
+      // Speak the response
+      setStatus('speaking');
+      await speakText(aiResponse);
+      
+      setStatus('idle');
+    } catch (err: any) {
+      console.error('[Voice] Processing error:', err);
+      setError('Something went wrong. Please try again.');
+      setStatus('idle');
     }
-  };
+  }, [status, conversation, userProfile]);
 
-  const handleToggle = () => {
-    if (isRecording) handleStop();
-    else handleStart();
-  };
+  // Handle orb tap
+  const handleOrbPress = useCallback(() => {
+    if (status === 'idle') {
+      handleStartRecording();
+    } else if (status === 'listening') {
+      handleStopRecording();
+    } else if (status === 'speaking') {
+      stopSpeaking();
+      setStatus('idle');
+    }
+  }, [status, handleStartRecording, handleStopRecording]);
 
-  const handleReplay = async () => {
-    const textToReplay = lastSpokenText || responseText;
-    if (!textToReplay) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSpeaking(true);
-    try {
-      await speakText(textToReplay);
-    } catch { /* silent */ }
-    setSpeaking(false);
-  };
-
-  const handleClose = async () => {
-    if (isRecording) await handleStop();
+  // Handle close
+  const handleClose = useCallback(async () => {
     await stopSpeaking();
-    setSpeaking(false);
-    setInternalResponse(null);
-    setDisplayedResponse('');
+    if (recordingRef.current) {
+      try {
+        await stopRecording(recordingRef.current);
+      } catch (e) {}
+    }
     onClose();
-  };
+  }, [onClose]);
 
-  const showReplay = !isSpeaking && !isRecording && !isTranscribing && (lastSpokenText || responseText);
+  // Current status config
+  const currentConfig = STATUS_CONFIG[status];
 
   return (
-    <View style={styles.root}>
+    <View style={styles.container}>
       <LinearGradient
-        colors={['#05010C', '#120528', '#1B0B38']}
+        colors={['#0F0A1F', '#1B0B38', '#2D1B4E']}
         style={StyleSheet.absoluteFillObject}
       />
+      
+      {/* Stars background */}
+      <View style={styles.starsContainer} pointerEvents="none">
+        {Array.from({ length: 30 }).map((_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.star,
+              {
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                width: Math.random() * 3 + 1,
+                height: Math.random() * 3 + 1,
+                opacity: Math.random() * 0.6 + 0.2,
+              },
+            ]}
+          />
+        ))}
+      </View>
 
-      {stars.map((star) => (
-        <View
-          key={star.key}
-          style={[styles.star, {
-            left: star.left as any,
-            top: star.top as any,
-            width: star.size,
-            height: star.size,
-            opacity: star.opacity,
-          }]}
-        />
-      ))}
-
-      <Pressable onPress={handleClose} style={styles.closeButton} hitSlop={12}>
-        <Ionicons name="close" size={20} color="#fff" />
+      {/* Close button */}
+      <Pressable onPress={handleClose} style={styles.closeButton}>
+        <Ionicons name="close" size={28} color="rgba(255,255,255,0.7)" />
       </Pressable>
 
-      <View style={styles.centerContent}>
-        <Pressable onPress={handleToggle} style={styles.orbTouch}>
-          <Animated.View style={[styles.orb, orbStyle]}>
-            {isRecording && (
-              <View style={styles.waveform}>
-                <Animated.View style={[styles.waveBar, wave1Style]} />
-                <Animated.View style={[styles.waveBar, wave2Style]} />
-                <Animated.View style={[styles.waveBar, wave3Style]} />
-              </View>
-            )}
-            {!isRecording && status === 'idle' && (
-              <Ionicons name="mic" size={48} color="rgba(255,255,255,0.85)" />
-            )}
-          </Animated.View>
-        </Pressable>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>VEYa</Text>
+        <Text style={styles.subtitle}>Your Personal Astrologer</Text>
+      </View>
 
-        <Text style={styles.statusText}>{STATUS_LABELS[status]}</Text>
-
-        {currentTranscript && (
-          <Text style={styles.transcriptText}>"{currentTranscript}"</Text>
-        )}
-
-        {displayedResponse ? (
-          <Animated.View entering={FadeInUp.duration(600)} style={styles.responseWrap}>
-            <Text style={styles.responseText}>{displayedResponse}</Text>
-          </Animated.View>
-        ) : null}
-
-        {showReplay && (
-          <Pressable onPress={handleReplay} style={styles.replayButton}>
-            <Text style={styles.replayText}>Replay 🔁</Text>
+      {/* Main orb */}
+      <View style={styles.orbContainer}>
+        <Animated.View style={[styles.orbGlow, glowStyle, { backgroundColor: currentConfig.color }]} />
+        <Animated.View style={[styles.orbWrapper, orbStyle]}>
+          <Pressable onPress={handleOrbPress} style={styles.orbPressable}>
+            <LinearGradient
+              colors={[currentConfig.color, '#4C1D95']}
+              style={styles.orb}
+            >
+              {status === 'processing' ? (
+                <ActivityIndicator size="large" color="#FFFFFF" />
+              ) : status === 'listening' ? (
+                <Ionicons name="mic" size={48} color="#FFFFFF" />
+              ) : status === 'speaking' ? (
+                <Ionicons name="volume-high" size={48} color="#FFFFFF" />
+              ) : (
+                <Ionicons name="mic-outline" size={48} color="#FFFFFF" />
+              )}
+            </LinearGradient>
           </Pressable>
+        </Animated.View>
+      </View>
+
+      {/* Status label */}
+      <Text style={styles.statusLabel}>{currentConfig.label}</Text>
+
+      {/* Conversation display */}
+      <View style={styles.conversationContainer}>
+        {error && (
+          <Text style={styles.errorText}>{error}</Text>
+        )}
+        
+        {transcript && (
+          <View style={styles.messageContainer}>
+            <Text style={styles.messageLabel}>You said:</Text>
+            <Text style={styles.messageText}>{transcript}</Text>
+          </View>
+        )}
+        
+        {response && (
+          <View style={[styles.messageContainer, styles.responseContainer]}>
+            <Text style={[styles.messageLabel, styles.responseLabel]}>VEYa:</Text>
+            <Text style={styles.responseText}>{response}</Text>
+          </View>
         )}
       </View>
+
+      {/* User info */}
+      <View style={styles.userInfo}>
+        <Text style={styles.userInfoText}>
+          {userProfile.name} • {userProfile.sunSign || 'Unknown'} ☉
+        </Text>
+      </View>
+
+      {/* Instructions */}
+      <Text style={styles.instructions}>
+        {status === 'idle' 
+          ? 'Ask about your chart, today\'s energy, or cosmic guidance'
+          : status === 'listening'
+          ? 'Tap again when done speaking'
+          : ''
+        }
+      </Text>
     </View>
   );
 }
 
-const ORB_SIZE = Math.min(SCREEN_WIDTH * 0.55, 240);
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  root: {
+  container: {
     flex: 1,
-    backgroundColor: '#05010C',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingTop: 60,
+  },
+  starsContainer: {
+    ...StyleSheet.absoluteFillObject,
   },
   star: {
     position: 'absolute',
     backgroundColor: '#FFFFFF',
-    borderRadius: 99,
+    borderRadius: 10,
   },
   closeButton: {
     position: 'absolute',
-    top: 60,
-    right: 26,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    top: 50,
+    right: 20,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
-  centerContent: {
+  header: {
     alignItems: 'center',
-    paddingHorizontal: 28,
+    marginBottom: 40,
   },
-  orbTouch: {
+  title: {
+    fontFamily: 'PlayfairDisplay-Bold',
+    fontSize: 36,
+    color: '#FFFFFF',
+    letterSpacing: 2,
+  },
+  subtitle: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 4,
+  },
+  orbContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginVertical: 30,
+  },
+  orbGlow: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+  },
+  orbWrapper: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+  },
+  orbPressable: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 70,
+    overflow: 'hidden',
   },
   orb: {
-    width: ORB_SIZE,
-    height: ORB_SIZE,
-    borderRadius: ORB_SIZE / 2,
+    width: '100%',
+    height: '100%',
+    borderRadius: 70,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#8B5CF6',
-    shadowOpacity: 0.35,
-    shadowRadius: 30,
   },
-  waveform: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  waveBar: {
-    width: 8,
-    height: 38,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-  },
-  statusText: {
-    marginTop: 24,
+  statusLabel: {
+    fontFamily: 'Inter-SemiBold',
     fontSize: 16,
-    color: '#E9D9FF',
-    fontFamily: 'Inter-Medium',
+    color: '#FFFFFF',
+    marginBottom: 20,
   },
-  transcriptText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
-    textAlign: 'center',
+  conversationContainer: {
+    flex: 1,
+    width: '100%',
+    paddingHorizontal: 24,
+    maxHeight: SCREEN_HEIGHT * 0.3,
+  },
+  errorText: {
     fontFamily: 'Inter-Regular',
-    paddingHorizontal: 20,
+    fontSize: 14,
+    color: '#F87171',
+    textAlign: 'center',
+    marginBottom: 16,
   },
-  responseWrap: {
-    marginTop: 22,
-    paddingHorizontal: 18,
-    maxHeight: 200,
+  messageContainer: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  messageLabel: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.5)',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  messageText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 22,
+  },
+  responseContainer: {
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#8B5CF6',
+  },
+  responseLabel: {
+    color: '#A78BFA',
   },
   responseText: {
-    fontSize: 16,
-    color: '#F6E7C8',
-    textAlign: 'center',
-    lineHeight: 24,
     fontFamily: 'Inter-Regular',
+    fontSize: 15,
+    color: '#FFFFFF',
+    lineHeight: 22,
   },
-  replayButton: {
-    marginTop: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+  userInfo: {
+    paddingVertical: 12,
   },
-  replayText: {
-    fontSize: 14,
-    color: '#E9D9FF',
-    fontFamily: 'Inter-SemiBold',
+  userInfoText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.4)',
+  },
+  instructions: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.5)',
+    textAlign: 'center',
+    paddingHorizontal: 40,
+    paddingBottom: 40,
   },
 });
