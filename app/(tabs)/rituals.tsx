@@ -48,27 +48,21 @@ import AnimatedPressable from '@/components/ui/AnimatedPressable';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getMoonPhase, getCurrentTransits } from '@/services/astroEngine';
-import { colors as themeColors } from '@/theme/colors';
 import { useJournalStore } from '@/stores/journalStore';
 import { generateJournalInsights } from '@/services/ai';
+import { 
+  colors as themeColors, 
+  typography as themeTypography, 
+  spacing as themeSpacing, 
+  borderRadius as themeBorderRadius 
+} from '@/theme/design-system';
 
 // ─────────────────────────────────────────────────────────────
-// DESIGN TOKENS
+// DESIGN TOKENS (Extended from design-system.ts)
 // ─────────────────────────────────────────────────────────────
 
 const colors = {
-  background: '#FDFBF7',
-  surface: '#F5F0E8',
-  surfaceAlt: '#EDE7DB',
-  white: '#FFFFFF',
-  textPrimary: '#1A1A2E',
-  textSecondary: '#6B6B80',
-  textMuted: '#9B9BAD',
-  primary: '#8B5CF6',
-  primaryDark: '#7C3AED',
-  primaryLight: '#EDE9FE',
-  accentGold: '#D4A547',
-  accentGoldLight: '#FDF4E3',
+  ...themeColors,
   sunriseOrange: '#F4A261',
   streakFlame: '#FF6B35',
   streakFlameBg: 'rgba(255, 107, 53, 0.08)',
@@ -78,42 +72,26 @@ const colors = {
   premiumGold: '#C9A84C',
   cardBorder: 'rgba(212, 165, 71, 0.12)',
   cardShadow: 'rgba(139, 92, 246, 0.08)',
+  white: '#FFFFFF',
 } as const;
 
 const typography = {
-  fonts: {
-    display: 'PlayfairDisplay-Bold',
-    displaySemiBold: 'PlayfairDisplay-SemiBold',
-    displayItalic: 'PlayfairDisplay-Italic',
-    body: 'Inter-Regular',
-    bodyMedium: 'Inter-Medium',
-    bodySemiBold: 'Inter-SemiBold',
-  },
+  fonts: themeTypography.fonts,
   sizes: {
-    display2: 28,
-    heading3: 18,
-    body: 16,
-    bodySmall: 14,
-    caption: 13,
-    tiny: 11,
+    display2: themeTypography.sizes.display2,
+    heading3: themeTypography.sizes.heading3,
+    body: themeTypography.sizes.body,
+    bodySmall: themeTypography.sizes.bodySmall,
+    caption: themeTypography.sizes.caption,
+    tiny: themeTypography.sizes.tiny,
   },
 } as const;
 
-const spacing = {
-  xs: 8,
-  sm: 12,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
-} as const;
+const spacing = themeSpacing;
 
 const borderRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
+  ...themeBorderRadius,
   xl: 20,
-  full: 9999,
 } as const;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
