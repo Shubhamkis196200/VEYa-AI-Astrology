@@ -129,8 +129,11 @@ function buildDateContext(now: Date): string {
   const dayOfYear = Math.floor(
     (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000,
   );
+  const year = now.getFullYear();
 
-  return `TODAY: ${formatted}\nDay of Year: ${dayOfYear}/365`;
+  return `⚠️ CURRENT DATE (USE THIS): ${formatted}
+CURRENT YEAR: ${year} (NOT 2023 or 2024 - we are in ${year})
+Day of Year: ${dayOfYear}/365`;
 }
 
 function buildChartContext(userData: UserChartData): string {
