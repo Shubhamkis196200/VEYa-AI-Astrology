@@ -10,7 +10,7 @@
 
 import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import { Platform, Text, View, Pressable, StyleSheet } from 'react-native';
+import { Platform, Text, View, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, G, Defs, LinearGradient, Stop } from 'react-native-svg';
 import Animated, {
@@ -273,35 +273,46 @@ function TabLabel({ label, focused }: { label: string; focused: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ERROR BOUNDARY
+// ERROR BOUNDARY - Shows actual error for debugging
 // ─────────────────────────────────────────────────────────────
 
 class TabsErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { hasError: boolean }
+  { hasError: boolean; error: Error | null; errorInfo: string }
 > {
-  state = { hasError: false };
+  state = { hasError: false, error: null as Error | null, errorInfo: '' };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error, errorInfo: error?.message || 'Unknown error' };
   }
 
-  componentDidCatch(error: unknown) {
-    console.error('[Tabs] render error', error);
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[Tabs] render error', error, info);
+    this.setState({ 
+      errorInfo: `${error?.message}\n\nComponent: ${info?.componentStack?.slice(0, 300)}` 
+    });
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false });
+    this.setState({ hasError: false, error: null, errorInfo: '' });
   };
 
   render() {
     if (this.state.hasError) {
       return (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>We hit a snag</Text>
-          <Text style={styles.errorMessage}>
-            If this keeps happening, tap to retry.
-          </Text>
+          <Text style={styles.errorTitle}>Debug Error Info</Text>
+          <ScrollView style={{ maxHeight: 300, marginVertical: 12 }}>
+            <Text style={{ fontSize: 12, color: '#E8664D', fontFamily: 'monospace' }}>
+              {this.state.error?.message || 'No message'}
+            </Text>
+            <Text style={{ fontSize: 10, color: '#666', marginTop: 8, fontFamily: 'monospace' }}>
+              {this.state.errorInfo}
+            </Text>
+            <Text style={{ fontSize: 9, color: '#999', marginTop: 8, fontFamily: 'monospace' }}>
+              {this.state.error?.stack?.slice(0, 400)}
+            </Text>
+          </ScrollView>
           <Pressable onPress={this.handleRetry} style={styles.retryButton}>
             <Text style={styles.retryText}>Retry</Text>
           </Pressable>
