@@ -6,6 +6,11 @@
  * 
  * Theme: Premium Light (Warm Cream + Gold accents)
  * Inspired by: Glossier, Aesop, luxury journals
+ * 
+ * Phase 7 Visual Polish Update:
+ * - Consistent card styles
+ * - Unified animations
+ * - Loading/Error/Empty state patterns
  */
 
 // ─────────────────────────────────────────────────────────────
@@ -36,6 +41,7 @@ export const colors = {
   accentGold: '#D4A547',
   accentGoldLight: '#FDF4E3',
   accentGoldMuted: 'rgba(212, 165, 71, 0.15)',
+  accentGoldDark: '#B8923E',
 
   // Accent Rose
   accentRose: '#E8788A',
@@ -57,6 +63,7 @@ export const colors = {
   border: '#E5DFD5',
   borderFocused: '#D4A547',
   borderMuted: 'rgba(229, 223, 213, 0.5)',
+  borderGold: 'rgba(212, 165, 71, 0.12)',
 
   // Overlays
   overlay: 'rgba(26, 26, 46, 0.5)',
@@ -173,17 +180,51 @@ export const shadows = {
     shadowRadius: 16,
     elevation: 6,
   },
+  gold: {
+    shadowColor: colors.accentGold,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
 } as const;
 
 // ─────────────────────────────────────────────────────────────
-// ANIMATION DURATIONS
+// ANIMATION DURATIONS & EASING
 // ─────────────────────────────────────────────────────────────
 
 export const animation = {
+  // Durations (in milliseconds)
   fast: 150,
   normal: 300,
   slow: 500,
   verySlow: 800,
+  
+  // Named durations for specific use cases
+  buttonPress: 100,
+  cardHover: 200,
+  pageTransition: 400,
+  modalSlide: 350,
+  fadeIn: 200,
+  fadeOut: 150,
+  shimmer: 1200,
+  
+  // Easing curves (for withTiming)
+  easing: {
+    ease: 'ease',
+    easeIn: 'ease-in',
+    easeOut: 'ease-out',
+    easeInOut: 'ease-in-out',
+    linear: 'linear',
+  },
+  
+  // Spring configs (for withSpring)
+  spring: {
+    gentle: { damping: 15, stiffness: 100, mass: 1 },
+    bouncy: { damping: 10, stiffness: 180, mass: 0.8 },
+    stiff: { damping: 20, stiffness: 300, mass: 1 },
+    soft: { damping: 25, stiffness: 80, mass: 1.2 },
+  },
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -197,11 +238,13 @@ export const commonStyles = {
     backgroundColor: colors.background,
   },
 
-  // Card styles
+  // Card styles - THE standard card appearance
   card: {
     backgroundColor: colors.surfaceElevated,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.borderGold,
     ...shadows.md,
   },
 
@@ -209,6 +252,15 @@ export const commonStyles = {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
+  },
+  
+  cardCompact: {
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderGold,
+    ...shadows.sm,
   },
 
   // Button styles
@@ -237,6 +289,17 @@ export const commonStyles = {
     borderRadius: borderRadius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  
+  buttonOutlineGold: {
+    backgroundColor: 'transparent',
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.accentGoldMuted,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
@@ -284,6 +347,72 @@ export const commonStyles = {
     fontFamily: typography.fonts.body,
     fontSize: typography.sizes.caption,
     color: colors.textMuted,
+  },
+  
+  // Section header - THE standard section header
+  sectionHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  
+  sectionTitle: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.body,
+    color: colors.textPrimary,
+  },
+  
+  sectionSubtitle: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.tiny,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  
+  sectionAction: {
+    fontFamily: typography.fonts.bodyMedium,
+    fontSize: typography.sizes.caption,
+    color: colors.primary,
+  },
+  
+  // Icon circle - THE standard icon container
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.accentGoldMuted,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  
+  iconCircleLarge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.accentGoldMuted,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 165, 71, 0.15)',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  
+  // Badge styles
+  badge: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  
+  badgeGold: {
+    backgroundColor: colors.accentGoldLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.accentGoldMuted,
   },
 } as const;
 
@@ -338,6 +467,31 @@ export const progressDots = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────
+// GRADIENT PRESETS
+// ─────────────────────────────────────────────────────────────
+
+export const gradients = {
+  // Background gradients
+  screenBg: ['#FDFBF7', '#F8F4EC', '#FDFBF7'] as const,
+  cardBg: ['#FFFFFF', '#FDFBF7', '#FAF6EE'] as const,
+  
+  // Button gradients
+  primary: ['#8B5CF6', '#7C3AED'] as const,
+  gold: ['#D4A547', '#B8923E'] as const,
+  rose: ['#E8788A', '#D85F71'] as const,
+  
+  // Feature card gradients
+  voice: ['#8B5CF6', '#6D28D9', '#5B21B6'] as const,
+  chat: ['#6366F1', '#4F46E5'] as const,
+  chart: ['#D4A547', '#B8860B'] as const,
+  tarot: ['#9333EA', '#7C3AED'] as const,
+  moon: ['#1E3A5F', '#2D4A6F'] as const,
+  compatibility: ['#EC4899', '#DB2777'] as const,
+  transits: ['#059669', '#047857'] as const,
+  journal: ['#F59E0B', '#D97706'] as const,
+} as const;
+
 export default {
   colors,
   typography,
@@ -349,4 +503,5 @@ export default {
   zodiacColors,
   elementColors,
   progressDots,
+  gradients,
 };

@@ -1,12 +1,16 @@
 /**
  * VEYa Error Boundary — Graceful error handling for React components
+ * 
+ * Uses the light premium theme for consistency with the rest of the app.
  */
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+import { borderRadius } from '../../theme/borderRadius';
 
 interface Props {
   children: ReactNode;
@@ -42,18 +46,36 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <View style={styles.container}>
+          {/* Light premium gradient background */}
           <LinearGradient
-            colors={['#1B0B38', '#0F0720']}
+            colors={['#FDFBF7', '#F8F4EC', '#FDFBF7']}
+            locations={[0, 0.5, 1]}
             style={StyleSheet.absoluteFillObject}
           />
-          <Text style={styles.emoji}>✨</Text>
-          <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>
-            {this.props.fallbackMessage || 'The stars are realigning. Please try again.'}
-          </Text>
-          <Pressable style={styles.button} onPress={this.handleRetry}>
-            <Text style={styles.buttonText}>Try Again</Text>
-          </Pressable>
+          
+          {/* Error card */}
+          <View style={styles.errorCard}>
+            <View style={styles.emojiCircle}>
+              <Text style={styles.emoji}>✨</Text>
+            </View>
+            <Text style={styles.title}>Something went wrong</Text>
+            <Text style={styles.message}>
+              {this.props.fallbackMessage || 'The stars are realigning. Please try again.'}
+            </Text>
+            <Pressable 
+              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} 
+              onPress={this.handleRetry}
+            >
+              <LinearGradient
+                colors={[colors.primary, colors.primaryDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.buttonGradient}
+              >
+                <Text style={styles.buttonText}>Try Again</Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
         </View>
       );
     }
@@ -96,37 +118,75 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.lg,
+  },
+  errorCard: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+    maxWidth: 320,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 165, 71, 0.12)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  emojiCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(212, 165, 71, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 165, 71, 0.15)',
   },
   emoji: {
-    fontSize: 48,
-    marginBottom: 16,
+    fontSize: 32,
   },
   title: {
     fontFamily: typography.fonts.display,
-    fontSize: 24,
+    fontSize: 22,
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
   message: {
     fontFamily: typography.fonts.body,
-    fontSize: 16,
+    fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
+    marginBottom: spacing.lg,
+    lineHeight: 22,
   },
   button: {
-    backgroundColor: colors.accentGold,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 24,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  buttonPressed: {
+    opacity: 0.9,
+  },
+  buttonGradient: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    borderRadius: borderRadius.full,
   },
   buttonText: {
     fontFamily: typography.fonts.bodySemiBold,
     fontSize: 16,
-    color: '#1B0B38',
+    color: colors.white,
   },
 });
 
