@@ -112,7 +112,9 @@ class TabsErrorBoundary extends React.Component<
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = Platform.OS === 'ios' ? 50 + insets.bottom : 60;
+  // Ensure enough space for phones with gesture navigation bars
+  const bottomPadding = Math.max(insets.bottom, 20);
+  const tabBarHeight = Platform.OS === 'ios' ? 60 + bottomPadding : 70 + bottomPadding;
 
   return (
     <TabsErrorBoundary>
@@ -126,8 +128,8 @@ export default function TabLayout() {
             borderTopColor: colors.border,
             borderTopWidth: 1,
             height: tabBarHeight,
-            paddingTop: 8,
-            paddingBottom: Platform.OS === 'ios' ? insets.bottom : 8,
+            paddingTop: 10,
+            paddingBottom: bottomPadding + 8,
           },
           tabBarLabelStyle: {
             fontFamily: 'Inter-Medium',
