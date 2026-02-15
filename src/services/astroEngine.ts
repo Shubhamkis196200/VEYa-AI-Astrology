@@ -173,70 +173,92 @@ function isRetrograde(body: Astronomy.Body, date: Date): boolean {
  * Get current positions of all planets
  */
 export function getCurrentTransits(date: Date = new Date()): PlanetPosition[] {
-  return ASTRONOMY_BODIES.map(({ name, body }) => {
-    const longitude = getEclipticLongitude(body, date);
-    const sign = getZodiacSign(longitude);
-    const signDeg = getSignDegree(longitude);
-    const degree = Math.floor(signDeg);
-    const minute = Math.round((signDeg - degree) * 60);
-    const retrograde = isRetrograde(body, date);
+  try {
+    return ASTRONOMY_BODIES.map(({ name, body }) => {
+      const longitude = getEclipticLongitude(body, date);
+      const sign = getZodiacSign(longitude);
+      const signDeg = getSignDegree(longitude);
+      const degree = Math.floor(signDeg);
+      const minute = Math.round((signDeg - degree) * 60);
+      const retrograde = isRetrograde(body, date);
 
-    return {
-      name,
-      longitude,
-      sign,
-      signDegree: degree,
-      signMinute: minute,
-      retrograde,
-      symbol: PLANET_SYMBOLS[name] || '⭐',
-    };
-  });
+      return {
+        name,
+        longitude,
+        sign,
+        signDegree: degree,
+        signMinute: minute,
+        retrograde,
+        symbol: PLANET_SYMBOLS[name] || '⭐',
+      };
+    });
+  } catch (error) {
+    console.warn('[astroEngine] getCurrentTransits failed:', error);
+    return [];
+  }
 }
 
 /**
  * Get current moon phase with full details
  */
 export function getMoonPhase(date: Date = new Date()): MoonPhaseInfo {
-  const time = Astronomy.MakeTime(date);
+  try {
+    const time = Astronomy.MakeTime(date);
 
-  // Moon phase angle (0 = New, 90 = First Quarter, 180 = Full, 270 = Last Quarter)
-  const phaseAngle = Astronomy.MoonPhase(time);
+    // Moon phase angle (0 = New, 90 = First Quarter, 180 = Full, 270 = Last Quarter)
+    const phaseAngle = Astronomy.MoonPhase(time);
 
-  // Illumination
-  const illum = Astronomy.Illumination(Astronomy.Body.Moon, time);
+    // Illumination
+    const illum = Astronomy.Illumination(Astronomy.Body.Moon, time);
 
-  // Moon position for zodiac sign
-  const moonGeo = Astronomy.EclipticGeoMoon(time);
-  const moonSign = getZodiacSign(moonGeo.lon);
-  const moonSignDeg = getSignDegree(moonGeo.lon);
+    // Moon position for zodiac sign
+    const moonGeo = Astronomy.EclipticGeoMoon(time);
+    const moonSign = getZodiacSign(moonGeo.lon);
+    const moonSignDeg = getSignDegree(moonGeo.lon);
 
-  // Phase name
-  const phaseName = getMoonPhaseName(phaseAngle);
-  const emoji = getMoonPhaseEmoji(phaseAngle);
+    // Phase name
+    const phaseName = getMoonPhaseName(phaseAngle);
+    const emoji = getMoonPhaseEmoji(phaseAngle);
 
-  // Next Full Moon (phase = 180°)
-  const nextFull = Astronomy.SearchMoonPhase(180, time, 30);
-  const nextFullDate = nextFull ? nextFull.date : new Date(date.getTime() + 15 * 86400000);
-  const daysUntilFull = (nextFullDate.getTime() - date.getTime()) / 86400000;
+    // Next Full Moon (phase = 180°)
+    const nextFull = Astronomy.SearchMoonPhase(180, time, 30);
+    const nextFullDate = nextFull ? nextFull.date : new Date(date.getTime() + 15 * 86400000);
+    const daysUntilFull = (nextFullDate.getTime() - date.getTime()) / 86400000;
 
-  // Next New Moon (phase = 0°)
-  const nextNew = Astronomy.SearchMoonPhase(0, time, 30);
-  const nextNewDate = nextNew ? nextNew.date : new Date(date.getTime() + 15 * 86400000);
-  const daysUntilNew = (nextNewDate.getTime() - date.getTime()) / 86400000;
+    // Next New Moon (phase = 0°)
+    const nextNew = Astronomy.SearchMoonPhase(0, time, 30);
+    const nextNewDate = nextNew ? nextNew.date : new Date(date.getTime() + 15 * 86400000);
+    const daysUntilNew = (nextNewDate.getTime() - date.getTime()) / 86400000;
 
-  return {
-    phaseName,
-    illumination: illum.phase_fraction,
-    phaseAngle,
-    moonSign,
-    moonDegree: moonGeo.lon,
-    moonSignDegree: Math.floor(moonSignDeg),
-    daysUntilFullMoon: Math.round(daysUntilFull * 10) / 10,
-    daysUntilNewMoon: Math.round(daysUntilNew * 10) / 10,
-    nextFullMoonDate: nextFullDate,
-    nextNewMoonDate: nextNewDate,
-    emoji,
-  };
+    return {
+      phaseName,
+      illumination: illum.phase_fraction,
+      phaseAngle,
+      moonSign,
+      moonDegree: moonGeo.lon,
+      moonSignDegree: Math.floor(moonSignDeg),
+      daysUntilFullMoon: Math.round(daysUntilFull * 10) / 10,
+      daysUntilNewMoon: Math.round(daysUntilNew * 10) / 10,
+      nextFullMoonDate: nextFullDate,
+      nextNewMoonDate: nextNewDate,
+      emoji,
+    };
+  } catch (error) {
+    console.warn('[astroEngine] getMoonPhase failed:', error);
+    return {
+      phaseName: 'Moon',
+      illumination: 0.5,
+      phaseAngle: 0,
+      moonSign: 'Unknown',
+      moonDegree: 0,
+      moonSignDegree: 0,
+      daysUntilFullMoon: 7,
+      daysUntilNewMoon: 14,
+      nextFullMoonDate: new Date(date.getTime() + 7 * 86400000),
+      nextNewMoonDate: new Date(date.getTime() + 14 * 86400000),
+      emoji: '🌙',
+    };
+  }
 }
 
 function getMoonPhaseName(angle: number): string {
