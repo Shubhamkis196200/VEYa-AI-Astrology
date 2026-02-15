@@ -7,7 +7,38 @@
 
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
-import { Buffer } from 'buffer';
+
+// Polyfill for base64 encoding in React Native
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  // Use global btoa if available, otherwise manual encode
+  if (typeof btoa !== 'undefined') {
+    return btoa(binary);
+  }
+  // Manual base64 encoding
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = '';
+  let i = 0;
+  while (i < binary.length) {
+    const a = binary.charCodeAt(i++);
+    const b = binary.charCodeAt(i++);
+    const c = binary.charCodeAt(i++);
+    result += chars[a >> 2];
+    result += chars[((a & 3) << 4) | (b >> 4)];
+    result += chars[((b & 15) << 2) | (c >> 6)];
+    result += chars[c & 63];
+  }
+  const pad = binary.length % 3;
+  if (pad) {
+    result = result.slice(0, pad - 3);
+    while (result.length % 4) result += '=';
+  }
+  return result;
+}
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -246,7 +277,7 @@ export async function getAstrologyResponse(
 export async function speakText(text: string): Promise<void> {
   if (!OPENAI_API_KEY) {
     console.warn('[Voice] No API key for TTS');
-    return; // Don't throw, just skip
+    return;
   }
 
   if (!text.trim()) return;
@@ -260,18 +291,20 @@ export async function speakText(text: string): Promise<void> {
       try {
         await currentSound.stopAsync();
         await currentSound.unloadAsync();
-      } catch (e) {
-        // Ignore cleanup errors
-      }
+      } catch (e) {}
       currentSound = null;
     }
 
+    // Set audio mode for playback
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
       playsInSilentModeIOS: true,
       staysActiveInBackground: false,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
     });
 
+    // Call OpenAI TTS API
     console.log('[Voice] Calling OpenAI TTS API...');
     const response = await fetch(`${OPENAI_BASE}/audio/speech`, {
       method: 'POST',
@@ -283,66 +316,69 @@ export async function speakText(text: string): Promise<void> {
         model: 'tts-1',
         voice: 'nova',
         input: text,
-        speed: 1.0,
+        response_format: 'mp3',
       }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
+      const errorText = await response.text().catch(() => 'Unknown');
       console.error('[Voice] TTS API error:', response.status, errorText);
-      // Don't throw - gracefully fail
       return;
     }
 
     console.log('[Voice] TTS API success, processing audio...');
+    
+    // Convert to ArrayBuffer then to base64
     const arrayBuffer = await response.arrayBuffer();
-    const base64Audio = Buffer.from(arrayBuffer).toString('base64');
+    const base64Audio = arrayBufferToBase64(arrayBuffer);
     
-    // Use cacheDirectory as fallback if documentDirectory is null
-    const baseDir = FileSystem.documentDirectory || FileSystem.cacheDirectory || '';
-    if (!baseDir) {
-      console.error('[Voice] No writable directory available');
-      return;
-    }
+    console.log('[Voice] Base64 audio length:', base64Audio.length);
     
-    const fileUri = `${baseDir}veya_tts_${Date.now()}.mp3`;
-    console.log('[Voice] Saving audio to:', fileUri);
-    
+    // Save to file
+    const fileUri = `${FileSystem.cacheDirectory}veya_tts_${Date.now()}.mp3`;
     await FileSystem.writeAsStringAsync(fileUri, base64Audio, {
-      encoding: 'base64' as any,
+      encoding: FileSystem.EncodingType.Base64,
     });
 
-    console.log('[Voice] Audio saved, playing...');
+    // Verify file
+    const fileInfo = await FileSystem.getInfoAsync(fileUri);
+    console.log('[Voice] Audio file size:', fileInfo.exists ? (fileInfo as any).size : 'N/A');
+
+    if (!fileInfo.exists) {
+      console.error('[Voice] Audio file not created');
+      return;
+    }
+
+    // Play audio
+    console.log('[Voice] Playing audio...');
     const { sound } = await Audio.Sound.createAsync(
       { uri: fileUri },
-      { shouldPlay: true }
+      { shouldPlay: true, volume: 1.0 }
     );
     currentSound = sound;
 
-    // Wait for playback to complete with timeout
+    // Wait for playback
     await new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('[Voice] Playback timeout, resolving');
-        resolve();
-      }, 30000); // 30 second max
-
+      const timeout = setTimeout(resolve, 30000);
       sound.setOnPlaybackStatusUpdate((status) => {
-        if (!status.isLoaded) return;
-        if (status.didJustFinish) {
+        if (status.isLoaded && status.didJustFinish) {
           clearTimeout(timeout);
           resolve();
         }
       });
     });
 
+    // Cleanup
     try {
       await sound.unloadAsync();
+      await FileSystem.deleteAsync(fileUri, { idempotent: true });
     } catch (e) {}
+    
     currentSound = null;
-    console.log('[Voice] Speech completed successfully');
+    console.log('[Voice] TTS completed');
+    
   } catch (error) {
     console.error('[Voice] TTS error:', error);
-    // Don't re-throw - let the UI continue
   } finally {
     isSpeaking = false;
   }
