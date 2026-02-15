@@ -60,15 +60,16 @@ function pickTarotCard(seed: number) {
 }
 
 function buildStories(): AstroStory[] {
-  const moon = getMoonPhase();
-  const transits = getCurrentTransits();
-  const dateSeed = new Date().getDate();
-  const tarot = pickTarotCard(dateSeed);
+  try {
+    const moon = getMoonPhase();
+    const transits = getCurrentTransits();
+    const dateSeed = new Date().getDate();
+    const tarot = pickTarotCard(dateSeed);
 
-  const transitHighlight = transits.find((planet) => planet.retrograde) || transits[0];
-  const transitMessage = transitHighlight
-    ? `${transitHighlight.symbol} ${transitHighlight.name} in ${transitHighlight.sign} — focus on ${transitHighlight.retrograde ? 'reflection' : 'momentum'}.`
-    : 'Planetary currents are calm and steady. Move with grace.';
+    const transitHighlight = transits.find((planet) => planet.retrograde) || transits[0];
+    const transitMessage = transitHighlight
+      ? `${transitHighlight.symbol} ${transitHighlight.name} in ${transitHighlight.sign} — focus on ${transitHighlight.retrograde ? 'reflection' : 'momentum'}.`
+      : 'Planetary currents are calm and steady. Move with grace.';
 
   return [
     {
@@ -112,6 +113,28 @@ function buildStories(): AstroStory[] {
       colors: THEME_COLORS.transit,
     },
   ];
+  } catch (error) {
+    console.warn('[StoryStore] buildStories failed:', error);
+    // Return safe fallback stories
+    return [
+      {
+        id: 'moon',
+        title: 'Moon Update',
+        body: 'The cosmic tides are shifting. Tune in to your intuition.',
+        emoji: '🌙',
+        actionLabel: 'Learn More',
+        colors: THEME_COLORS.moon,
+      },
+      {
+        id: 'daily',
+        title: 'Daily Cosmic Insight',
+        body: 'Your energy is luminous today. Trust your path.',
+        emoji: '☀️',
+        actionLabel: 'Learn More',
+        colors: THEME_COLORS.daily,
+      },
+    ];
+  }
 }
 
 export const useStoryStore = create<StoryStore>()(

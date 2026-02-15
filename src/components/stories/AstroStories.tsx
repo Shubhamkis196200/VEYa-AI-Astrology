@@ -6,12 +6,21 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
 import { useStoryStore } from '@/stores/storyStore';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
 import { borderRadius } from '@/theme/borderRadius';
+
+// Safe haptic function
+async function safeHaptic() {
+  try {
+    const Haptics = await import('expo-haptics');
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  } catch {
+    // Haptics not available - silent fail
+  }
+}
 
 const STORY_RING_GRADIENTS: Record<string, readonly [string, string]> = {
   moon: ['#8B5CF6', '#22D3EE'],
@@ -27,6 +36,11 @@ export default function AstroStories() {
   useEffect(() => {
     refreshStories();
   }, [refreshStories]);
+
+  // Safety check - don't render if no stories
+  if (!stories || stories.length === 0) {
+    return null;
+  }
 
   return (
     <Animated.View entering={FadeIn.duration(400)} style={styles.container}>
@@ -44,7 +58,7 @@ export default function AstroStories() {
             <Pressable
               key={story.id}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                safeHaptic();
                 openViewer(index);
               }}
               style={styles.storyItem}
