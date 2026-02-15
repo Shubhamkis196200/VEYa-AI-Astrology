@@ -166,12 +166,18 @@ function useRealRitualContent(): RealRitualContent {
       return getMoonPhase();
     } catch (e) {
       console.warn('[Rituals] getMoonPhase failed:', e);
+      // Complete fallback with ALL required MoonPhaseInfo properties
       return {
         phaseName: 'New Moon',
         illumination: 0,
+        phaseAngle: 0,
         moonSign: 'Aquarius',
+        moonDegree: 15,
+        moonSignDegree: 15,
         daysUntilFullMoon: 14,
         daysUntilNewMoon: 0,
+        nextFullMoonDate: new Date(),
+        nextNewMoonDate: new Date(),
         emoji: '🌑',
       };
     }
@@ -1035,7 +1041,20 @@ function MoonPhaseDetailsCard() {
       return getMoonPhase();
     } catch (e) {
       console.warn('[MoonPhaseDetails] getMoonPhase failed:', e);
-      return { phaseName: 'Moon', emoji: '🌙', moonSign: 'Calculating...', illumination: 0.5 };
+      // Complete fallback
+      return { 
+        phaseName: 'Moon', 
+        emoji: '🌙', 
+        moonSign: 'Aquarius', 
+        illumination: 0.5,
+        phaseAngle: 90,
+        moonDegree: 15,
+        moonSignDegree: 15,
+        daysUntilFullMoon: 7,
+        daysUntilNewMoon: 14,
+        nextFullMoonDate: new Date(),
+        nextNewMoonDate: new Date(),
+      };
     }
   }, []);
 

@@ -231,14 +231,13 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
       return generateDailyInsight(data.sunSign, data.moonSign, data.risingSign, data.name);
     } catch (e) {
       console.warn('[OneInsight] generateDailyInsight failed:', e);
+      // Complete fallback with ALL required properties
       return {
         emoji: '✨',
         headline: 'Your Cosmic Reading',
-        subheadline: `The stars align in your favor today, ${data.name || 'cosmic traveler'}.`,
-        detail: 'Trust your intuition and embrace the energy around you.',
-        moonPhase: 'Moon',
-        moonSign: 'Aquarius',
-        accent: '#8B5CF6',
+        message: `The stars align in your favor today, ${data.name || 'cosmic traveler'}. Trust your intuition.`,
+        transit: 'Moon in harmony',
+        energy: 'positive' as const,
       };
     }
   }, [data.sunSign, data.moonSign, data.risingSign, data.name]);

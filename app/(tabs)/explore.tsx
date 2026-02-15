@@ -910,12 +910,18 @@ function MoonTrackerSection() {
       return getMoonPhase();
     } catch (e) {
       console.warn('[MoonTracker] getMoonPhase failed:', e);
+      // Complete fallback with ALL required MoonPhaseInfo properties
       return {
         phaseName: 'Moon',
         illumination: 0.5,
-        moonSign: 'Calculating...',
+        phaseAngle: 90,
+        moonSign: 'Aquarius',
+        moonDegree: 15,
+        moonSignDegree: 15,
         daysUntilFullMoon: 7,
         daysUntilNewMoon: 14,
+        nextFullMoonDate: new Date(),
+        nextNewMoonDate: new Date(),
         emoji: '🌙',
       };
     }

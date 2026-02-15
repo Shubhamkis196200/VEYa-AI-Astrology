@@ -149,14 +149,18 @@ export default function CosmicWeatherWidget({ onPress }: CosmicWeatherWidgetProp
       return calculateCosmicWeather();
     } catch (e) {
       console.warn('[CosmicWeather] calculation failed:', e);
+      // Complete fallback with ALL required properties
       return {
+        level: 'good' as const,
         score: 70,
-        label: 'Calm Skies',
         emoji: '✨',
+        headline: 'Cosmic Weather',
         description: 'The cosmic weather is favorable today.',
-        color: '#8B5CF6',
-        moonPhase: 'Moon',
-        dominantPlanet: 'Venus',
+        gradientColors: ['#1E3A5F', '#3B82F6'] as const,
+        conditions: [
+          { emoji: '🌙', label: 'Moon', value: 'Calm', color: '#8B5CF6' },
+          { emoji: '✨', label: 'Energy', value: 'Good', color: '#10B981' },
+        ],
       };
     }
   }, []);
