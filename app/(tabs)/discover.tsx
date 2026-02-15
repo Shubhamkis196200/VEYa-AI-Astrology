@@ -89,9 +89,13 @@ import {
   getMoonPhase,
   getCurrentTransits,
   getMonthEvents,
+  getPlanetaryHours,
+  getRetrogradeData,
   type MoonPhaseInfo,
   type PlanetPosition,
   type MonthEvent,
+  type PlanetaryHoursData,
+  type RetrogradeData,
 } from '@/services/astroEngine';
 import { generateTarotReading, chatWithVeya } from '@/services/ai';
 import { router } from 'expo-router';
@@ -1157,6 +1161,247 @@ function TransitCalendarSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SECTION 7: PLANETARY HOURS ⏰
+// ═══════════════════════════════════════════════════════════════
+
+function PlanetaryHoursSection() {
+  const [hoursData, setHoursData] = useState<PlanetaryHoursData | null>(null);
+  const [showFullSchedule, setShowFullSchedule] = useState(false);
+
+  useEffect(() => {
+    // Get planetary hours (default to NYC coordinates, could be user location)
+    const data = getPlanetaryHours(new Date());
+    setHoursData(data);
+  }, []);
+
+  if (!hoursData) return null;
+
+  const { currentHour, todayHours, sunrise, sunset, dayRuler, dayRulerSymbol } = hoursData;
+  const dayHours = todayHours.filter(h => h.isDay);
+  const nightHours = todayHours.filter(h => !h.isDay);
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+
+  return (
+    <Animated.View entering={FadeInDown.duration(600).delay(1100)} style={styles.sectionContainer}>
+      <Text style={styles.sectionLabel}>PLANETARY HOURS</Text>
+      <Text style={styles.sectionTitle}>Cosmic Timing</Text>
+      <View style={[styles.card, styles.planetaryHoursCard]}>
+        {/* Current Hour Hero */}
+        <View style={styles.currentHourHero}>
+          <View style={[styles.currentHourIcon, { backgroundColor: currentHour.color + '20' }]}>
+            <Text style={[styles.currentHourSymbol, { color: currentHour.color }]}>{currentHour.symbol}</Text>
+          </View>
+          <View style={styles.currentHourInfo}>
+            <Text style={styles.currentHourLabel}>Current Hour</Text>
+            <Text style={styles.currentHourPlanet}>{currentHour.planet}</Text>
+            <Text style={styles.currentHourTime}>
+              {formatTime(currentHour.startTime)} - {formatTime(currentHour.endTime)}
+            </Text>
+          </View>
+          <View style={styles.dayRulerBadge}>
+            <Text style={styles.dayRulerSymbol}>{dayRulerSymbol}</Text>
+            <Text style={styles.dayRulerLabel}>{dayRuler}'s Day</Text>
+          </View>
+        </View>
+
+        {/* Sun Times */}
+        <View style={styles.sunTimesRow}>
+          <View style={styles.sunTimeItem}>
+            <Text style={styles.sunTimeEmoji}>🌅</Text>
+            <Text style={styles.sunTimeLabel}>Sunrise</Text>
+            <Text style={styles.sunTimeValue}>{formatTime(sunrise)}</Text>
+          </View>
+          <View style={styles.sunTimeDivider} />
+          <View style={styles.sunTimeItem}>
+            <Text style={styles.sunTimeEmoji}>🌇</Text>
+            <Text style={styles.sunTimeLabel}>Sunset</Text>
+            <Text style={styles.sunTimeValue}>{formatTime(sunset)}</Text>
+          </View>
+        </View>
+
+        {/* Hour Schedule Toggle */}
+        <Pressable
+          onPress={() => { hapticLight(); setShowFullSchedule(!showFullSchedule); }}
+          style={styles.scheduleToggle}
+        >
+          <Text style={styles.scheduleToggleText}>
+            {showFullSchedule ? 'Hide Full Schedule' : 'View Full Schedule'} {showFullSchedule ? '↑' : '↓'}
+          </Text>
+        </Pressable>
+
+        {/* Full Schedule */}
+        {showFullSchedule && (
+          <Animated.View entering={FadeInDown.duration(300)} style={styles.fullScheduleContainer}>
+            <View style={styles.scheduleSection}>
+              <Text style={styles.scheduleSectionLabel}>☀️ Day Hours</Text>
+              <View style={styles.scheduleGrid}>
+                {dayHours.map((hour) => (
+                  <View key={hour.hourNumber} style={[styles.scheduleItem, hour.isCurrent && styles.scheduleItemCurrent]}>
+                    <Text style={[styles.scheduleSymbol, { color: hour.color }]}>{hour.symbol}</Text>
+                    <Text style={styles.schedulePlanet}>{hour.planet}</Text>
+                    <Text style={styles.scheduleTime}>{formatTime(hour.startTime)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+            <View style={styles.scheduleSection}>
+              <Text style={styles.scheduleSectionLabel}>🌙 Night Hours</Text>
+              <View style={styles.scheduleGrid}>
+                {nightHours.map((hour) => (
+                  <View key={hour.hourNumber} style={[styles.scheduleItem, hour.isCurrent && styles.scheduleItemCurrent]}>
+                    <Text style={[styles.scheduleSymbol, { color: hour.color }]}>{hour.symbol}</Text>
+                    <Text style={styles.schedulePlanet}>{hour.planet}</Text>
+                    <Text style={styles.scheduleTime}>{formatTime(hour.startTime)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Planetary Hour Guide */}
+        <View style={styles.planetaryGuide}>
+          <Text style={styles.planetaryGuideTitle}>Best Uses for {currentHour.planet} Hour:</Text>
+          <Text style={styles.planetaryGuideText}>{getPlanetaryHourGuidance(currentHour.planet)}</Text>
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
+function getPlanetaryHourGuidance(planet: string): string {
+  const guidance: Record<string, string> = {
+    Sun: 'Success, leadership, vitality. Great for important meetings, asking for raises, or health-related activities.',
+    Moon: 'Intuition, emotions, home. Ideal for family matters, meditation, and nurturing activities.',
+    Mars: 'Action, courage, competition. Perfect for physical exercise, confronting challenges, or starting projects.',
+    Mercury: 'Communication, intellect, travel. Best for writing, negotiations, learning, and short trips.',
+    Jupiter: 'Expansion, luck, abundance. Excellent for business deals, legal matters, and spiritual growth.',
+    Venus: 'Love, beauty, pleasure. Wonderful for dates, artistic pursuits, and self-care.',
+    Saturn: 'Discipline, structure, endings. Good for organization, long-term planning, and breaking bad habits.',
+  };
+  return guidance[planet] || 'A time for cosmic alignment.';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 8: RETROGRADE TRACKER ⏪
+// ═══════════════════════════════════════════════════════════════
+
+function RetrogradeTrackerSection() {
+  const retroData = React.useMemo(() => getRetrogradeData(), []);
+
+  if (!retroData) return null;
+
+  const { currentRetrogrades, upcomingRetrogrades, retrogradeCount, message } = retroData;
+
+  return (
+    <Animated.View entering={FadeInDown.duration(600).delay(1200)} style={styles.sectionContainer}>
+      <Text style={styles.sectionLabel}>RETROGRADE TRACKER</Text>
+      <Text style={styles.sectionTitle}>Planetary Stations</Text>
+      <View style={[styles.card, styles.retrogradeCard]}>
+        {/* Status Header */}
+        <View style={styles.retrogradeStatus}>
+          <View style={[
+            styles.retrogradeStatusBadge,
+            retrogradeCount === 0 && styles.retrogradeStatusClear,
+            retrogradeCount > 0 && retrogradeCount <= 2 && styles.retrogradeStatusModerate,
+            retrogradeCount > 2 && styles.retrogradeStatusHeavy,
+          ]}>
+            <Text style={styles.retrogradeStatusIcon}>
+              {retrogradeCount === 0 ? '✨' : retrogradeCount <= 2 ? '⏪' : '🌀'}
+            </Text>
+            <Text style={styles.retrogradeStatusText}>
+              {retrogradeCount === 0 ? 'All Clear' : `${retrogradeCount} Retrograde${retrogradeCount > 1 ? 's' : ''}`}
+            </Text>
+          </View>
+          <Text style={styles.retrogradeMessage}>{message}</Text>
+        </View>
+
+        {/* Current Retrogrades */}
+        {currentRetrogrades.length > 0 && (
+          <View style={styles.retrogradeSection}>
+            <Text style={styles.retrogradeSectionLabel}>Currently Retrograde</Text>
+            {currentRetrogrades.map((retro) => (
+              <View key={retro.planet} style={styles.retrogradeItem}>
+                <View style={styles.retrogradeItemLeft}>
+                  <View style={[styles.retrogradeSymbolWrap, { backgroundColor: getRetroColor(retro.planet) + '20' }]}>
+                    <Text style={[styles.retrogradeSymbol, { color: getRetroColor(retro.planet) }]}>{retro.symbol}</Text>
+                  </View>
+                  <View style={styles.retrogradeItemInfo}>
+                    <Text style={styles.retrogradeItemName}>{retro.planet} ℞</Text>
+                    <Text style={styles.retrogradeItemSign}>in {retro.sign}</Text>
+                  </View>
+                </View>
+                {retro.endDate && (
+                  <View style={styles.retrogradeEndDate}>
+                    <Text style={styles.retrogradeEndLabel}>Goes Direct</Text>
+                    <Text style={styles.retrogradeEndValue}>
+                      {retro.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Upcoming Retrogrades */}
+        {upcomingRetrogrades.length > 0 && (
+          <View style={styles.retrogradeSection}>
+            <Text style={styles.retrogradeSectionLabel}>Upcoming</Text>
+            {upcomingRetrogrades.map((retro) => (
+              <View key={retro.planet} style={[styles.retrogradeItem, styles.retrogradeItemUpcoming]}>
+                <View style={styles.retrogradeItemLeft}>
+                  <View style={[styles.retrogradeSymbolWrap, styles.retrogradeSymbolUpcoming]}>
+                    <Text style={styles.retrogradeSymbolMuted}>{retro.symbol}</Text>
+                  </View>
+                  <View style={styles.retrogradeItemInfo}>
+                    <Text style={styles.retrogradeItemNameMuted}>{retro.planet}</Text>
+                    <Text style={styles.retrogradeItemSign}>will enter {retro.sign}</Text>
+                  </View>
+                </View>
+                {retro.stationDate && (
+                  <View style={styles.retrogradeEndDate}>
+                    <Text style={styles.retrogradeEndLabel}>Stations Rx</Text>
+                    <Text style={styles.retrogradeEndValue}>
+                      {retro.stationDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* No Retrogrades Message */}
+        {currentRetrogrades.length === 0 && upcomingRetrogrades.length === 0 && (
+          <View style={styles.noRetrogrades}>
+            <Text style={styles.noRetrogradesEmoji}>🚀</Text>
+            <Text style={styles.noRetrogradesText}>Clear skies ahead! All planets moving forward.</Text>
+          </View>
+        )}
+      </View>
+    </Animated.View>
+  );
+}
+
+function getRetroColor(planet: string): string {
+  const colors: Record<string, string> = {
+    Mercury: '#87CEEB',
+    Venus: '#DDA0DD',
+    Mars: '#CD5C5C',
+    Jupiter: '#7B68EE',
+    Saturn: '#5B5B7A',
+    Uranus: '#40E0D0',
+    Neptune: '#4169E1',
+    Pluto: '#8B0000',
+  };
+  return colors[planet] || '#888888';
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 
@@ -1182,6 +1427,9 @@ export default function ExploreTab() {
         bounces={true}
       >
         <ExploreHeader />
+        
+        {/* YOUR CHART SECTION */}
+        <Text style={styles.majorSectionHeader}>Your Chart</Text>
         <MyBirthChartSection />
 
         {/* Ask VEYa About Your Chart */}
@@ -1205,12 +1453,17 @@ export default function ExploreTab() {
           </LinearGradient>
         </Pressable>
 
+        {/* EXPLORE SECTION */}
+        <Text style={styles.majorSectionHeader}>Explore</Text>
         <CompatibilitySection onStart={() => setShowCompatibility(true)} />
         <TarotSection />
         <MoonTrackerSection />
         <TransitCalendarSection />
+        <PlanetaryHoursSection />
+        <RetrogradeTrackerSection />
 
         {/* Soul Connections Section */}
+        <Text style={styles.majorSectionHeader}>Connect</Text>
         <Animated.View entering={FadeInDown.duration(600).delay(1000)} style={styles.sectionContainer}>
           <Text style={styles.sectionLabel}>SOUL CONNECTIONS</Text>
           <Text style={styles.sectionTitle}>Your Cosmic Circle</Text>
@@ -1218,6 +1471,7 @@ export default function ExploreTab() {
         </Animated.View>
 
         {/* Cosmic Year Section */}
+        <Text style={styles.majorSectionHeader}>Plan Ahead</Text>
         <Animated.View entering={FadeInDown.duration(600).delay(1200)} style={styles.sectionContainer}>
           <Text style={styles.sectionLabel}>YOUR COSMIC YEAR</Text>
           <Text style={styles.sectionTitle}>2026 at a Glance</Text>
@@ -1225,6 +1479,7 @@ export default function ExploreTab() {
         </Animated.View>
 
         {/* Soundscapes Section */}
+        <Text style={styles.majorSectionHeader}>Relax</Text>
         <Animated.View entering={FadeInDown.duration(600).delay(1400)} style={styles.sectionContainer}>
           <SoundscapePlayer />
         </Animated.View>
@@ -1247,6 +1502,16 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: CONTENT_PADDING, paddingBottom: 120 },
+
+  // Major Section Headers
+  majorSectionHeader: {
+    fontFamily: typography.fonts.displaySemiBold,
+    fontSize: typography.sizes.heading2,
+    color: colors.textPrimary,
+    letterSpacing: 0.3,
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
+  },
 
   // Header
   headerContainer: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
@@ -1634,5 +1899,303 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: typography.fonts.body,
     color: 'rgba(255,255,255,0.75)',
+  },
+
+  // Planetary Hours
+  planetaryHoursCard: { padding: spacing.lg },
+  currentHourHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  currentHourIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  currentHourSymbol: {
+    fontSize: 28,
+    fontWeight: '600',
+  },
+  currentHourInfo: {
+    flex: 1,
+  },
+  currentHourLabel: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.tiny,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  currentHourPlanet: {
+    fontFamily: typography.fonts.displaySemiBold,
+    fontSize: typography.sizes.heading3,
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  currentHourTime: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.caption,
+    color: colors.textSecondary,
+  },
+  dayRulerBadge: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  dayRulerSymbol: {
+    fontSize: 20,
+    marginBottom: 2,
+  },
+  dayRulerLabel: {
+    fontFamily: typography.fonts.bodyMedium,
+    fontSize: typography.sizes.tiny,
+    color: colors.textMuted,
+  },
+  sunTimesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  sunTimeItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  sunTimeEmoji: {
+    fontSize: 18,
+    marginBottom: 2,
+  },
+  sunTimeLabel: {
+    fontFamily: typography.fonts.bodyMedium,
+    fontSize: typography.sizes.tiny,
+    color: colors.textMuted,
+    marginBottom: 2,
+  },
+  sunTimeValue: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.bodySmall,
+    color: colors.textPrimary,
+  },
+  sunTimeDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+  },
+  scheduleToggle: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  scheduleToggleText: {
+    fontFamily: typography.fonts.bodyMedium,
+    fontSize: typography.sizes.caption,
+    color: colors.primary,
+  },
+  fullScheduleContainer: {
+    marginBottom: spacing.md,
+  },
+  scheduleSection: {
+    marginBottom: spacing.md,
+  },
+  scheduleSectionLabel: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  scheduleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  scheduleItem: {
+    width: '23%',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
+    alignItems: 'center',
+  },
+  scheduleItemCurrent: {
+    backgroundColor: colors.primary + '15',
+    borderWidth: 1,
+    borderColor: colors.primary + '40',
+  },
+  scheduleSymbol: {
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  schedulePlanet: {
+    fontFamily: typography.fonts.bodyMedium,
+    fontSize: typography.sizes.tiny,
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  scheduleTime: {
+    fontFamily: typography.fonts.body,
+    fontSize: 9,
+    color: colors.textMuted,
+  },
+  planetaryGuide: {
+    backgroundColor: 'rgba(212, 165, 71, 0.08)',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+  },
+  planetaryGuideTitle: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.caption,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  planetaryGuideText: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.caption,
+    color: colors.textSecondary,
+    lineHeight: typography.sizes.caption * 1.5,
+  },
+
+  // Retrograde Tracker
+  retrogradeCard: { padding: spacing.lg },
+  retrogradeStatus: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  retrogradeStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    marginBottom: spacing.sm,
+  },
+  retrogradeStatusClear: {
+    backgroundColor: 'rgba(74, 157, 110, 0.15)',
+  },
+  retrogradeStatusModerate: {
+    backgroundColor: 'rgba(212, 148, 44, 0.15)',
+  },
+  retrogradeStatusHeavy: {
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+  },
+  retrogradeStatusIcon: {
+    fontSize: 16,
+    marginRight: spacing.xs,
+  },
+  retrogradeStatusText: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.bodySmall,
+    color: colors.textPrimary,
+  },
+  retrogradeMessage: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: typography.sizes.caption * 1.5,
+    paddingHorizontal: spacing.md,
+  },
+  retrogradeSection: {
+    marginBottom: spacing.md,
+  },
+  retrogradeSectionLabel: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.tiny,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
+  },
+  retrogradeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  retrogradeItemUpcoming: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    borderStyle: 'dashed',
+  },
+  retrogradeItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  retrogradeSymbolWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  retrogradeSymbolUpcoming: {
+    backgroundColor: 'rgba(0,0,0,0.04)',
+  },
+  retrogradeSymbol: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  retrogradeSymbolMuted: {
+    fontSize: 18,
+    color: colors.textMuted,
+  },
+  retrogradeItemInfo: {},
+  retrogradeItemName: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.body,
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  retrogradeItemNameMuted: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.body,
+    color: colors.textMuted,
+    marginBottom: 2,
+  },
+  retrogradeItemSign: {
+    fontFamily: typography.fonts.displayItalic,
+    fontSize: typography.sizes.caption,
+    color: colors.textSecondary,
+  },
+  retrogradeEndDate: {
+    alignItems: 'flex-end',
+  },
+  retrogradeEndLabel: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.tiny,
+    color: colors.textMuted,
+    marginBottom: 2,
+  },
+  retrogradeEndValue: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.caption,
+    color: colors.primary,
+  },
+  noRetrogrades: {
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+  },
+  noRetrogradesEmoji: {
+    fontSize: 32,
+    marginBottom: spacing.sm,
+  },
+  noRetrogradesText: {
+    fontFamily: typography.fonts.body,
+    fontSize: typography.sizes.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });

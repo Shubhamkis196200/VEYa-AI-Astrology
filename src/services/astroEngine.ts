@@ -600,3 +600,260 @@ export function formatMoonForPrompt(moon: MoonPhaseInfo): string {
     `Next New Moon: ${Math.round(moon.daysUntilNewMoon)} days`,
   ].join('\n');
 }
+
+// ---------------------------------------------------------------------------
+// Planetary Hours
+// ---------------------------------------------------------------------------
+
+export interface PlanetaryHour {
+  planet: string;
+  symbol: string;
+  color: string;
+  startTime: Date;
+  endTime: Date;
+  isCurrent: boolean;
+  hourNumber: number; // 1-24
+  isDay: boolean;
+}
+
+export interface PlanetaryHoursData {
+  currentHour: PlanetaryHour;
+  todayHours: PlanetaryHour[];
+  sunrise: Date;
+  sunset: Date;
+  dayRuler: string;
+  dayRulerSymbol: string;
+}
+
+// Chaldean order of planets for planetary hours
+const PLANETARY_HOUR_ORDER = [
+  { name: 'Saturn', symbol: '♄', color: '#5B5B7A' },
+  { name: 'Jupiter', symbol: '♃', color: '#7B68EE' },
+  { name: 'Mars', symbol: '♂', color: '#CD5C5C' },
+  { name: 'Sun', symbol: '☉', color: '#FFB347' },
+  { name: 'Venus', symbol: '♀', color: '#DDA0DD' },
+  { name: 'Mercury', symbol: '☿', color: '#87CEEB' },
+  { name: 'Moon', symbol: '☽', color: '#E8E8E8' },
+];
+
+// Day rulers (planetary day rulers, starting with Sunday)
+const DAY_RULERS = [
+  { name: 'Sun', symbol: '☉' },      // Sunday
+  { name: 'Moon', symbol: '☽' },     // Monday
+  { name: 'Mars', symbol: '♂' },     // Tuesday
+  { name: 'Mercury', symbol: '☿' },  // Wednesday
+  { name: 'Jupiter', symbol: '♃' },  // Thursday
+  { name: 'Venus', symbol: '♀' },    // Friday
+  { name: 'Saturn', symbol: '♄' },   // Saturday
+];
+
+/**
+ * Get planetary hours for a given date and location
+ * Uses astronomy-engine for accurate sunrise/sunset
+ */
+export function getPlanetaryHours(
+  date: Date = new Date(),
+  latitude: number = 40.7128, // Default: NYC
+  longitude: number = -74.0060
+): PlanetaryHoursData {
+  const time = Astronomy.MakeTime(date);
+  const observer: Astronomy.Observer = {
+    latitude,
+    longitude,
+    height: 0
+  };
+
+  // Get sunrise and sunset for today
+  const sunriseSearch = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, time, 1);
+  const sunsetSearch = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, time, 1);
+
+  // Fallback times if calculation fails (shouldn't happen at normal latitudes)
+  const sunrise = sunriseSearch?.date || new Date(date.setHours(6, 0, 0, 0));
+  const sunset = sunsetSearch?.date || new Date(date.setHours(18, 0, 0, 0));
+
+  // Get yesterday's sunset for night hours before today's sunrise
+  const yesterday = new Date(date.getTime() - 86400000);
+  const yesterdayTime = Astronomy.MakeTime(yesterday);
+  const yesterdaySunsetSearch = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, yesterdayTime, 1);
+  const yesterdaySunset = yesterdaySunsetSearch?.date || new Date(yesterday.setHours(18, 0, 0, 0));
+
+  // Get tomorrow's sunrise for night hours after today's sunset
+  const tomorrow = new Date(date.getTime() + 86400000);
+  const tomorrowTime = Astronomy.MakeTime(tomorrow);
+  const tomorrowSunriseSearch = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, tomorrowTime, 1);
+  const tomorrowSunrise = tomorrowSunriseSearch?.date || new Date(tomorrow.setHours(6, 0, 0, 0));
+
+  // Calculate day and night hour lengths
+  const dayLengthMs = sunset.getTime() - sunrise.getTime();
+  const nightLengthMs = tomorrowSunrise.getTime() - sunset.getTime();
+  const dayHourMs = dayLengthMs / 12;
+  const nightHourMs = nightLengthMs / 12;
+
+  // Get day of week (0 = Sunday)
+  const dayOfWeek = date.getDay();
+  const dayRuler = DAY_RULERS[dayOfWeek];
+
+  // Find starting index in Chaldean order for first day hour
+  const dayRulerIndex = PLANETARY_HOUR_ORDER.findIndex(p => p.name === dayRuler.name);
+
+  const hours: PlanetaryHour[] = [];
+  const now = date.getTime();
+
+  // Generate 12 day hours (starting from sunrise)
+  for (let i = 0; i < 12; i++) {
+    const planetIndex = (dayRulerIndex + i) % 7;
+    const planet = PLANETARY_HOUR_ORDER[planetIndex];
+    const startTime = new Date(sunrise.getTime() + i * dayHourMs);
+    const endTime = new Date(sunrise.getTime() + (i + 1) * dayHourMs);
+
+    hours.push({
+      planet: planet.name,
+      symbol: planet.symbol,
+      color: planet.color,
+      startTime,
+      endTime,
+      isCurrent: now >= startTime.getTime() && now < endTime.getTime(),
+      hourNumber: i + 1,
+      isDay: true,
+    });
+  }
+
+  // Generate 12 night hours (starting from sunset)
+  for (let i = 0; i < 12; i++) {
+    const planetIndex = (dayRulerIndex + 12 + i) % 7;
+    const planet = PLANETARY_HOUR_ORDER[planetIndex];
+    const startTime = new Date(sunset.getTime() + i * nightHourMs);
+    const endTime = new Date(sunset.getTime() + (i + 1) * nightHourMs);
+
+    hours.push({
+      planet: planet.name,
+      symbol: planet.symbol,
+      color: planet.color,
+      startTime,
+      endTime,
+      isCurrent: now >= startTime.getTime() && now < endTime.getTime(),
+      hourNumber: i + 13,
+      isDay: false,
+    });
+  }
+
+  // Find current hour
+  const currentHour = hours.find(h => h.isCurrent) || hours[0];
+
+  return {
+    currentHour,
+    todayHours: hours,
+    sunrise,
+    sunset,
+    dayRuler: dayRuler.name,
+    dayRulerSymbol: dayRuler.symbol,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Retrograde Tracker
+// ---------------------------------------------------------------------------
+
+export interface RetrogradeInfo {
+  planet: string;
+  symbol: string;
+  sign: string;
+  isRetrograde: boolean;
+  stationDate?: Date;
+  stationType?: 'retrograde' | 'direct';
+  endDate?: Date;
+  interpretation: string;
+}
+
+export interface RetrogradeData {
+  currentRetrogrades: RetrogradeInfo[];
+  upcomingRetrogrades: RetrogradeInfo[];
+  retrogradeCount: number;
+  message: string;
+}
+
+/**
+ * Get comprehensive retrograde information
+ */
+export function getRetrogradeData(date: Date = new Date()): RetrogradeData {
+  const planets = getCurrentTransits(date);
+  const currentRetrogrades: RetrogradeInfo[] = [];
+  const upcomingRetrogrades: RetrogradeInfo[] = [];
+
+  // Retrograde interpretations
+  const retroInterps: Record<string, string> = {
+    Mercury: 'Communication, travel, and technology require extra attention. Review contracts carefully.',
+    Venus: 'Love and relationships under review. Past connections may resurface.',
+    Mars: 'Energy may feel blocked. Avoid starting new physical projects.',
+    Jupiter: 'Inner growth over outer expansion. Reassess beliefs and goals.',
+    Saturn: 'Restructuring responsibilities. Old limitations surface for healing.',
+    Uranus: 'Internal revolution. Unexpected changes to your sense of freedom.',
+    Neptune: 'Spiritual introspection. Dreams and intuition intensify.',
+    Pluto: 'Deep psychological transformation. Hidden power dynamics revealed.',
+  };
+
+  // Check each planet (excluding Sun and Moon which don't retrograde)
+  for (const p of planets) {
+    if (p.name === 'Sun' || p.name === 'Moon') continue;
+
+    if (p.retrograde) {
+      // Find approximate end date by scanning forward
+      let endDate: Date | undefined;
+      for (let d = 1; d <= 120; d++) {
+        const futureDate = new Date(date.getTime() + d * 86400000);
+        const body = ASTRONOMY_BODIES.find(b => b.name === p.name)?.body;
+        if (body && !isRetrograde(body, futureDate)) {
+          endDate = futureDate;
+          break;
+        }
+      }
+
+      currentRetrogrades.push({
+        planet: p.name,
+        symbol: p.symbol,
+        sign: p.sign,
+        isRetrograde: true,
+        endDate,
+        interpretation: retroInterps[p.name] || 'A time for inner reflection.',
+      });
+    } else {
+      // Check if retrograde is coming in next 60 days
+      for (let d = 1; d <= 60; d++) {
+        const futureDate = new Date(date.getTime() + d * 86400000);
+        const body = ASTRONOMY_BODIES.find(b => b.name === p.name)?.body;
+        if (body && isRetrograde(body, futureDate)) {
+          upcomingRetrogrades.push({
+            planet: p.name,
+            symbol: p.symbol,
+            sign: getZodiacSign(getEclipticLongitude(body, futureDate)),
+            isRetrograde: false,
+            stationDate: futureDate,
+            stationType: 'retrograde',
+            interpretation: retroInterps[p.name] || 'Prepare for reflection period.',
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  // Generate summary message
+  let message = '';
+  if (currentRetrogrades.length === 0) {
+    message = 'No planets are retrograde. Clear skies for forward momentum!';
+  } else if (currentRetrogrades.length === 1) {
+    message = `${currentRetrogrades[0].planet} is retrograde. ${currentRetrogrades[0].interpretation.split('.')[0]}.`;
+  } else if (currentRetrogrades.length <= 3) {
+    const names = currentRetrogrades.map(r => r.planet).join(', ');
+    message = `${names} are retrograde. A time for review and reflection.`;
+  } else {
+    message = `${currentRetrogrades.length} planets retrograde. Major review period — patience is key.`;
+  }
+
+  return {
+    currentRetrogrades,
+    upcomingRetrogrades: upcomingRetrogrades.slice(0, 3),
+    retrogradeCount: currentRetrogrades.length,
+    message,
+  };
+}
