@@ -70,7 +70,6 @@ const colors = {
   cardShadow: 'rgba(139, 92, 246, 0.08)',
   switchTrack: '#E0D8CC',
   switchTrackActive: 'rgba(139, 92, 246, 0.3)',
-  white: '#FFFFFF',
 } as const;
 
 const typography = {

@@ -72,7 +72,6 @@ const colors = {
   premiumGold: '#C9A84C',
   cardBorder: 'rgba(212, 165, 71, 0.12)',
   cardShadow: 'rgba(139, 92, 246, 0.08)',
-  white: '#FFFFFF',
 } as const;
 
 const typography = {

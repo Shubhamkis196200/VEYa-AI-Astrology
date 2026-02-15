@@ -71,6 +71,10 @@ export const colors = {
   // Disabled states
   disabled: 'rgba(26, 26, 46, 0.3)',
   disabledBackground: '#F5F0E8',
+
+  // Utility
+  white: '#FFFFFF',
+  black: '#1A1A2E',
 } as const;
 
 // ─────────────────────────────────────────────────────────────
