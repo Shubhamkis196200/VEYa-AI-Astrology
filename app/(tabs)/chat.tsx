@@ -31,20 +31,25 @@ import {
 } from '../../src/services/voiceService';
 import type { Audio } from 'expo-av';
 import type { UserProfile } from '../../src/types';
+import { colors as themeColors } from '@/theme/colors';
+import { typography } from '@/theme/typography';
+import { spacing } from '@/theme/spacing';
+import { borderRadius } from '@/theme/borderRadius';
 
+// Extended colors using design system as base
 const COLORS = {
-  bg: '#FDFBF7',
-  primary: '#8B5CF6',
-  primaryLight: '#A78BFA',
-  gold: '#D4A547',
+  bg: themeColors.background,
+  primary: themeColors.primary,
+  primaryLight: themeColors.primaryLight,
+  gold: themeColors.accentGold,
   goldLight: 'rgba(212, 165, 71, 0.08)',
   goldBorder: 'rgba(212, 165, 71, 0.15)',
-  textPrimary: '#1A1A2E',
-  textSecondary: '#6B6B80',
-  textMuted: '#9B9BAD',
-  white: '#FFFFFF',
-  inputBg: '#F5F0E8',
-  border: 'rgba(0, 0, 0, 0.04)',
+  textPrimary: themeColors.textPrimary,
+  textSecondary: themeColors.textSecondary,
+  textMuted: themeColors.textMuted,
+  white: themeColors.white,
+  inputBg: themeColors.surface,
+  border: themeColors.border,
   aiBubbleBg: '#FFFDF8',
   aiBubbleBorder: 'rgba(212, 165, 71, 0.12)',
 };
