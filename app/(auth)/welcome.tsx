@@ -47,70 +47,45 @@ import Svg, {
   Line,
 } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
+import { 
+  colors as themeColors, 
+  typography as themeTypography, 
+  spacing as themeSpacing, 
+  borderRadius as themeBorderRadius,
+  shadows as themeShadows 
+} from '@/theme/design-system';
 
 // ─────────────────────────────────────────────────────────────
-// DESIGN TOKENS (from PHASE1-ARCHITECTURE.md Section 5)
+// DESIGN TOKENS (Extended from design-system.ts)
 // ─────────────────────────────────────────────────────────────
 
 const colors = {
-  background: '#FDFBF7',
-  surface: '#F5F0E8',
-  surfaceAlt: '#EDE7DB',
-  textPrimary: '#1A1A2E',
-  textSecondary: '#6B6B80',
-  textMuted: '#9B9BAD',
-  primary: '#8B5CF6',
-  primaryDark: '#7C3AED',
-  primaryLight: '#EDE9FE',
-  accentGold: '#D4A547',
-  accentGoldLight: '#FDF4E3',
-  accentRose: '#E8788A',
-  fire: '#E8664D',
-  earth: '#6B8E6B',
-  air: '#D4A547',
-  water: '#5B8DB8',
+  ...themeColors,
   overlay: 'rgba(26, 26, 46, 0.7)',
 } as const;
 
 const typography = {
-  fonts: {
-    display: 'PlayfairDisplay-Bold',
-    displaySemiBold: 'PlayfairDisplay-SemiBold',
-    displayRegular: 'PlayfairDisplay-Regular',
-    displayItalic: 'PlayfairDisplay-Italic',
-    body: 'Inter-Regular',
-    bodyMedium: 'Inter-Medium',
-    bodySemiBold: 'Inter-SemiBold',
-  },
+  fonts: themeTypography.fonts,
   sizes: {
-    display1: 34,
-    display2: 28,
+    display1: themeTypography.sizes.display1,
+    display2: themeTypography.sizes.display2,
     heading1: 26,
-    body: 16,
-    bodySmall: 14,
-    caption: 13,
-    tiny: 11,
+    body: themeTypography.sizes.body,
+    bodySmall: themeTypography.sizes.bodySmall,
+    caption: themeTypography.sizes.caption,
+    tiny: themeTypography.sizes.tiny,
   },
 } as const;
 
 const spacing = {
-  xs: 8,
-  sm: 12,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
+  ...themeSpacing,
   xxxl: 64,
 } as const;
 
-const borderRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  full: 9999,
-} as const;
+const borderRadius = themeBorderRadius;
 
 const shadows = {
+  ...themeShadows,
   subtle: {
     shadowColor: '#D4A547',
     shadowOffset: { width: 0, height: 2 },
