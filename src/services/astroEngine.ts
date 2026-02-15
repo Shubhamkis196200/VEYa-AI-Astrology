@@ -678,11 +678,12 @@ export function getPlanetaryHours(
   latitude: number = 40.7128, // Default: NYC
   longitude: number = -74.0060
 ): PlanetaryHoursData {
-  const time = Astronomy.MakeTime(date);
-  const observer: Astronomy.Observer = {
-    latitude,
-    longitude,
-    height: 0
+  try {
+    const time = Astronomy.MakeTime(date);
+    const observer: Astronomy.Observer = {
+      latitude,
+      longitude,
+      height: 0
   };
 
   // Get sunrise and sunset for today
@@ -770,6 +771,29 @@ export function getPlanetaryHours(
     dayRuler: dayRuler.name,
     dayRulerSymbol: dayRuler.symbol,
   };
+  } catch (error) {
+    console.warn('[AstroEngine] getPlanetaryHours failed:', error);
+    // Return safe fallback
+    const now = new Date();
+    const fallbackHour: PlanetaryHour = {
+      planet: 'Sun',
+      symbol: '☉',
+      color: '#F59E0B',
+      startTime: now,
+      endTime: new Date(now.getTime() + 3600000),
+      isCurrent: true,
+      hourNumber: 1,
+      isDay: true,
+    };
+    return {
+      currentHour: fallbackHour,
+      todayHours: [fallbackHour],
+      sunrise: new Date(now.setHours(6, 0, 0, 0)),
+      sunset: new Date(now.setHours(18, 0, 0, 0)),
+      dayRuler: 'Sun',
+      dayRulerSymbol: '☉',
+    };
+  }
 }
 
 // ---------------------------------------------------------------------------

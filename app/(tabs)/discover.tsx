@@ -1197,12 +1197,17 @@ function PlanetaryHoursSection() {
   const [showFullSchedule, setShowFullSchedule] = useState(false);
 
   useEffect(() => {
-    // Get planetary hours (default to NYC coordinates, could be user location)
-    const data = getPlanetaryHours(new Date());
-    setHoursData(data);
+    try {
+      // Get planetary hours (default to NYC coordinates, could be user location)
+      const data = getPlanetaryHours(new Date());
+      setHoursData(data);
+    } catch (e) {
+      console.warn('[PlanetaryHoursSection] Failed to get data:', e);
+    }
   }, []);
 
-  if (!hoursData) return null;
+  // Safety check - don't render if data is incomplete
+  if (!hoursData || !hoursData.currentHour) return null;
 
   const { currentHour, todayHours, sunrise, sunset, dayRuler, dayRulerSymbol } = hoursData;
   const dayHours = todayHours.filter(h => h.isDay);
