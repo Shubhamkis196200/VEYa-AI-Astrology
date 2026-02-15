@@ -204,7 +204,7 @@ export async function getAstrologyResponse(
       body: JSON.stringify({
         model: 'gpt-4o-mini', // Fast and current
         messages,
-        max_tokens: 150,
+        max_tokens: 100, // Shorter = cheaper TTS
         temperature: 0.9, // More creative/natural
       }),
     });
@@ -272,10 +272,11 @@ async function speakWithOpenAI(text: string): Promise<boolean> {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'tts-1-hd', // HD quality for better voice
-        voice: 'shimmer', // Most expressive, human-like female voice
+        model: 'tts-1', // Standard quality - good & 50% cheaper than HD
+        voice: 'nova', // Warm, natural female voice (best balance)
         input: text,
         response_format: 'mp3',
+        speed: 1.0,
       }),
     });
 
