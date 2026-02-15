@@ -297,6 +297,12 @@
             "About/Help links"
           ]
         }
+      },
+      "deployment": {
+        "commit": "79d9475bff4fbe1c5afbfdf264dfc9814be6c3ad",
+        "message": "Phase 6: Profile Tab",
+        "easUpdateId": "1592ddbc-e0f2-4715-99db-37558b9efc98",
+        "dashboard": "https://expo.dev/accounts/shubham987654/projects/veya-v4/updates/1592ddbc-e0f2-4715-99db-37558b9efc98"
       }
     }
   ],
