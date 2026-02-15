@@ -197,8 +197,6 @@ class SoundscapePlayer {
       // For now, create a placeholder that can be swapped for real assets
       // The UI will work, and sounds can be added as MP3s later
       this.isPlaying = true;
-      
-      console.log(`[Soundscape] Playing: ${soundscape.name} (${soundscape.frequency}Hz)`);
     } catch (error) {
       console.warn('[Soundscape] Failed to play:', error);
     }

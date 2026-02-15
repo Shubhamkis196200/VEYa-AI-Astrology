@@ -205,7 +205,6 @@ export async function generateWidgetData(sunSign: string): Promise<WidgetData> {
 export async function scheduleWidgetUpdates(): Promise<void> {
   // In production, this would use expo-task-manager to schedule
   // background updates every 6 hours
-  console.log('[Widget] Widget updates scheduled');
 }
 
 // ---------------------------------------------------------------------------
