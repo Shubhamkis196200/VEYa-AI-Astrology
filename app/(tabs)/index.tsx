@@ -9,7 +9,7 @@
  * - Visual feature cards with clear labels
  * - Quick actions grid for frequent tasks
  */
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import ViewShot from 'react-native-view-shot';
 import { Audio } from 'expo-av';
 import { router } from 'expo-router';
 import Animated, {
@@ -40,18 +39,13 @@ import { useReadingStore } from '@/stores/readingStore';
 import { useStreakStore } from '@/stores/streakStore';
 import type { ZodiacSign } from '@/types';
 import OneInsightCard from '@/components/home/OneInsightCard';
-import DailyBriefingCard from '@/components/home/DailyBriefingCard';
 // StreakCounter removed to avoid duplication
 import EnergyMeter from '@/components/home/EnergyMeter';
 import DoAndDontCard from '@/components/home/DoAndDontCard';
 import TransitHighlights from '@/components/home/TransitHighlights';
 import CosmicWeatherWidget from '@/components/home/CosmicWeatherWidget';
 import DailyAffirmation from '@/components/home/DailyAffirmation';
-import ShareableCard from '@/components/shared/ShareableCard';
 import VoiceInterface from '@/components/voice/VoiceInterface';
-import AstroStories from '@/components/stories/AstroStories';
-import { StoryViewer } from '@/components/stories/StoryViewer';
-import { shareReading, captureAndShare } from '@/services/shareService';
 import { getMoonPhase } from '@/services/astroEngine';
 // MomentCaptureButton rendered globally in app/_layout
 import { colors } from '@/theme/colors';
@@ -317,7 +311,6 @@ export default function TodayScreen() {
   const { currentStreak, isLoading: streakLoading, performCheckIn, loadStreak } = useStreakStore();
 
   const [showVoice, setShowVoice] = useState(false);
-  const shareRef = useRef<ViewShot | null>(null);
 
   const demoUserId = 'demo-user-001';
   const sunSign: ZodiacSign = (data?.sunSign as ZodiacSign) || 'Scorpio';
@@ -352,16 +345,6 @@ export default function TodayScreen() {
   const dateDisplay = useMemo(() => getDateDisplay(), []);
   const r = generatedReading;
 
-  const shareData = useMemo(() => (r ? shareReading(r, sunSign) : null), [r, sunSign]);
-
-  const handleShare = useCallback(async () => {
-    if (!shareData) return;
-    const success = await captureAndShare(shareRef);
-    if (!success) {
-      Alert.alert('Share failed', 'Unable to share this card right now. Please try again.');
-    }
-  }, [shareData]);
-
   const handleOpenVoice = useCallback(async () => {
     try {
       const { granted } = await Audio.requestPermissionsAsync();
@@ -379,25 +362,10 @@ export default function TodayScreen() {
     <View style={[styles.root, { paddingTop: insets.top + 12 }]}>
       <StatusBar style="dark" />
       
-      {/* Hidden share view */}
-      {shareData && (
-        <ViewShot ref={shareRef} style={styles.shareShot}>
-          <ShareableCard
-            title={shareData.title}
-            body={shareData.body}
-            signName={shareData.signName}
-            date={shareData.date}
-          />
-        </ViewShot>
-      )}
-
       {/* Voice Interface Modal */}
       <Modal visible={showVoice} animationType="slide" presentationStyle="fullScreen">
         <VoiceInterface onClose={() => setShowVoice(false)} />
       </Modal>
-
-      {/* Story Viewer Modal */}
-      <StoryViewer />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* ─────────────────────────────────────────────────────────── */}
@@ -466,11 +434,6 @@ export default function TodayScreen() {
           subtitle="Current planetary influences"
         />
         <CosmicWeatherWidget />
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* ASTRO STORIES — Instagram-style daily content */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        <AstroStories />
 
         {/* ─────────────────────────────────────────────────────────── */}
         {/* MOON PHASE BADGE */}
@@ -548,79 +511,6 @@ export default function TodayScreen() {
             </LinearGradient>
           </Pressable>
         </Animated.View>
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* DAILY BRIEFING */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        {r?.briefing && (
-          <>
-            <SectionHeader
-              icon="📜"
-              title="Daily Briefing"
-              subtitle="Your cosmic overview"
-              action={shareData ? { label: 'Share', onPress: handleShare } : undefined}
-            />
-            <DailyBriefingCard
-              briefing={r.briefing}
-              onShare={shareData ? handleShare : undefined}
-            />
-          </>
-        )}
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* LUCKY ELEMENTS */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        {r && (
-          <>
-            <SectionHeader
-              icon="🍀"
-              title="Lucky Elements"
-              subtitle="Fortune favors these today"
-            />
-            <View style={styles.card}>
-              <View style={styles.luckyGrid}>
-                <View style={styles.luckyItem}>
-                  <Text style={styles.luckyIcon}>🎨</Text>
-                  <Text style={styles.luckyLabel}>Color</Text>
-                  <Text style={styles.luckyValue}>{r.luckyColor}</Text>
-                </View>
-                <View style={styles.luckyItem}>
-                  <Text style={styles.luckyIcon}>🔢</Text>
-                  <Text style={styles.luckyLabel}>Number</Text>
-                  <Text style={styles.luckyValue}>{r.luckyNumber}</Text>
-                </View>
-                <View style={styles.luckyItem}>
-                  <Text style={styles.luckyIcon}>⏰</Text>
-                  <Text style={styles.luckyLabel}>Time</Text>
-                  <Text style={styles.luckyValue}>{r.luckyTime}</Text>
-                </View>
-              </View>
-            </View>
-          </>
-        )}
-
-        {/* ─────────────────────────────────────────────────────────── */}
-        {/* COSMIC ALLIES / COMPATIBILITY */}
-        {/* ─────────────────────────────────────────────────────────── */}
-        {r?.compatibility && (
-          <>
-            <SectionHeader
-              icon="💫"
-              title="Cosmic Allies"
-              subtitle="Best connections today"
-              action={{ label: 'Full compatibility', onPress: () => router.push('/(tabs)/discover') }}
-            />
-            <Pressable onPress={() => router.push('/(tabs)/discover')}>
-              <View style={styles.card}>
-                <Text style={styles.compatText}>Best match: <Text style={styles.compatSign}>{r.compatibility.best}</Text></Text>
-                <Text style={styles.compatText}>Rising connection: <Text style={styles.compatSign}>{r.compatibility.rising}</Text></Text>
-                <View style={styles.compatCta}>
-                  <Text style={styles.compatCtaText}>Check your compatibility →</Text>
-                </View>
-              </View>
-            </Pressable>
-          </>
-        )}
 
         {/* Bottom spacing */}
         <View style={{ height: 40 }} />

@@ -152,7 +152,7 @@ function WhatsHereSection() {
       <View style={[styles.card, styles.whatsHereCard]}>
         <Text style={styles.whatsHereTitle}>👤 Your Profile</Text>
         <Text style={styles.whatsHereDesc}>
-          This is your cosmic home — view your chart, track your stats, manage rituals, and customize your VEYa experience.
+          This is your cosmic home — view your chart, track your stats, reflect in your journal, and customize your VEYa experience.
         </Text>
         <View style={styles.whatsHereFeatures}>
           <View style={styles.whatsHereFeatureItem}>
@@ -164,8 +164,8 @@ function WhatsHereSection() {
             <Text style={styles.whatsHereFeatureLabel}>Chart</Text>
           </View>
           <View style={styles.whatsHereFeatureItem}>
-            <Text style={styles.whatsHereFeatureEmoji}>🌙</Text>
-            <Text style={styles.whatsHereFeatureLabel}>Rituals</Text>
+            <Text style={styles.whatsHereFeatureEmoji}>✍️</Text>
+            <Text style={styles.whatsHereFeatureLabel}>Journal</Text>
           </View>
           <View style={styles.whatsHereFeatureItem}>
             <Text style={styles.whatsHereFeatureEmoji}>⚙️</Text>

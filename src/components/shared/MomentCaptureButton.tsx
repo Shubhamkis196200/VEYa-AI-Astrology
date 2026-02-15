@@ -30,7 +30,6 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentTransits, getMoonPhase } from '@/services/astroEngine';
 import { colors } from '@/theme/colors';
@@ -91,6 +90,32 @@ export async function getMoments(): Promise<CapturedMoment[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Haptics (dynamic import for Expo Go safety)
+// ---------------------------------------------------------------------------
+
+async function triggerImpact(style: 'Light' | 'Medium' = 'Light') {
+  try {
+    const Haptics = await import('expo-haptics');
+    const impactStyle =
+      style === 'Light'
+        ? Haptics.ImpactFeedbackStyle.Light
+        : Haptics.ImpactFeedbackStyle.Medium;
+    await Haptics.impactAsync(impactStyle);
+  } catch {}
+}
+
+async function triggerNotification(type: 'Success' | 'Error' = 'Success') {
+  try {
+    const Haptics = await import('expo-haptics');
+    const notificationType =
+      type === 'Success'
+        ? Haptics.NotificationFeedbackType.Success
+        : Haptics.NotificationFeedbackType.Error;
+    await Haptics.notificationAsync(notificationType);
+  } catch {}
+}
+
+// ---------------------------------------------------------------------------
 // Emotion Options
 // ---------------------------------------------------------------------------
 
@@ -118,6 +143,18 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
   const [note, setNote] = useState('');
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Safe memoized moon phase - computed once, not in render
+  const [moonInfo, setMoonInfo] = useState({ moonSign: 'Calculating...', phaseName: 'Moon' });
+  
+  useEffect(() => {
+    try {
+      const phase = getMoonPhase();
+      setMoonInfo({ moonSign: phase.moonSign, phaseName: phase.phaseName });
+    } catch {
+      setMoonInfo({ moonSign: 'Moon', phaseName: '' });
+    }
+  }, [modalVisible]); // Refresh when modal opens
 
   // Floating button animation
   const pulse = useSharedValue(1);
@@ -158,7 +195,7 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
   }));
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerImpact('Medium');
     setModalVisible(true);
   };
 
@@ -166,7 +203,7 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
     if (!note.trim() && !selectedEmotion) return;
     
     setIsSaving(true);
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await triggerNotification('Success');
 
     try {
       const transits = getCurrentTransits();
@@ -262,7 +299,7 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
                     <Pressable
                       key={emotion.label}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        triggerImpact('Light');
                         setSelectedEmotion(emotion.emoji);
                       }}
                       style={[
@@ -296,7 +333,7 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
               <View style={styles.cosmicPreviewLight}>
                 <Text style={styles.cosmicPreviewLabelLight}>🌙 Current Cosmic Weather</Text>
                 <Text style={styles.cosmicPreviewTextLight}>
-                  Moon in {getMoonPhase().moonSign} · {getMoonPhase().phaseName}
+                  Moon in {moonInfo.moonSign} · {moonInfo.phaseName}
                 </Text>
               </View>
 

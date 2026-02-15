@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../src/lib/supabase';
 import { useUserStore } from '../src/stores/userStore';
+import { useOnboardingStore } from '../src/stores/onboardingStore';
 import { requestPermissions, scheduleMorningNotification } from '../src/services/notificationService';
 import AchievementToast from '../src/components/shared/AchievementToast';
 import MomentCaptureButton from '../src/components/shared/MomentCaptureButton';
@@ -64,6 +65,7 @@ class ErrorBoundary extends React.Component<
 
 export default function RootLayout() {
   const { setUser, setLoading } = useUserStore();
+  const { onboardingCompleted } = useOnboardingStore();
   const [appReady, setAppReady] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const router = useRouter();
@@ -178,7 +180,7 @@ export default function RootLayout() {
           {/* Global Achievement Toast */}
           <AchievementToast />
           {/* Global Moment Capture Button */}
-          <MomentCaptureButton />
+          {onboardingCompleted && <MomentCaptureButton />}
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
