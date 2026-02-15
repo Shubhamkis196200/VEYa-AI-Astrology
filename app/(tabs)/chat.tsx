@@ -369,7 +369,7 @@ export default function ChatScreen() {
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder={isVoiceRecording ? 'Listening...' : 'Ask the stars...'}
+            placeholder={isVoiceRecording ? 'Listening...' : 'Ask the cosmos...'}
             placeholderTextColor={COLORS.textMuted}
             onSubmitEditing={() => handleSend(input)}
             returnKeyType="send"
