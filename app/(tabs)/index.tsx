@@ -53,6 +53,7 @@ import AstroStories from '@/components/stories/AstroStories';
 import { StoryViewer } from '@/components/stories/StoryViewer';
 import { shareReading, captureAndShare } from '@/services/shareService';
 import { getMoonPhase } from '@/services/astroEngine';
+import MomentCaptureButton from '@/components/shared/MomentCaptureButton';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 import { borderRadius } from '@/theme/borderRadius';
@@ -636,6 +637,9 @@ export default function TodayScreen() {
         {/* Bottom spacing */}
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Floating Moment Capture Button */}
+      <MomentCaptureButton />
     </View>
   );
 }

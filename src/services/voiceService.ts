@@ -10,6 +10,15 @@ import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import * as FileSystem from 'expo-file-system';
 
+// Add type declaration for better compatibility
+declare module 'expo-file-system' {
+  export const cacheDirectory: string | null;
+  export enum EncodingType {
+    UTF8 = 'utf8',
+    Base64 = 'base64',
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------

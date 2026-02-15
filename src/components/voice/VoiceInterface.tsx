@@ -30,7 +30,6 @@ import {
   getAstrologyResponse,
   speakText,
   stopSpeaking,
-  testOpenAIConnection,
 } from '../../services/voiceService';
 import { useOnboardingStore } from '../../stores/onboardingStore';
 
@@ -85,7 +84,9 @@ export default function VoiceInterface({ onClose }: VoiceInterfaceProps) {
     sunSign: data?.sunSign,
     moonSign: data?.moonSign,
     risingSign: data?.risingSign,
-    birthDate: data?.birthDate,
+    birthDate: data?.birthDate instanceof Date 
+      ? data.birthDate.toISOString().split('T')[0] 
+      : (typeof data?.birthDate === 'string' ? data.birthDate : undefined),
   };
 
   // Animation values
