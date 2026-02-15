@@ -198,10 +198,7 @@ function ProfileHeader({ userName, sunSign, moonSign, risingSign }: ProfileHeade
   const zodiacEmoji = ZODIAC_EMOJIS[sunSign || ''] || '✨';
 
   useEffect(() => {
-    borderRotate.value = withRepeat(
-      withTiming(360, { duration: 30000, easing: Easing.linear }),
-      -1, false
-    );
+    borderRotate.value = withTiming(360, { duration: 12000, easing: Easing.linear });
     memoryCounterScale.value = withDelay(800, withSpring(1, { damping: 10, stiffness: 120, mass: 0.8 }));
   }, []);
 
@@ -377,12 +374,9 @@ function SubscriptionCard() {
   const shimmer = useSharedValue(0);
 
   useEffect(() => {
-    shimmer.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.sin) })
-      ),
-      -1, true
+    shimmer.value = withSequence(
+      withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
+      withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.sin) })
     );
   }, []);
 

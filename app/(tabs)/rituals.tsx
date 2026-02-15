@@ -3,7 +3,7 @@
  * Morning & evening rituals, cosmic journal, streak tracking, AI insights.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useContext, createContext } from 'react';
 import {
   View,
   Text,
@@ -25,7 +25,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withDelay,
-  withRepeat,
   withSequence,
   withSpring,
   interpolate,
@@ -102,10 +101,11 @@ const CONTENT_PADDING = spacing.lg;
 // MOCK DATA
 // ─────────────────────────────────────────────────────────────
 
-function getRealRitualContent() {
+function getRealRitualContent(
+  moon: ReturnType<typeof getMoonPhase>,
+  transits: ReturnType<typeof getCurrentTransits>,
+) {
   try {
-    const moon = getMoonPhase();
-    const transits = getCurrentTransits();
     const retrogrades = transits.filter(p => p.retrograde);
 
     const moonIntentions: Record<string, string> = {
@@ -156,44 +156,64 @@ function getRealRitualContent() {
   }
 }
 
-const REAL_RITUAL = getRealRitualContent();
+type RealRitualContent = ReturnType<typeof getRealRitualContent>;
 
-const MOCK = {
-  userName: 'Aria',
-  streakCount: 7,
-  streakDays: [true, true, true, true, true, true, false],
-  dayLabels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+type RitualMockData = ReturnType<typeof buildMockData>;
 
-  morningRitual: {
-    status: 'ready' as const,
-    intention: REAL_RITUAL.intention,
-    affirmation: REAL_RITUAL.affirmation,
-    energyForecast: REAL_RITUAL.energyForecast,
-    estimatedTime: '~2 min',
-  },
+function useRealRitualContent(): RealRitualContent {
+  const moon = useMemo(() => getMoonPhase(), []);
+  const transits = useMemo(() => getCurrentTransits(), []);
+  return useMemo(() => getRealRitualContent(moon, transits), [moon, transits]);
+}
 
-  eveningRitual: {
-    status: 'ready' as const,
-    availableAt: '7:00 PM',
-    reflectionPrompt: 'What moment today made you feel most alive?',
-    estimatedTime: '~2 min',
-  },
+function buildMockData(realRitual: RealRitualContent) {
+  return {
+    userName: 'Aria',
+    streakCount: 7,
+    streakDays: [true, true, true, true, true, true, false],
+    dayLabels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
 
-  journal: {
-    todaysPrompt: REAL_RITUAL.journalPrompt,
-    recentEntries: [
-      { id: '1', date: 'Feb 12', preview: 'Felt a deep pull toward journaling today. The Pisces energy is...', mood: '✨' },
-      { id: '2', date: 'Feb 11', preview: 'Had the most intense dream about water and old friends...', mood: '🌊' },
-      { id: '3', date: 'Feb 9', preview: 'Mars square Saturn hit hard. Frustrated at work but...', mood: '🔥' },
+    morningRitual: {
+      status: 'ready' as const,
+      intention: realRitual.intention,
+      affirmation: realRitual.affirmation,
+      energyForecast: realRitual.energyForecast,
+      estimatedTime: '~2 min',
+    },
+
+    eveningRitual: {
+      status: 'ready' as const,
+      availableAt: '7:00 PM',
+      reflectionPrompt: 'What moment today made you feel most alive?',
+      estimatedTime: '~2 min',
+    },
+
+    journal: {
+      todaysPrompt: realRitual.journalPrompt,
+      recentEntries: [
+        { id: '1', date: 'Feb 12', preview: 'Felt a deep pull toward journaling today. The Pisces energy is...', mood: '✨' },
+        { id: '2', date: 'Feb 11', preview: 'Had the most intense dream about water and old friends...', mood: '🌊' },
+        { id: '3', date: 'Feb 9', preview: 'Mars square Saturn hit hard. Frustrated at work but...', mood: '🔥' },
+      ],
+    },
+
+    insights: [
+      'You feel most creative during Pisces transits',
+      'Your energy dips during Mercury retrogrades',
+      'Journaling increases on Full Moon days by 3×',
     ],
-  },
+  };
+}
 
-  insights: [
-    'You feel most creative during Pisces transits',
-    'Your energy dips during Mercury retrogrades',
-    'Journaling increases on Full Moon days by 3×',
-  ],
-};
+const RitualMockContext = createContext<RitualMockData | null>(null);
+
+function useRitualMock(): RitualMockData {
+  const context = useContext(RitualMockContext);
+  if (!context) {
+    throw new Error('Ritual mock data is unavailable');
+  }
+  return context;
+}
 
 // ─────────────────────────────────────────────────────────────
 // HELPERS
@@ -335,13 +355,9 @@ function MorningRitualFlow() {
   const breathPulse = useSharedValue(1);
 
   useEffect(() => {
-    breathPulse.value = withRepeat(
-      withSequence(
-        withTiming(1.08, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
-        withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.sin) })
-      ),
-      -1,
-      true
+    breathPulse.value = withSequence(
+      withTiming(1.08, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+      withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.sin) })
     );
   }, []);
 
@@ -533,16 +549,13 @@ function MorningRitualFlow() {
 // ─────────────────────────────────────────────────────────────
 
 function PracticeHeader() {
+  const MOCK = useRitualMock();
   const flameScale = useSharedValue(1);
 
   useEffect(() => {
-    flameScale.value = withRepeat(
-      withSequence(
-        withTiming(1.15, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.sin) })
-      ),
-      -1,
-      true
+    flameScale.value = withSequence(
+      withTiming(1.15, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+      withTiming(1, { duration: 800, easing: Easing.inOut(Easing.sin) })
     );
   }, []);
 
@@ -588,6 +601,7 @@ function PracticeHeader() {
 // ─────────────────────────────────────────────────────────────
 
 function MorningRitualCard() {
+  const MOCK = useRitualMock();
   const pressScale = useSharedValue(1);
   const isComplete = MOCK.morningRitual.status === 'complete';
 
@@ -665,6 +679,7 @@ function MorningRitualCard() {
 // ─────────────────────────────────────────────────────────────
 
 function EveningRitualCard() {
+  const MOCK = useRitualMock();
   const pressScale = useSharedValue(1);
   const isLocked = MOCK.eveningRitual.status === 'locked';
   const isComplete = MOCK.eveningRitual.status === 'complete';
@@ -753,6 +768,7 @@ function EveningRitualCard() {
 // ─────────────────────────────────────────────────────────────
 
 function CosmicJournalSection({ onWrite }: { onWrite: () => void }) {
+  const MOCK = useRitualMock();
   const writeButtonScale = useSharedValue(1);
   const entries = useJournalStore((state) => state.entries);
 
@@ -835,13 +851,9 @@ function InsightsCard() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    shimmer.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.sin) })
-      ),
-      -1,
-      true
+    shimmer.value = withSequence(
+      withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
+      withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.sin) })
     );
   }, []);
 
@@ -935,24 +947,27 @@ function StardustParticle({ config }: { config: ParticleConfig }) {
   const opacity = useSharedValue(0);
 
   useEffect(() => {
-    translateX.value = withDelay(config.delay, withRepeat(
+    translateX.value = withDelay(
+      config.delay,
       withSequence(
         withTiming(config.driftX, { duration: config.duration, easing: Easing.inOut(Easing.sin) }),
         withTiming(-config.driftX * 0.6, { duration: config.duration * 0.8, easing: Easing.inOut(Easing.sin) })
-      ), -1, true
-    ));
-    translateY.value = withDelay(config.delay, withRepeat(
+      )
+    );
+    translateY.value = withDelay(
+      config.delay,
       withSequence(
         withTiming(config.driftY, { duration: config.duration * 1.1, easing: Easing.inOut(Easing.sin) }),
         withTiming(-config.driftY * 0.5, { duration: config.duration * 0.9, easing: Easing.inOut(Easing.sin) })
-      ), -1, true
-    ));
-    opacity.value = withDelay(config.delay, withRepeat(
+      )
+    );
+    opacity.value = withDelay(
+      config.delay,
       withSequence(
         withTiming(config.opacity, { duration: config.duration * 0.5, easing: Easing.inOut(Easing.ease) }),
         withTiming(config.opacity * 0.15, { duration: config.duration * 0.5, easing: Easing.inOut(Easing.ease) })
-      ), -1, true
-    ));
+      )
+    );
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -977,60 +992,68 @@ function StardustParticle({ config }: { config: ParticleConfig }) {
 
 export function RitualsContentSection() {
   const [journalVisible, setJournalVisible] = useState(false);
+  const realRitual = useRealRitualContent();
+  const mockData = useMemo(() => buildMockData(realRitual), [realRitual]);
 
   return (
-    <View style={styles.ritualsSection}>
-      <Text style={styles.ritualsSectionTitle}>Your Rituals</Text>
-      <MorningRitualFlow />
-      <PracticeHeader />
-      <MorningRitualCard />
-      <EveningRitualCard />
-      <CosmicJournalSection onWrite={() => setJournalVisible(true)} />
-      <InsightsCard />
-      <JournalModal 
-        visible={journalVisible} 
-        onClose={() => setJournalVisible(false)}
-        prompt={REAL_RITUAL.journalPrompt}
-      />
-    </View>
-  );
-}
-
-export default function RitualsScreen() {
-  const insets = useSafeAreaInsets();
-  const [journalVisible, setJournalVisible] = useState(false);
-
-  return (
-    <View style={styles.root}>
-      <StatusBar style="dark" />
-      <LinearGradient
-        colors={['#FDFBF7', '#F8F4EC', '#FDFBF7']}
-        locations={[0, 0.4, 1]}
-        style={StyleSheet.absoluteFillObject}
-      />
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-        {PARTICLES.map((p, i) => <StardustParticle key={i} config={p} />)}
-      </View>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.md }]}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-      >
+    <RitualMockContext.Provider value={mockData}>
+      <View style={styles.ritualsSection}>
+        <Text style={styles.ritualsSectionTitle}>Your Rituals</Text>
         <MorningRitualFlow />
         <PracticeHeader />
         <MorningRitualCard />
         <EveningRitualCard />
         <CosmicJournalSection onWrite={() => setJournalVisible(true)} />
         <InsightsCard />
-        <View style={{ height: 40 }} />
-      </ScrollView>
-      <JournalModal 
-        visible={journalVisible} 
-        onClose={() => setJournalVisible(false)}
-        prompt={REAL_RITUAL.journalPrompt}
-      />
-    </View>
+        <JournalModal 
+          visible={journalVisible} 
+          onClose={() => setJournalVisible(false)}
+          prompt={realRitual.journalPrompt}
+        />
+      </View>
+    </RitualMockContext.Provider>
+  );
+}
+
+export default function RitualsScreen() {
+  const insets = useSafeAreaInsets();
+  const [journalVisible, setJournalVisible] = useState(false);
+  const realRitual = useRealRitualContent();
+  const mockData = useMemo(() => buildMockData(realRitual), [realRitual]);
+
+  return (
+    <RitualMockContext.Provider value={mockData}>
+      <View style={styles.root}>
+        <StatusBar style="dark" />
+        <LinearGradient
+          colors={['#FDFBF7', '#F8F4EC', '#FDFBF7']}
+          locations={[0, 0.4, 1]}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+          {PARTICLES.map((p, i) => <StardustParticle key={i} config={p} />)}
+        </View>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.md }]}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
+          <MorningRitualFlow />
+          <PracticeHeader />
+          <MorningRitualCard />
+          <EveningRitualCard />
+          <CosmicJournalSection onWrite={() => setJournalVisible(true)} />
+          <InsightsCard />
+          <View style={{ height: 40 }} />
+        </ScrollView>
+        <JournalModal 
+          visible={journalVisible} 
+          onClose={() => setJournalVisible(false)}
+          prompt={realRitual.journalPrompt}
+        />
+      </View>
+    </RitualMockContext.Provider>
   );
 }
 

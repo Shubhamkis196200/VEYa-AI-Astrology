@@ -274,7 +274,7 @@ class TabsErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Loading VEYa...</Text>
+          <Text style={styles.errorTitle}>We hit a snag</Text>
           <Text style={styles.errorMessage}>
             If this keeps happening, tap to retry.
           </Text>

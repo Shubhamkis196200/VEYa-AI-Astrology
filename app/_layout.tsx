@@ -65,6 +65,7 @@ class ErrorBoundary extends React.Component<
 export default function RootLayout() {
   const { setUser, setLoading } = useUserStore();
   const [appReady, setAppReady] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const router = useRouter();
 
   const [fontsLoaded, fontError] = useFonts({
@@ -140,6 +141,7 @@ export default function RootLayout() {
         } else {
           setUser(null);
         }
+        setIsAuthLoading(false);
       }
     );
 
@@ -147,6 +149,7 @@ export default function RootLayout() {
       if (!session) {
         setUser(null);
       }
+      setIsAuthLoading(false);
     });
 
     return () => {
@@ -162,7 +165,7 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  if (!appReady) {
+  if (!appReady || isAuthLoading) {
     return null;
   }
 

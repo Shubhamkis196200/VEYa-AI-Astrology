@@ -317,16 +317,14 @@ export default function TodayScreen() {
   const { currentStreak, isLoading: streakLoading, performCheckIn, loadStreak } = useStreakStore();
 
   const [showVoice, setShowVoice] = useState(false);
-  const [currentMoon, setCurrentMoon] = useState<{ name: string; emoji: string } | null>(null);
   const shareRef = useRef<ViewShot | null>(null);
 
   const demoUserId = 'demo-user-001';
   const sunSign: ZodiacSign = (data?.sunSign as ZodiacSign) || 'Scorpio';
 
-  // Load moon phase
-  useEffect(() => {
+  const currentMoon = useMemo(() => {
     const moon = getMoonPhase(new Date());
-    setCurrentMoon({ name: moon.phaseName, emoji: moon.emoji });
+    return { name: moon.phaseName, emoji: moon.emoji };
   }, []);
 
   useEffect(() => {
