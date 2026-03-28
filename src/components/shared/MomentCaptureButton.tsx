@@ -32,6 +32,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentTransits, getMoonPhase } from '@/services/astroEngine';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
@@ -143,6 +144,9 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
   const [note, setNote] = useState('');
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const insets = useSafeAreaInsets();
+  // Position button above tab bar (tab bar ~62px) + safe area bottom + extra gap
+  const buttonBottom = 62 + insets.bottom + 16;
   
   // Safe memoized moon phase - computed once, not in render
   const [moonInfo, setMoonInfo] = useState({ moonSign: 'Calculating...', phaseName: 'Moon' });
@@ -250,7 +254,7 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
       {/* Floating Button */}
       <AnimatedPressable
         onPress={handlePress}
-        style={[styles.floatingButton, style, buttonStyle]}
+        style={[styles.floatingButton, { bottom: buttonBottom }, style, buttonStyle]}
       >
         {/* Glow effect */}
         <Animated.View style={[styles.buttonGlow, glowStyle]} />
@@ -372,12 +376,12 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
 const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
-    bottom: 160, // raised above tab bar (tab bar ~80-100px + safe area)
+    bottom: 140, // fallback — overridden dynamically with safe area
     right: 20,
     width: 60,
     height: 60,
     borderRadius: 30,
-    zIndex: 100, // lowered so it never covers tab bar touches
+    zIndex: 100,
   },
   buttonGlow: {
     position: 'absolute',
