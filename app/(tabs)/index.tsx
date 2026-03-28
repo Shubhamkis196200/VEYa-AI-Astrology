@@ -37,6 +37,7 @@ import Animated, {
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useReadingStore } from '@/stores/readingStore';
 import { useStreakStore } from '@/stores/streakStore';
+import { useUserStore } from '@/stores/userStore';
 import type { ZodiacSign } from '@/types';
 import OneInsightCard from '@/components/home/OneInsightCard';
 // StreakCounter removed to avoid duplication
@@ -309,10 +310,11 @@ export default function TodayScreen() {
   const { data } = useOnboardingStore();
   const { generatedReading, ensureGeneratedReading, isLoading: readingLoading } = useReadingStore();
   const { currentStreak, isLoading: streakLoading, performCheckIn, loadStreak } = useStreakStore();
+  const { user } = useUserStore();
 
   const [showVoice, setShowVoice] = useState(false);
 
-  const demoUserId = 'demo-user-001';
+  const userId = user?.user_id || 'demo-user-001';
   const sunSign: ZodiacSign = (data?.sunSign as ZodiacSign) || 'Scorpio';
 
   const currentMoon = useMemo(() => {
@@ -333,13 +335,13 @@ export default function TodayScreen() {
   useEffect(() => {
     (async () => {
       try {
-        await loadStreak(demoUserId);
-        await performCheckIn(demoUserId);
+        await loadStreak(userId);
+        await performCheckIn(userId);
       } catch {
         // Silent fail
       }
     })();
-  }, [loadStreak, performCheckIn]);
+  }, [loadStreak, performCheckIn, userId]);
 
   const greeting = useMemo(() => getGreeting(), []);
   const dateDisplay = useMemo(() => getDateDisplay(), []);

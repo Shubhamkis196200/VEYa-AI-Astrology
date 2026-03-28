@@ -298,8 +298,8 @@ export default function ChatScreen() {
           <View style={styles.emptyIconCircle}>
             <Text style={styles.emptyEmoji}>✨</Text>
           </View>
-          <Text style={styles.emptyTitle}>Ask VEYa Anything</Text>
-          <Text style={styles.emptySubtitle}>Your personal AI astrologer — ask about your stars, your path, your purpose</Text>
+          <Text style={styles.emptyTitle}>Ask VEYa Anything, {onboardingData?.name || 'Star Child'}</Text>
+          <Text style={styles.emptySubtitle}>Your personal AI astrologer — ask about your {sunSign ? `${sunSign} stars` : 'stars'}, your path, your purpose</Text>
           {sunSign && <View style={styles.signBadge}><Text style={styles.signBadgeText}>☉ {sunSign}</Text></View>}
           
           {/* Feature Discovery: How VEYa Can Help */}
