@@ -134,8 +134,14 @@ export default function RootLayout() {
 
   // Listen for auth state changes
   useEffect(() => {
+    // Offline safety net: if auth doesn't resolve in 8s, proceed without user
+    const authTimeout = setTimeout(() => {
+      setIsAuthLoading(false);
+    }, 8000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        clearTimeout(authTimeout);
         if (session?.user) {
           const { data: profile } = await supabase
             .from('user_profiles')
@@ -151,6 +157,7 @@ export default function RootLayout() {
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(authTimeout);
       if (!session) {
         setUser(null);
       }
@@ -158,6 +165,7 @@ export default function RootLayout() {
     });
 
     return () => {
+      clearTimeout(authTimeout);
       subscription.unsubscribe();
     };
   }, []);

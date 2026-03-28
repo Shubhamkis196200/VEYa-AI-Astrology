@@ -1,5 +1,5 @@
 // ============================================================================
-// DATABASE TYPES (matches Supabase schema)
+// DATABASE TYPES (matches Supabase schema — new project: ennlryjggdoljgbqhttb)
 // ============================================================================
 
 export interface Database {
@@ -25,7 +25,7 @@ export interface Database {
       };
       ai_conversations: {
         Row: AIConversation;
-        Insert: Omit<AIConversation, 'id' | 'created_at'> & { id?: string; created_at?: string };
+        Insert: Omit<AIConversation, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Omit<AIConversation, 'id'>>;
         Relationships: [];
       };
@@ -51,6 +51,18 @@ export interface Database {
         Row: Subscription;
         Insert: Omit<Subscription, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Omit<Subscription, 'id'>>;
+        Relationships: [];
+      };
+      journal_entries: {
+        Row: JournalEntry;
+        Insert: Omit<JournalEntry, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<JournalEntry, 'id'>>;
+        Relationships: [];
+      };
+      daily_horoscope_cache: {
+        Row: DailyHoroscopeCache;
+        Insert: Omit<DailyHoroscopeCache, 'id' | 'created_at'> & { id?: string; created_at?: string };
+        Update: Partial<Omit<DailyHoroscopeCache, 'id'>>;
         Relationships: [];
       };
     };
@@ -84,7 +96,7 @@ export interface Database {
 export interface UserProfile {
   id: string;
   user_id: string;
-  display_name: string;
+  display_name: string | null;
   email: string | null;
   avatar_url: string | null;
   birth_date: string | null;
@@ -138,53 +150,16 @@ export interface HousePlacement {
 export interface BirthChart {
   id: string;
   user_id: string;
-  house_system: 'placidus' | 'whole_sign' | 'koch' | 'equal';
+  house_system: string;
   sun_sign: string | null;
-  sun_degree: number | null;
   moon_sign: string | null;
-  moon_degree: number | null;
   rising_sign: string | null;
-  rising_degree: number | null;
-  mercury_sign: string | null;
-  mercury_degree: number | null;
-  venus_sign: string | null;
-  venus_degree: number | null;
-  mars_sign: string | null;
-  mars_degree: number | null;
-  jupiter_sign: string | null;
-  jupiter_degree: number | null;
-  saturn_sign: string | null;
-  saturn_degree: number | null;
-  uranus_sign: string | null;
-  uranus_degree: number | null;
-  neptune_sign: string | null;
-  neptune_degree: number | null;
-  pluto_sign: string | null;
-  pluto_degree: number | null;
-  north_node_sign: string | null;
-  north_node_degree: number | null;
-  chiron_sign: string | null;
-  chiron_degree: number | null;
-  house_cusps: Record<string, unknown> | null;
-  aspects: Record<string, unknown> | null;
-  chart_svg: string | null;
   chart_data: Record<string, unknown> | null;
+  planets: Record<string, unknown> | null;
+  houses: Record<string, unknown> | null;
+  aspects: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
-  // Virtual fields for backward compat with services
-  planets?: {
-    sun: PlanetPlacement;
-    moon: PlanetPlacement;
-    mercury: PlanetPlacement;
-    venus: PlanetPlacement;
-    mars: PlanetPlacement;
-    jupiter: PlanetPlacement;
-    saturn: PlanetPlacement;
-    uranus: PlanetPlacement;
-    neptune: PlanetPlacement;
-    pluto: PlanetPlacement;
-  } | null;
-  houses?: HousePlacement[] | null;
 }
 
 // ============================================================================
@@ -196,18 +171,18 @@ export interface DailyReading {
   user_id: string;
   reading_date: string;
   sun_sign: string | null;
+  reading_text: string | null;
   energy_level: number | null;
   energy_summary: string | null;
-  reading_text: string | null;
   do_guidance: string | null;
   dont_guidance: string | null;
   transit_highlights: Record<string, unknown>[] | null;
-  focus_areas: Record<string, unknown> | null;
-  share_card_url: string | null;
-  mood: string | null;
   lucky_number: number | null;
   lucky_color: string | null;
+  mood: string | null;
   affirmation: string | null;
+  focus_areas: string[] | null;
+  share_card_url: string | null;
   created_at: string;
 }
 
@@ -225,11 +200,9 @@ export interface AIConversation {
   id: string;
   user_id: string;
   session_id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  tokens_used: number | null;
-  model: string | null;
+  messages: Record<string, unknown>[] | null;
   created_at: string;
+  updated_at: string;
 }
 
 // ============================================================================
@@ -254,13 +227,12 @@ export interface Ritual {
   id: string;
   user_id: string;
   ritual_type: 'morning' | 'evening' | 'custom';
-  title: string;
-  description: string | null;
-  steps: Record<string, unknown> | null;
-  duration_minutes: number;
-  is_active: boolean;
-  completed_today: boolean;
-  last_completed_at: string | null;
+  ritual_date: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  duration_sec: number | null;
+  notes: string | null;
+  data: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -272,11 +244,10 @@ export interface Ritual {
 export interface Streak {
   id: string;
   user_id: string;
-  streak_type: string;
   current_streak: number;
   longest_streak: number;
   last_check_in: string | null;
-  total_check_ins: number;
+  total_days: number;
   created_at: string;
   updated_at: string;
 }
@@ -288,16 +259,41 @@ export interface Streak {
 export interface Subscription {
   id: string;
   user_id: string;
-  plan: 'free' | 'premium' | 'lifetime';
-  status: 'active' | 'cancelled' | 'expired' | 'trial';
-  provider: 'stripe' | 'apple' | 'google' | 'manual' | null;
-  provider_subscription_id: string | null;
-  trial_ends_at: string | null;
-  current_period_start: string | null;
+  plan: 'free' | 'premium' | 'pro';
+  status: 'active' | 'cancelled' | 'expired' | 'trialing';
   current_period_end: string | null;
-  cancelled_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// ============================================================================
+// JOURNAL ENTRY TYPES
+// ============================================================================
+
+export interface JournalEntry {
+  id: string;
+  user_id: string;
+  content: string;
+  mood: string | null;
+  moon_phase: string | null;
+  sun_sign: string | null;
+  ai_insights: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// DAILY HOROSCOPE CACHE TYPES
+// ============================================================================
+
+export interface DailyHoroscopeCache {
+  id: string;
+  sign: string;
+  date: string;
+  content: string | null;
+  energy: number | null;
+  theme: string | null;
+  created_at: string;
 }
 
 // ============================================================================
@@ -312,6 +308,8 @@ export interface OnboardingData {
   birthTimePrecision: 'exact' | 'approximate' | 'unknown';
   birthTimeRange?: 'morning' | 'afternoon' | 'evening' | 'night';
   sunSign?: string;
+  moonSign?: string;
+  risingSign?: string;
   birthPlace: string;
   birthLat: number | null;
   birthLng: number | null;
@@ -350,7 +348,7 @@ export interface CalculateChartResponse {
   sun_sign: string;
   moon_sign: string;
   rising_sign: string | null;
-  planets: BirthChart['planets'];
+  planets: Record<string, unknown> | null;
   houses: HousePlacement[] | null;
   aspects: ChartAspect[];
 }

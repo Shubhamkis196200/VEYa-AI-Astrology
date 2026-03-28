@@ -48,6 +48,8 @@ interface ConversationMessage {
 
 interface VoiceInterfaceProps {
   onClose: () => void;
+  onTranscript?: (text: string) => void;
+  responseText?: string | null;
 }
 
 // ---------------------------------------------------------------------------

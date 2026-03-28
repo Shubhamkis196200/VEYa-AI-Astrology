@@ -170,8 +170,10 @@ export const useReadingStore = create<ReadingStore>()(
           const errorMessage =
             err instanceof Error ? err.message : 'Failed to fetch reading';
           console.error('[ReadingStore] fetchTodayReading error:', errorMessage);
+          // Persist the offline generated reading locally so the UI never goes blank
+          const { generatedReading } = get();
           set({ isLoading: false, error: errorMessage });
-          return null;
+          return (generatedReading as unknown as DailyReading) ?? null;
         }
       },
 
@@ -179,7 +181,7 @@ export const useReadingStore = create<ReadingStore>()(
         set({
           todayReading: reading,
           error: null,
-          lastFetchDate: reading?.date || null,
+          lastFetchDate: reading?.reading_date || null,
         }),
 
       setLoading: (loading) => set({ isLoading: loading }),
