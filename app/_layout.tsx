@@ -71,7 +71,12 @@ export default function RootLayout() {
   const router = useRouter();
   const pathname = usePathname();
   // Hide MomentCaptureButton on Today tab to avoid duplicate with the "Talk to VEYa" CTA
-  const isOnTodayTab = pathname === '/' || pathname === '' || pathname === '/(tabs)' || pathname === '/(tabs)/index';
+  const isOnTodayTab = !pathname ||
+    pathname === '/' ||
+    pathname === '' ||
+    pathname === '/(tabs)' ||
+    pathname.endsWith('/index') ||
+    pathname === '/(tabs)/index';
 
   const [fontsLoaded, fontError] = useFonts({
     'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),

@@ -70,7 +70,7 @@ function AnimatedTabIcon({ focused, children, label }: AnimatedTabIconProps) {
   }));
 
   return (
-    <Animated.View style={[styles.tabIconContainer, containerStyle]}>
+    <Animated.View style={[styles.tabIconContainer, containerStyle]} pointerEvents="none">
       <Animated.View style={[styles.tabIconBg, bgStyle]} />
       <View style={styles.tabIconInner}>
         {children}
@@ -356,12 +356,14 @@ export default function TabLayout() {
                 shadowRadius: 12,
               },
               android: {
-                elevation: 8,
+                elevation: 4,
               },
             }),
           },
+          tabBarHideOnKeyboard: true,
           tabBarItemStyle: {
-            paddingVertical: 4,
+            paddingVertical: 2,
+            height: 60,
           },
           tabBarLabelStyle: {
             fontFamily: 'Inter-SemiBold',

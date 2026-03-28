@@ -19,15 +19,15 @@ import {
   ActivityIndicator,
   Pressable,
   Modal,
-  Alert,
   Dimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
 import { router } from 'expo-router';
+import AstroStories from '@/components/stories/AstroStories';
+import { StoryViewer } from '@/components/stories/StoryViewer';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -345,17 +345,8 @@ export default function TodayScreen() {
   const dateDisplay = useMemo(() => getDateDisplay(), []);
   const r = generatedReading;
 
-  const handleOpenVoice = useCallback(async () => {
-    try {
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) {
-        Alert.alert('Mic needed', 'Please enable microphone access');
-        return;
-      }
-      setShowVoice(true);
-    } catch {
-      Alert.alert('Mic needed', 'Please enable microphone access');
-    }
+  const handleOpenVoice = useCallback(() => {
+    setShowVoice(true);
   }, []);
 
   return (
@@ -363,7 +354,7 @@ export default function TodayScreen() {
       <StatusBar style="dark" />
       
       {/* Voice Interface Modal */}
-      <Modal visible={showVoice} animationType="slide" presentationStyle="fullScreen">
+      <Modal visible={showVoice} animationType="slide" presentationStyle="fullScreen" transparent={false}>
         <VoiceInterface onClose={() => setShowVoice(false)} />
       </Modal>
 
@@ -375,6 +366,11 @@ export default function TodayScreen() {
           <Text style={styles.greeting}>{greeting}, {data?.name || 'Star Child'} ☉</Text>
           <Text style={styles.subtitle}>{dateDisplay} · {sunSign}</Text>
         </Animated.View>
+
+        {/* ─────────────────────────────────────────────────────────── */}
+        {/* COSMIC STORIES */}
+        {/* ─────────────────────────────────────────────────────────── */}
+        <AstroStories />
 
         {/* ─────────────────────────────────────────────────────────── */}
         {/* TODAY'S INSIGHT SECTION */}
@@ -517,6 +513,7 @@ export default function TodayScreen() {
       </ScrollView>
 
       {/* Moment capture button is rendered globally */}
+      <StoryViewer />
     </View>
   );
 }
