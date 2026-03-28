@@ -37,9 +37,7 @@
       "expo-web-browser"
     ],
     "owner": "shubham987654",
-    "runtimeVersion": {
-      "policy": "sdkVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "extra": {
       "router": {},
       "eas": {
