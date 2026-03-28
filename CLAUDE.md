@@ -265,7 +265,7 @@ Welcome → Name → Birth Date → Birth Time → Birth Place
 
 ```bash
 # .env.local
-EXPO_PUBLIC_SUPABASE_URL=https://fdivwigdptmrrabpwfyi.supabase.co
+EXPO_PUBLIC_SUPABASE_URL=https://ennlryjggdoljgbqhttb.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=***
 EXPO_PUBLIC_OPENAI_API_KEY=***
 ```
