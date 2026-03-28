@@ -1076,6 +1076,12 @@ function TransitCalendarSection() {
 
   // Load events asynchronously to avoid blocking main thread
   useEffect(() => {
+    // 5-second hard timeout so loading never gets stuck
+    const timeout = setTimeout(() => {
+      setMonthEvents([]);
+      setIsLoading(false);
+    }, 5000);
+
     const loadEvents = async () => {
       try {
         // Use setTimeout to defer heavy computation
@@ -1086,10 +1092,12 @@ function TransitCalendarSection() {
         console.warn('[TransitCalendar] Failed to load events:', e);
         setMonthEvents([]);
       } finally {
+        clearTimeout(timeout);
         setIsLoading(false);
       }
     };
     loadEvents();
+    return () => clearTimeout(timeout);
   }, [year, month]);
 
   // Build event map: day → events
@@ -1345,6 +1353,17 @@ function RetrogradeTrackerSection() {
 
   // Load retrograde data asynchronously to avoid blocking main thread
   useEffect(() => {
+    // 5-second hard timeout so loading never gets stuck
+    const timeout = setTimeout(() => {
+      setRetroData({
+        currentRetrogrades: [],
+        upcomingRetrogrades: [],
+        retrogradeCount: 0,
+        message: 'Data unavailable',
+      });
+      setIsLoading(false);
+    }, 5000);
+
     const loadData = async () => {
       try {
         // Use setTimeout to defer heavy computation
@@ -1360,10 +1379,12 @@ function RetrogradeTrackerSection() {
           message: 'Data unavailable',
         });
       } finally {
+        clearTimeout(timeout);
         setIsLoading(false);
       }
     };
     loadData();
+    return () => clearTimeout(timeout);
   }, []);
 
   if (isLoading) {

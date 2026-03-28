@@ -1,6 +1,6 @@
 import '../src/i18n';
 import React, { useEffect, useState } from 'react';
-import { Slot, SplashScreen, useRouter } from 'expo-router';
+import { Slot, SplashScreen, useRouter, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -69,6 +69,9 @@ export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
+  // Hide MomentCaptureButton on Today tab to avoid duplicate with the "Talk to VEYa" CTA
+  const isOnTodayTab = pathname === '/' || pathname === '' || pathname === '/(tabs)' || pathname === '/(tabs)/index';
 
   const [fontsLoaded, fontError] = useFonts({
     'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),
@@ -179,8 +182,8 @@ export default function RootLayout() {
           <Slot />
           {/* Global Achievement Toast */}
           <AchievementToast />
-          {/* Global Moment Capture Button */}
-          {onboardingCompleted && <MomentCaptureButton />}
+          {/* Global Moment Capture Button — hidden on Today tab (has its own voice CTA) */}
+          {onboardingCompleted && !isOnTodayTab && <MomentCaptureButton />}
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
