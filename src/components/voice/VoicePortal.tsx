@@ -59,8 +59,6 @@ export default function VoicePortal({ userProfile }: VoicePortalProps) {
           toggleVoiceMode(false);
           setVoiceResponse(null);
         }}
-        onTranscript={handleSend}
-        responseText={voiceResponse}
       />
     </Modal>
   );

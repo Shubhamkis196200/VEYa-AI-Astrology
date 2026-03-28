@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, Dimensions, type DimensionValue } from 'react-native';
 import Animated, { 
   FadeIn, 
   FadeOut, 
@@ -112,7 +112,7 @@ export function InlineLoader({ color = colors.accentGold }: { color?: string }) 
   const dot3 = useSharedValue(0);
 
   React.useEffect(() => {
-    const animate = (dot: Animated.SharedValue<number>, delay: number) => {
+    const animate = (dot: ReturnType<typeof useSharedValue<number>>, delay: number) => {
       dot.value = withRepeat(
         withSequence(
           withTiming(0, { duration: delay }),
@@ -128,7 +128,7 @@ export function InlineLoader({ color = colors.accentGold }: { color?: string }) 
     animate(dot3, 300);
   }, []);
 
-  const dotStyle = (dot: Animated.SharedValue<number>) => useAnimatedStyle(() => ({
+  const dotStyle = (dot: ReturnType<typeof useSharedValue<number>>) => useAnimatedStyle(() => ({
     transform: [{ translateY: interpolate(dot.value, [0, 1], [0, -6]) }],
     opacity: interpolate(dot.value, [0, 1], [0.5, 1]),
   }));
@@ -146,13 +146,13 @@ export function InlineLoader({ color = colors.accentGold }: { color?: string }) 
 // SKELETON LOADERS
 // ─────────────────────────────────────────────────────────────
 
-export function SkeletonBox({ 
-  width = '100%', 
-  height = 20, 
-  borderRadiusValue = borderRadius.sm 
-}: { 
-  width?: number | string; 
-  height?: number; 
+export function SkeletonBox({
+  width = '100%',
+  height = 20,
+  borderRadiusValue = borderRadius.sm
+}: {
+  width?: DimensionValue;
+  height?: number;
   borderRadiusValue?: number;
 }) {
   const shimmer = useSharedValue(0);
@@ -170,7 +170,7 @@ export function SkeletonBox({
   }));
 
   return (
-    <View style={[styles.skeletonBox, { width, height, borderRadius: borderRadiusValue }]}>
+    <View style={[styles.skeletonBox, { width: width as DimensionValue, height, borderRadius: borderRadiusValue }]}>
       <Animated.View style={[styles.shimmerOverlay, shimmerStyle]}>
         <LinearGradient
           colors={['transparent', 'rgba(255, 255, 255, 0.4)', 'transparent']}

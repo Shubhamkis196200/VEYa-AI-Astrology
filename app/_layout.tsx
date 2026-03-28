@@ -196,8 +196,8 @@ export default function RootLayout() {
           <Slot />
           {/* Global Achievement Toast */}
           <AchievementToast />
-          {/* Global Moment Capture Button — hidden on Today tab (has its own voice CTA) */}
-          {onboardingCompleted && !isOnTodayTab && <MomentCaptureButton />}
+          {/* Global Moment Capture Button — shown on all tabs */}
+          {onboardingCompleted && <MomentCaptureButton />}
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

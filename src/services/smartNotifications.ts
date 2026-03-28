@@ -57,6 +57,8 @@ export async function setupNotifications(): Promise<boolean> {
       shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
     }),
   });
 
@@ -244,6 +246,7 @@ export async function scheduleCosmicNotifications(
           sound: true,
         },
         trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
           date: notification.triggerDate,
           channelId: Platform.OS === 'android' ? 'veya-cosmic' : undefined,
         },

@@ -201,7 +201,7 @@ function buildMockData(realRitual: RealRitualContent) {
     dayLabels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
 
     morningRitual: {
-      status: 'ready' as const,
+      status: 'ready' as 'ready' | 'complete' | 'locked',
       intention: realRitual.intention,
       affirmation: realRitual.affirmation,
       energyForecast: realRitual.energyForecast,
@@ -209,7 +209,7 @@ function buildMockData(realRitual: RealRitualContent) {
     },
 
     eveningRitual: {
-      status: 'ready' as const,
+      status: 'ready' as 'ready' | 'complete' | 'locked',
       availableAt: '7:00 PM',
       reflectionPrompt: 'What moment today made you feel most alive?',
       estimatedTime: '~2 min',

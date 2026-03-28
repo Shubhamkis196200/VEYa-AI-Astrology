@@ -633,7 +633,7 @@ function ShimmerOverlay() {
 function BurstParticle({
   angle, distance, size, burstProgress,
 }: {
-  angle: number; distance: number; size: number; burstProgress: Animated.SharedValue<number>;
+  angle: number; distance: number; size: number; burstProgress: ReturnType<typeof useSharedValue<number>>;
 }) {
   const particleStyle = useAnimatedStyle(() => {
     const progress = burstProgress.value;

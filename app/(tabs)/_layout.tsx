@@ -48,34 +48,15 @@ interface AnimatedTabIconProps {
 }
 
 function AnimatedTabIcon({ focused, children, label }: AnimatedTabIconProps) {
-  const scale = useSharedValue(focused ? 1 : 0.9);
-  const translateY = useSharedValue(focused ? -2 : 0);
-  const bgOpacity = useSharedValue(focused ? 1 : 0);
-
-  useEffect(() => {
-    scale.value = withSpring(focused ? 1.05 : 1, { damping: 12, stiffness: 200 });
-    translateY.value = withSpring(focused ? -2 : 0, { damping: 12, stiffness: 200 });
-    bgOpacity.value = withTiming(focused ? 1 : 0, { duration: 200, easing: Easing.out(Easing.ease) });
-  }, [focused]);
-
-  const containerStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { translateY: translateY.value },
-    ],
-  }));
-
-  const bgStyle = useAnimatedStyle(() => ({
-    opacity: bgOpacity.value,
-  }));
-
+  // NOTE: Using plain View (no Reanimated) — animations were intercepting
+  // touch events on Android causing 10-20 taps needed to switch tabs.
   return (
-    <Animated.View style={[styles.tabIconContainer, containerStyle]} pointerEvents="none">
-      <Animated.View style={[styles.tabIconBg, bgStyle]} />
+    <View pointerEvents="none" style={styles.tabIconContainer}>
+      {focused && <View style={styles.tabIconBg} />}
       <View style={styles.tabIconInner}>
         {children}
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -246,29 +227,15 @@ function YouIcon({ color, focused }: { color: string; focused: boolean }) {
 // ─────────────────────────────────────────────────────────────
 
 function TabLabel({ label, focused }: { label: string; focused: boolean }) {
-  const opacity = useSharedValue(focused ? 1 : 0.7);
-  const scale = useSharedValue(focused ? 1 : 0.95);
-
-  useEffect(() => {
-    opacity.value = withTiming(focused ? 1 : 0.7, { duration: 200 });
-    scale.value = withSpring(focused ? 1 : 0.95, { damping: 15, stiffness: 200 });
-  }, [focused]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ scale: scale.value }],
-  }));
-
   return (
-    <Animated.Text 
+    <Text
       style={[
-        styles.tabLabel, 
+        styles.tabLabel,
         { color: focused ? colors.primary : colors.textMuted },
-        style
       ]}
     >
       {label}
-    </Animated.Text>
+    </Text>
   );
 }
 

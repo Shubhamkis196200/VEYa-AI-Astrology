@@ -434,10 +434,11 @@ function FullChartModal({ visible, onClose }: { visible: boolean; onClose: () =>
       const userProfile = {
         user_id: 'user-chart',
         name: data.name || 'Friend',
+        display_name: data.name || 'Friend',
         sun_sign: data.sunSign || 'Aries',
         moon_sign: data.moonSign,
         rising_sign: data.risingSign,
-      };
+      } as unknown as import('@/types').UserProfile;
       const prompt = `Give me a brief, warm 2-3 sentence reading of my Big Three: ${data.sunSign || 'Unknown'} Sun, ${data.moonSign || 'Unknown'} Moon, ${data.risingSign || 'Unknown'} Rising. Speak like a wise friend, not a textbook. Be specific and personal.`;
       
       const response = await chatWithVeya(prompt, [], userProfile, [], false, false);
