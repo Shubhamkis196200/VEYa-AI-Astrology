@@ -2,7 +2,10 @@
  * Onboarding Service — Saves onboarding data to Supabase
  *
  * Called when the user completes onboarding.
- * Inserts into user_profiles and birth_charts tables.
+ * Inserts into profiles and birth_charts tables.
+ *
+ * NOTE: profiles.user_id = auth UID
+ *       profiles.id      = profile UUID (used as FK in all child tables)
  */
 
 import { supabase } from '../lib/supabase';
@@ -16,7 +19,7 @@ interface ChartData {
 
 /**
  * Save the complete onboarding data to Supabase.
- * Creates/updates user_profiles and inserts a birth_chart record.
+ * Creates/updates profiles and inserts a birth_chart record.
  */
 export async function saveOnboardingData(
   onboardingData: OnboardingData,
@@ -31,7 +34,7 @@ export async function saveOnboardingData(
       return { success: true }; // Graceful fallback — data stays in Zustand
     }
 
-    const userId = user.id;
+    const authUid = user.id;
 
     // Format birth date as ISO string
     const birthDateStr = onboardingData.birthDate
@@ -47,28 +50,23 @@ export async function saveOnboardingData(
           : String(onboardingData.birthTime))
       : null;
 
-    // 1. Upsert user_profiles (column names match new DB schema)
-    const { error: profileError } = await supabase
-      .from('user_profiles')
+    // 1. Upsert profiles (column names match real DB schema)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: profileError } = await (supabase as any)
+      .from('profiles')
       .upsert(
         {
-          user_id: userId,
+          user_id: authUid,
+          name: onboardingData.name || 'Cosmic Soul',
           display_name: onboardingData.name || 'Cosmic Soul',
           birth_date: birthDateStr,
           birth_time: birthTimeStr,
-          birth_time_precision: onboardingData.birthTimePrecision,
-          birth_time_range: onboardingData.birthTimeRange || null,
           birth_place: onboardingData.birthPlace || null,
-          birth_latitude: onboardingData.birthLat,
-          birth_longitude: onboardingData.birthLng,
           sun_sign: chartData?.sunSign || onboardingData.sunSign || null,
-          moon_sign: chartData?.moonSign || null,
-          rising_sign: chartData?.risingSign || null,
+          moon_sign: chartData?.moonSign || onboardingData.moonSign || null,
+          rising_sign: chartData?.risingSign || onboardingData.risingSign || null,
           focus_areas: onboardingData.focusAreas || [],
-          interests: onboardingData.purpose || [],
-          personality_traits: onboardingData.methodology || [],
           onboarding_completed: true,
-          onboarding_step: 9,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'user_id' }
@@ -79,12 +77,29 @@ export async function saveOnboardingData(
       return { success: false, error: profileError.message };
     }
 
-    // 2. Insert birth_charts (if chart data is available)
+    // 2. Fetch the profile UUID (profiles.id) — needed as FK for birth_charts
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profileRow, error: fetchError } = await (supabase as any)
+      .from('profiles')
+      .select('id')
+      .eq('user_id', authUid)
+      .single();
+
+    if (fetchError || !profileRow) {
+      console.error('Error fetching profile id:', fetchError?.message);
+      // Birth chart won't be saved but profile is OK
+      return { success: true };
+    }
+
+    const profileId = profileRow.id;
+
+    // 3. Insert birth_charts (uses profiles.id as FK)
     if (chartData) {
-      const { error: chartError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: chartError } = await (supabase as any)
         .from('birth_charts')
         .insert({
-          user_id: userId,
+          user_id: profileId,
           house_system: 'placidus',
           sun_sign: chartData.sunSign,
           moon_sign: chartData.moonSign,

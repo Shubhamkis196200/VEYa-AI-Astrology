@@ -294,17 +294,23 @@ git add . && git commit -m "message" && git push origin master
 
 ---
 
-## 📊 SUPABASE TABLES
+## 📊 SUPABASE TABLES (Real Schema — project: ennlryjggdoljgbqhttb)
 
-| Table | Status | Notes |
-|-------|--------|-------|
-| user_profiles | ✅ | Missing `name` column |
-| birth_charts | ✅ | Working |
-| daily_readings | ✅ | Working |
-| ai_conversations | ✅ | Missing `messages` column |
-| rituals | ✅ | Missing `completed_at`, `data` |
-| streaks | ✅ | Working |
-| user_embeddings | ✅ | RAG storage |
+> **CRITICAL**: `profiles.id` = profile UUID (FK in child tables). `profiles.user_id` = auth UID.
+> Always query child tables with `profiles.id`, NOT `auth.uid()` directly.
+
+| Table | FK | Key Columns |
+|-------|-----|-------------|
+| profiles | user_id → auth.users | id, user_id, email, name, display_name, birth_date, birth_time, birth_place, sun_sign, moon_sign, rising_sign, intent, notifications_enabled, premium, onboarding_completed, focus_areas |
+| birth_charts | user_id → profiles.id | id, user_id, house_system, sun_sign, moon_sign, rising_sign, chart_data |
+| daily_readings | user_id → profiles.id | id, user_id, reading_date, sun_sign, reading_text, energy_level, do_guidance, dont_guidance, transit_highlights, lucky_number, lucky_color, mood, affirmation |
+| ai_conversations | user_id → profiles.id | id, user_id, session_id, messages (jsonb) |
+| streaks | user_id → profiles.id | id, user_id, current_streak, longest_streak, last_check_in, total_days |
+| rituals | user_id → profiles.id | id, user_id, ritual_type, ritual_date, completed, completed_at, data |
+| user_embeddings | user_id → profiles.id | id, user_id, content, content_type, embedding (vector), metadata |
+| journal_entries | user_id → profiles.id | id, user_id, date, mood, mood_emoji, energy, gratitude, reflection |
+| favorites | user_id → profiles.id | id, user_id, type, content (jsonb) |
+| daily_horoscope_cache | — | id, date, zodiac_sign, reading (jsonb) |
 
 ---
 

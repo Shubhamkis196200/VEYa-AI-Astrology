@@ -143,8 +143,9 @@ export default function RootLayout() {
       async (event, session) => {
         clearTimeout(authTimeout);
         if (session?.user) {
-          const { data: profile } = await supabase
-            .from('user_profiles')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: profile } = await (supabase as any)
+            .from('profiles')
             .select('*')
             .eq('user_id', session.user.id)
             .single();

@@ -5,7 +5,7 @@
 export interface Database {
   public: {
     Tables: {
-      user_profiles: {
+      profiles: {
         Row: UserProfile;
         Insert: Omit<UserProfile, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Omit<UserProfile, 'id'>>;
@@ -47,10 +47,10 @@ export interface Database {
         Update: Partial<Omit<Streak, 'id'>>;
         Relationships: [];
       };
-      subscriptions: {
-        Row: Subscription;
-        Insert: Omit<Subscription, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string };
-        Update: Partial<Omit<Subscription, 'id'>>;
+      favorites: {
+        Row: Favorite;
+        Insert: Omit<Favorite, 'id' | 'created_at'> & { id?: string; created_at?: string };
+        Update: Partial<Omit<Favorite, 'id'>>;
         Relationships: [];
       };
       journal_entries: {
@@ -94,31 +94,36 @@ export interface Database {
 // ============================================================================
 
 export interface UserProfile {
-  id: string;
-  user_id: string;
-  display_name: string | null;
+  // Core columns (real schema: profiles table)
+  id: string;           // profile UUID — used as FK in all child tables
+  user_id: string;      // auth.users UUID
   email: string | null;
-  avatar_url: string | null;
+  name: string | null;  // primary display name column
+  display_name: string | null;
   birth_date: string | null;
   birth_time: string | null;
-  birth_time_precision: 'exact' | 'approximate' | 'unknown';
-  birth_time_range: 'morning' | 'afternoon' | 'evening' | 'night' | null;
   birth_place: string | null;
-  birth_latitude: number | null;
-  birth_longitude: number | null;
   sun_sign: string | null;
   moon_sign: string | null;
   rising_sign: string | null;
-  focus_areas: string[];
-  personality_traits: string[];
-  interests: string[];
+  intent: string | null;
+  notifications_enabled: boolean;
+  premium: boolean;
   onboarding_completed: boolean;
-  onboarding_step: number;
-  subscription_tier: string;
+  focus_areas: string[];
   created_at: string;
   updated_at: string;
-  // Virtual / computed fields used by app (not in DB)
-  name?: string | null; // alias for display_name
+  // Optional / extended columns
+  avatar_url?: string | null;
+  birth_time_precision?: 'exact' | 'approximate' | 'unknown';
+  birth_time_range?: 'morning' | 'afternoon' | 'evening' | 'night' | null;
+  birth_latitude?: number | null;
+  birth_longitude?: number | null;
+  personality_traits?: string[];
+  interests?: string[];
+  onboarding_step?: number;
+  subscription_tier?: string;
+  // Virtual / computed fields (not in DB)
   chinese_zodiac?: string | null;
   vedic_nakshatra?: string | null;
   life_path_number?: number | null;
@@ -253,31 +258,18 @@ export interface Streak {
 }
 
 // ============================================================================
-// SUBSCRIPTION TYPES
-// ============================================================================
-
-export interface Subscription {
-  id: string;
-  user_id: string;
-  plan: 'free' | 'premium' | 'pro';
-  status: 'active' | 'cancelled' | 'expired' | 'trialing';
-  current_period_end: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-// ============================================================================
 // JOURNAL ENTRY TYPES
 // ============================================================================
 
 export interface JournalEntry {
   id: string;
-  user_id: string;
-  content: string;
+  user_id: string; // FK to profiles.id
+  date: string;    // YYYY-MM-DD
   mood: string | null;
-  moon_phase: string | null;
-  sun_sign: string | null;
-  ai_insights: string | null;
+  mood_emoji: string | null;
+  energy: number | null;
+  gratitude: string | null;
+  reflection: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -288,11 +280,21 @@ export interface JournalEntry {
 
 export interface DailyHoroscopeCache {
   id: string;
-  sign: string;
   date: string;
-  content: string | null;
-  energy: number | null;
-  theme: string | null;
+  zodiac_sign: string;
+  reading: Record<string, unknown> | null;
+  created_at: string;
+}
+
+// ============================================================================
+// FAVORITES TYPES
+// ============================================================================
+
+export interface Favorite {
+  id: string;
+  user_id: string; // FK to profiles.id
+  type: string;
+  content: Record<string, unknown>;
   created_at: string;
 }
 
