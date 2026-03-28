@@ -73,6 +73,12 @@ export interface CompatibilityReport {
   advice: string;
 }
 
+interface PlanetPlacementData {
+  sign?: string;
+  degree?: number;
+  house?: number;
+}
+
 export interface TransitHighlight {
   planet: string;
   aspect: string;
@@ -150,8 +156,9 @@ function formatChartContext(profile: UserProfile, chart?: BirthChart | null): st
     const planets = chart.planets;
     for (const [planet, placement] of Object.entries(planets)) {
       if (placement) {
-        const house = placement.house ? ` in House ${placement.house}` : '';
-        lines.push(`  ${planet}: ${placement.sign} ${placement.degree.toFixed(1)}°${house}`);
+        const p = placement as PlanetPlacementData;
+        const house = p.house ? ` in House ${p.house}` : '';
+        lines.push(`  ${planet}: ${p.sign} ${(p.degree ?? 0).toFixed(1)}°${house}`);
       }
     }
   }
@@ -163,9 +170,9 @@ function formatChartContext(profile: UserProfile, chart?: BirthChart | null): st
     }
   }
 
-  if (chart?.houses?.length) {
+  if (Array.isArray(chart?.houses) && chart.houses.length) {
     lines.push('\nHouses:');
-    for (const house of chart.houses) {
+    for (const house of (chart.houses as any[])) {
       lines.push(`  House ${house.number}: ${house.sign} ${house.degree.toFixed(1)}°`);
     }
   }
@@ -489,7 +496,8 @@ export async function generateCompatibility(
     user2Lines.push('\nPlanet placements:');
     for (const [planet, placement] of Object.entries(user2BirthData.planets)) {
       if (placement) {
-        user2Lines.push(`  ${planet}: ${placement.sign} ${placement.degree.toFixed(1)}°`);
+        const p = placement as PlanetPlacementData;
+        user2Lines.push(`  ${planet}: ${p.sign} ${(p.degree ?? 0).toFixed(1)}°`);
       }
     }
   }

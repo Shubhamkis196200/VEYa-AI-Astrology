@@ -45,7 +45,7 @@ export const useStreakStore = create<StreakStore>()(
             set({
               currentStreak: data.current_streak || 0,
               longestStreak: data.longest_streak || 0,
-              totalCheckIns: data.total_check_ins || 0,
+              totalCheckIns: data.total_days || 0,
               lastCheckIn: data.last_check_in || null,
               isLoading: false,
             });
@@ -84,7 +84,7 @@ export const useStreakStore = create<StreakStore>()(
             set({
               currentStreak: data.current_streak || 0,
               longestStreak: data.longest_streak || 0,
-              totalCheckIns: data.total_check_ins || 0,
+              totalCheckIns: data.total_days || 0,
               lastCheckIn: data.last_check_in || null,
               isLoading: false,
             });
