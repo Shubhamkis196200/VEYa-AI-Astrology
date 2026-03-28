@@ -372,12 +372,12 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
 const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 160, // raised above tab bar (tab bar ~80-100px + safe area)
     right: 20,
     width: 60,
     height: 60,
     borderRadius: 30,
-    zIndex: 1000,
+    zIndex: 100, // lowered so it never covers tab bar touches
   },
   buttonGlow: {
     position: 'absolute',

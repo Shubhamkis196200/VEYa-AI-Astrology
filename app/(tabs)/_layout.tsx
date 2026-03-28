@@ -297,8 +297,8 @@ class TabsErrorBoundary extends React.Component<
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(insets.bottom, 20);
-  const tabBarHeight = Platform.OS === 'ios' ? 70 + bottomPadding : 80 + bottomPadding;
+  const bottomPadding = Math.max(insets.bottom, 8);
+  const tabBarHeight = Platform.OS === 'ios' ? 60 + bottomPadding : 65;
 
   return (
     <TabsErrorBoundary>
@@ -329,8 +329,7 @@ export default function TabLayout() {
           },
           tabBarHideOnKeyboard: true,
           tabBarItemStyle: {
-            paddingVertical: 2,
-            height: 60,
+            paddingVertical: 4,
           },
           tabBarLabelStyle: {
             fontFamily: 'Inter-SemiBold',
