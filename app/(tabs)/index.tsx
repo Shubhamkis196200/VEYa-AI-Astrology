@@ -313,14 +313,27 @@ export default function TodayScreen() {
   const { user } = useUserStore();
 
   const [showVoice, setShowVoice] = useState(false);
+  const [showDeferred, setShowDeferred] = useState(false);
+  const [currentMoon, setCurrentMoon] = useState<{ name: string; emoji: string } | undefined>(undefined);
 
   const userId = user?.user_id || 'demo-user-001';
   const sunSign: ZodiacSign = (data?.sunSign as ZodiacSign) || 'Scorpio';
 
-  const currentMoon = useMemo(() => {
-    const moon = getMoonPhase(new Date());
-    return { name: moon.phaseName, emoji: moon.emoji };
+  useEffect(() => {
+    // After critical content renders, load everything else
+    const timer = setTimeout(() => setShowDeferred(true), 300);
+    return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!showDeferred) return;
+    try {
+      const moon = getMoonPhase(new Date());
+      setCurrentMoon({ name: moon.phaseName, emoji: moon.emoji });
+    } catch {
+      // silent
+    }
+  }, [showDeferred]);
 
   useEffect(() => {
     (async () => {
@@ -395,9 +408,9 @@ export default function TodayScreen() {
         )}
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* TRANSIT HIGHLIGHTS */}
+        {/* TRANSIT HIGHLIGHTS — deferred */}
         {/* ─────────────────────────────────────────────────────────── */}
-        {r?.transits && (
+        {showDeferred && r?.transits && (
           <>
             <SectionHeader
               icon="🪐"
@@ -410,9 +423,9 @@ export default function TodayScreen() {
         )}
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* DO'S AND DON'TS */}
+        {/* DO'S AND DON'TS — deferred */}
         {/* ─────────────────────────────────────────────────────────── */}
-        {r?.dos && r?.donts && (
+        {showDeferred && r?.dos && r?.donts && (
           <>
             <SectionHeader
               icon="✅"
@@ -424,7 +437,7 @@ export default function TodayScreen() {
         )}
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* COSMIC WEATHER */}
+        {/* COSMIC WEATHER — always visible */}
         {/* ─────────────────────────────────────────────────────────── */}
         <SectionHeader
           icon="🌤️"
@@ -457,9 +470,9 @@ export default function TodayScreen() {
         )}
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* ENERGY METER */}
+        {/* ENERGY METER — deferred */}
         {/* ─────────────────────────────────────────────────────────── */}
-        {r && (
+        {showDeferred && r && (
           <>
             <SectionHeader
               icon="⚡"
@@ -473,42 +486,50 @@ export default function TodayScreen() {
         )}
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* DAILY AFFIRMATION */}
+        {/* DAILY AFFIRMATION — deferred */}
         {/* ─────────────────────────────────────────────────────────── */}
-        <SectionHeader
-          icon="💫"
-          title="Daily Affirmation"
-          subtitle="Words to carry with you"
-        />
-        <DailyAffirmation sunSign={sunSign} />
+        {showDeferred && (
+          <>
+            <SectionHeader
+              icon="💫"
+              title="Daily Affirmation"
+              subtitle="Words to carry with you"
+            />
+            <DailyAffirmation sunSign={sunSign} />
+          </>
+        )}
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* FEATURE HUB — All features in one place */}
+        {/* FEATURE HUB — deferred */}
         {/* ─────────────────────────────────────────────────────────── */}
-        <FeatureHub onOpenVoice={handleOpenVoice} moonPhase={currentMoon || undefined} />
+        {showDeferred && (
+          <FeatureHub onOpenVoice={handleOpenVoice} moonPhase={currentMoon} />
+        )}
 
         {/* ─────────────────────────────────────────────────────────── */}
-        {/* HERO SECTION — Talk to VEYa CTA */}
+        {/* HERO SECTION — Talk to VEYa CTA — deferred */}
         {/* ─────────────────────────────────────────────────────────── */}
-        <Animated.View entering={FadeInDown.duration(500).delay(100)}>
-          <Pressable onPress={handleOpenVoice} style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
-            <LinearGradient
-              colors={['#8B5CF6', '#6D28D9', '#5B21B6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.talkCard}
-            >
-              <View style={styles.talkCardContent}>
-                <Ionicons name="mic" size={28} color="#FFFFFF" />
-                <View style={styles.talkCardText}>
-                  <Text style={styles.talkCardTitle}>Talk to VEYa ✨</Text>
-                  <Text style={styles.talkCardSubtitle}>Your AI astrologer is ready to chat</Text>
+        {showDeferred && (
+          <Animated.View entering={FadeInDown.duration(500).delay(100)}>
+            <Pressable onPress={handleOpenVoice} style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
+              <LinearGradient
+                colors={['#8B5CF6', '#6D28D9', '#5B21B6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.talkCard}
+              >
+                <View style={styles.talkCardContent}>
+                  <Ionicons name="mic" size={28} color="#FFFFFF" />
+                  <View style={styles.talkCardText}>
+                    <Text style={styles.talkCardTitle}>Talk to VEYa ✨</Text>
+                    <Text style={styles.talkCardSubtitle}>Your AI astrologer is ready to chat</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
-              </View>
-            </LinearGradient>
-          </Pressable>
-        </Animated.View>
+              </LinearGradient>
+            </Pressable>
+          </Animated.View>
+        )}
 
         {/* Bottom spacing */}
         <View style={{ height: 40 }} />

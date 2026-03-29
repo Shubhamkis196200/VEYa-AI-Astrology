@@ -37,9 +37,26 @@ export default function AstroStories() {
     refreshStories();
   }, [refreshStories]);
 
-  // Safety check - don't render if no stories
+  // Show skeleton while stories are loading
   if (!stories || stories.length === 0) {
-    return null;
+    return (
+      <Animated.View entering={FadeIn.duration(300)} style={styles.container}>
+        <Text style={styles.sectionTitle}>Cosmic Stories</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          scrollEnabled={false}
+        >
+          {[0, 1, 2, 3, 4].map((i) => (
+            <View key={i} style={styles.storyItem}>
+              <View style={styles.skeletonRing} />
+              <View style={styles.skeletonLabel} />
+            </View>
+          ))}
+        </ScrollView>
+      </Animated.View>
+    );
   }
 
   return (
@@ -130,5 +147,18 @@ const styles = StyleSheet.create({
   },
   storyLabelViewed: {
     color: colors.textSecondary,
+  },
+  skeletonRing: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  skeletonLabel: {
+    width: 44,
+    height: 10,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginTop: spacing.xs,
   },
 });

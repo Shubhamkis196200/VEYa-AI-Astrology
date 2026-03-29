@@ -2,8 +2,8 @@
 // VEYa Cosmic Weather Widget — Today's Cosmic Conditions at a Glance
 // ============================================================================
 
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import Animated, {
   FadeInDown,
   useSharedValue,
@@ -143,26 +143,32 @@ interface CosmicWeatherWidgetProps {
   onPress?: () => void;
 }
 
-export default function CosmicWeatherWidget({ onPress }: CosmicWeatherWidgetProps) {
-  const weather = useMemo(() => {
-    try {
-      return calculateCosmicWeather();
-    } catch (e) {
-      console.warn('[CosmicWeather] calculation failed:', e);
-      // Complete fallback with ALL required properties
-      return {
-        level: 'good' as const,
-        score: 70,
-        emoji: '✨',
-        headline: 'Cosmic Weather',
-        description: 'The cosmic weather is favorable today.',
-        gradientColors: ['#1E3A5F', '#3B82F6'] as const,
-        conditions: [
-          { emoji: '🌙', label: 'Moon', value: 'Calm', color: '#8B5CF6' },
-          { emoji: '✨', label: 'Energy', value: 'Good', color: '#10B981' },
-        ],
-      };
-    }
+const FALLBACK_WEATHER: WeatherData = {
+  level: 'good',
+  emoji: '✨',
+  headline: 'Cosmic Weather',
+  description: 'The cosmic weather is favorable today.',
+  gradientColors: ['#1E3A5F', '#3B82F6'],
+  conditions: [
+    { emoji: '🌙', label: 'Moon', value: 'Loading...', color: '#8B5CF6' },
+    { emoji: '✨', label: 'Energy', value: 'Loading...', color: '#10B981' },
+  ],
+};
+
+function CosmicWeatherWidget({ onPress }: CosmicWeatherWidgetProps) {
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+
+  useEffect(() => {
+    // Defer to after initial render — don't block JS thread
+    const timer = setTimeout(() => {
+      try {
+        setWeather(calculateCosmicWeather());
+      } catch (e) {
+        console.warn('[CosmicWeather] calculation failed:', e);
+        setWeather(FALLBACK_WEATHER);
+      }
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // Subtle pulse for the weather emoji
@@ -184,6 +190,8 @@ export default function CosmicWeatherWidget({ onPress }: CosmicWeatherWidgetProp
     opacity: 0.8 + pulse.value * 0.2,
   }));
 
+  const displayWeather = weather ?? FALLBACK_WEATHER;
+
   return (
     <Animated.View entering={FadeInDown.duration(500).delay(100)}>
       <Pressable
@@ -193,7 +201,7 @@ export default function CosmicWeatherWidget({ onPress }: CosmicWeatherWidgetProp
         }}
       >
         <LinearGradient
-          colors={weather.gradientColors}
+          colors={displayWeather.gradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.container}
@@ -201,17 +209,19 @@ export default function CosmicWeatherWidget({ onPress }: CosmicWeatherWidgetProp
           {/* Header */}
           <View style={styles.header}>
             <Animated.Text style={[styles.weatherEmoji, pulseStyle]}>
-              {weather.emoji}
+              {weather ? displayWeather.emoji : '🌤️'}
             </Animated.Text>
             <View style={styles.headerText}>
-              <Text style={styles.headline}>{weather.headline}</Text>
-              <Text style={styles.description}>{weather.description}</Text>
+              <Text style={styles.headline}>{displayWeather.headline}</Text>
+              <Text style={styles.description}>
+                {weather ? displayWeather.description : 'Calculating cosmic conditions...'}
+              </Text>
             </View>
           </View>
 
           {/* Conditions Grid */}
           <View style={styles.conditionsGrid}>
-            {weather.conditions.map((condition, index) => (
+            {displayWeather.conditions.map((condition, index) => (
               <View key={index} style={styles.conditionItem}>
                 <Text style={styles.conditionEmoji}>{condition.emoji}</Text>
                 <Text style={styles.conditionLabel}>{condition.label}</Text>
@@ -230,6 +240,8 @@ export default function CosmicWeatherWidget({ onPress }: CosmicWeatherWidgetProp
 // ---------------------------------------------------------------------------
 // Styles
 // ---------------------------------------------------------------------------
+
+export default React.memo(CosmicWeatherWidget);
 
 const styles = StyleSheet.create({
   container: {

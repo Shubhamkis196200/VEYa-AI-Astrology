@@ -127,7 +127,7 @@ interface DailyAffirmationProps {
   onShare?: (text: string) => void;
 }
 
-export default function DailyAffirmation({ sunSign = 'Aries', onShare }: DailyAffirmationProps) {
+function DailyAffirmation({ sunSign = 'Aries', onShare }: DailyAffirmationProps) {
   const [isRevealed, setIsRevealed] = useState(false);
 
   // Get deterministic daily affirmation
@@ -229,6 +229,8 @@ export default function DailyAffirmation({ sunSign = 'Aries', onShare }: DailyAf
     </Animated.View>
   );
 }
+
+export default React.memo(DailyAffirmation);
 
 // ---------------------------------------------------------------------------
 // Styles

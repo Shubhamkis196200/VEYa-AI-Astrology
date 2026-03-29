@@ -15,6 +15,7 @@ import {
   Share,
   Platform,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -220,26 +221,30 @@ interface OneInsightCardProps {
   onPress?: () => void;
 }
 
-export default function OneInsightCard({ onPress }: OneInsightCardProps) {
+function OneInsightCard({ onPress }: OneInsightCardProps) {
   const { data } = useOnboardingStore();
   const { incrementProgress } = useAchievementStore();
   const viewShotRef = React.useRef<ViewShot>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const [insight, setInsight] = useState<DailyInsight | null>(null);
 
-  const insight = useMemo(() => {
-    try {
-      return generateDailyInsight(data.sunSign, data.moonSign, data.risingSign, data.name);
-    } catch (e) {
-      console.warn('[OneInsight] generateDailyInsight failed:', e);
-      // Complete fallback with ALL required properties
-      return {
-        emoji: '✨',
-        headline: 'Your Cosmic Reading',
-        message: `The stars align in your favor today, ${data.name || 'cosmic traveler'}. Trust your intuition.`,
-        transit: 'Moon in harmony',
-        energy: 'positive' as const,
-      };
-    }
+  useEffect(() => {
+    // Defer to after initial render — don't block JS thread
+    const timer = setTimeout(() => {
+      try {
+        setInsight(generateDailyInsight(data.sunSign, data.moonSign, data.risingSign, data.name));
+      } catch (e) {
+        console.warn('[OneInsight] generateDailyInsight failed:', e);
+        setInsight({
+          emoji: '✨',
+          headline: 'Your Cosmic Reading',
+          message: `The stars align in your favor today, ${data.name || 'cosmic traveler'}. Trust your intuition.`,
+          transit: 'Moon in harmony',
+          energy: 'positive',
+        });
+      }
+    }, 50);
+    return () => clearTimeout(timer);
   }, [data.sunSign, data.moonSign, data.risingSign, data.name]);
 
   // Animations
@@ -284,7 +289,7 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
   };
 
   const handleShare = async () => {
-    if (isSharing) return;
+    if (isSharing || !insight) return;
     setIsSharing(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -330,6 +335,22 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
     day: 'numeric',
   });
 
+  if (!insight) {
+    return (
+      <Animated.View entering={FadeInUp.duration(400)} style={styles.loadingContainer}>
+        <LinearGradient
+          colors={['#1B0B38', '#2D1B4E', '#1B0B38']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.cardGradient, styles.loadingCard]}
+        >
+          <ActivityIndicator size="small" color="#A78BFA" />
+          <Text style={styles.loadingText}>Reading the stars...</Text>
+        </LinearGradient>
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View entering={FadeInUp.duration(800).delay(200)}>
       <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
@@ -368,7 +389,7 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
               <Text style={styles.date}>{dateString}</Text>
 
               {/* Emoji */}
-              <Animated.Text 
+              <Animated.Text
                 entering={FadeIn.duration(600).delay(400)}
                 style={styles.emoji}
               >
@@ -376,7 +397,7 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
               </Animated.Text>
 
               {/* Headline */}
-              <Animated.Text 
+              <Animated.Text
                 entering={FadeIn.duration(600).delay(500)}
                 style={styles.headline}
               >
@@ -384,7 +405,7 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
               </Animated.Text>
 
               {/* Message */}
-              <Animated.Text 
+              <Animated.Text
                 entering={FadeIn.duration(600).delay(600)}
                 style={styles.message}
               >
@@ -392,7 +413,7 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
               </Animated.Text>
 
               {/* Transit badge */}
-              <Animated.View 
+              <Animated.View
                 entering={FadeIn.duration(400).delay(700)}
                 style={styles.transitBadge}
               >
@@ -414,8 +435,8 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
       </ViewShot>
 
       {/* Share button (outside ViewShot so it doesn't appear in screenshot) */}
-      <Pressable 
-        onPress={handleShare} 
+      <Pressable
+        onPress={handleShare}
         style={[styles.shareButton, isSharing && styles.shareButtonDisabled]}
         disabled={isSharing}
       >
@@ -431,6 +452,8 @@ export default function OneInsightCard({ onPress }: OneInsightCardProps) {
     </Animated.View>
   );
 }
+
+export default React.memo(OneInsightCard);
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -566,5 +589,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     letterSpacing: 0.5,
+  },
+  loadingContainer: {
+    marginBottom: spacing.sm,
+  },
+  loadingCard: {
+    minHeight: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  loadingText: {
+    fontFamily: typography.fonts.body,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
   },
 });

@@ -14,7 +14,7 @@ interface EnergyMeterProps {
   maxScore?: number;
 }
 
-export default function EnergyMeter({ score, maxScore = 10 }: EnergyMeterProps) {
+function EnergyMeter({ score, maxScore = 10 }: EnergyMeterProps) {
   const widthPercent = `${(score / maxScore) * 100}%`;
   const label = `${score} / ${maxScore}`;
 
@@ -28,6 +28,8 @@ export default function EnergyMeter({ score, maxScore = 10 }: EnergyMeterProps) 
     </View>
   );
 }
+
+export default React.memo(EnergyMeter);
 
 const styles = StyleSheet.create({
   title: {

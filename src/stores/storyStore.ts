@@ -140,7 +140,7 @@ function buildStories(): AstroStory[] {
 export const useStoryStore = create<StoryStore>()(
   persist(
     (set, get) => ({
-      stories: buildStories(),
+      stories: [], // start empty, load async
       currentIndex: 0,
       isViewerOpen: false,
       viewed: {},
@@ -149,13 +149,20 @@ export const useStoryStore = create<StoryStore>()(
       refreshStories: () => {
         const today = getTodayDate();
         const { lastUpdatedDate } = get();
-        if (lastUpdatedDate === today) return;
+        if (lastUpdatedDate === today && get().stories.length > 0) return;
 
-        set({
-          stories: buildStories(),
-          lastUpdatedDate: today,
-          currentIndex: 0,
-        });
+        // Defer to avoid blocking JS thread on startup
+        setTimeout(() => {
+          try {
+            set({
+              stories: buildStories(),
+              lastUpdatedDate: today,
+              currentIndex: 0,
+            });
+          } catch (e) {
+            console.warn('[StoryStore] build failed:', e);
+          }
+        }, 200);
       },
 
       openViewer: (index) => {
