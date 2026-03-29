@@ -47,7 +47,9 @@ import { useOnboardingStore } from '../../src/stores/onboardingStore';
 import { useJournalStore } from '../../src/stores/journalStore';
 import { useAchievementStore, ACHIEVEMENTS } from '../../src/stores/achievementStore';
 import { useStreakStore } from '../../src/stores/streakStore';
+import { useChatStore } from '../../src/stores/chatStore';
 import { useRouter } from 'expo-router';
+import { supabase } from '../../src/lib/supabase';
 import AnimatedPressable from '@/components/ui/AnimatedPressable';
 // Rituals section moved to dedicated Rituals tab
 import { 
@@ -255,11 +257,23 @@ function ProfileHeader({ userName, sunSign, moonSign, risingSign }: ProfileHeade
 // ─────────────────────────────────────────────────────────────
 
 function CosmicStatsCard() {
+  const entries = useJournalStore((s) => s.entries);
+  const { currentStreak, longestStreak } = useStreakStore();
+
+  const stats = [
+    { id: 'journal', label: 'Journal entries', value: String(entries.length), icon: '✍️' },
+    { id: 'streak', label: 'Day streak', value: String(currentStreak), icon: '🔥' },
+    { id: 'longest', label: 'Longest streak', value: String(longestStreak), icon: '⭐' },
+    { id: 'topic', label: 'Favorite topic', value: 'Love', icon: '💕' },
+    { id: 'active', label: 'Most active', value: 'Mornings', icon: '☀️' },
+    { id: 'readings', label: 'Readings', value: MOCK_COSMIC.stats.find(s => s.id === 'readings')?.value || '0', icon: '📖' },
+  ];
+
   return (
     <View style={[styles.card, styles.statsCard]}>
         <Text style={styles.statsTitle}>Your Cosmic Stats</Text>
         <View style={styles.statsGrid}>
-          {MOCK_COSMIC.stats.map((stat, index) => (
+          {stats.map((stat) => (
             <Animated.View key={stat.id} style={styles.statItem}>
               <View style={styles.statIconCircle}>
                 <Text style={styles.statIcon}>{stat.icon}</Text>
@@ -520,7 +534,7 @@ function SubscriptionCard() {
 // COMPONENT: Settings Section
 // ─────────────────────────────────────────────────────────────
 
-function SettingsSection({ focusAreas }: { focusAreas: string[] }) {
+function SettingsSection({ focusAreas, onSignOut }: { focusAreas: string[]; onSignOut: () => void }) {
   const [notifications, setNotifications] = React.useState(true);
   const [autoSpeak, setAutoSpeak] = React.useState(false);
   const [houseSystem, setHouseSystem] = React.useState<'placidus' | 'whole-sign'>('placidus');
@@ -632,7 +646,7 @@ function SettingsSection({ focusAreas }: { focusAreas: string[] }) {
         ))}
       </View>
 
-      <Pressable onPress={() => hapticMedium()} style={styles.signOutButton}>
+      <Pressable onPress={onSignOut} style={styles.signOutButton}>
         <Text style={styles.signOutText}>Sign Out</Text>
       </Pressable>
       <Text style={styles.appVersion}>VEYa v4.0.0</Text>
@@ -646,6 +660,7 @@ function SettingsSection({ focusAreas }: { focusAreas: string[] }) {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { data } = useOnboardingStore();
 
   // Use onboarding store data with fallbacks
@@ -656,6 +671,19 @@ export default function ProfileScreen() {
   const sunSign = data.sunSign;
   const moonSign = data.moonSign;
   const risingSign = data.risingSign;
+
+  const handleSignOut = async () => {
+    try {
+      await hapticMedium();
+      await supabase.auth.signOut();
+      useOnboardingStore.getState().resetOnboarding?.();
+      useChatStore.getState().clearChat();
+      router.replace('/(auth)/welcome');
+    } catch (error) {
+      console.warn('[SignOut] error:', error);
+      router.replace('/(auth)/welcome');
+    }
+  };
 
   return (
     <View style={styles.root}>
@@ -676,7 +704,7 @@ export default function ProfileScreen() {
         <JournalSection />
         <AchievementsSection />
         {/* SubscriptionCard hidden — all features unlocked */}
-        <SettingsSection focusAreas={focusAreas} />
+        <SettingsSection focusAreas={focusAreas} onSignOut={handleSignOut} />
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>

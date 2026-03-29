@@ -158,9 +158,7 @@ export default function TabLayout() {
             ),
           }}
         />
-        {/* Hidden screens */}
-        <Tabs.Screen name="explore" options={{ href: null }} />
-        <Tabs.Screen name="profile" options={{ href: null }} />
+
       </Tabs>
     </TabsErrorBoundary>
   );

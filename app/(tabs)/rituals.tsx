@@ -44,6 +44,8 @@ import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getMoonPhase, getCurrentTransits } from '@/services/astroEngine';
 import { useJournalStore } from '@/stores/journalStore';
+import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useStreakStore } from '@/stores/streakStore';
 import { generateJournalInsights } from '@/services/ai';
 import { 
   colors as themeColors, 
@@ -189,11 +191,20 @@ function useRealRitualContent(): RealRitualContent {
   return useMemo(() => getRealRitualContent(moon, transits), [moon, transits]);
 }
 
-function buildMockData(realRitual: RealRitualContent) {
+function buildStreakDays(currentStreak: number): boolean[] {
+  // Build a 7-slot week view: last 6 days + today
+  const days: boolean[] = [];
+  for (let i = 6; i >= 0; i--) {
+    days.push(i < currentStreak);
+  }
+  return days;
+}
+
+function buildMockData(realRitual: RealRitualContent, userName: string = 'Star Child', streakCount: number = 0) {
   return {
-    userName: 'Aria',
-    streakCount: 7,
-    streakDays: [true, true, true, true, true, true, false],
+    userName,
+    streakCount,
+    streakDays: buildStreakDays(streakCount),
     dayLabels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
 
     morningRitual: {
@@ -1082,7 +1093,10 @@ function DailyWeeklyRitualsCard() {
 export function RitualsContentSection() {
   const [journalVisible, setJournalVisible] = useState(false);
   const realRitual = useRealRitualContent();
-  const mockData = useMemo(() => buildMockData(realRitual), [realRitual]);
+  const { data: onboardingData } = useOnboardingStore();
+  const { currentStreak } = useStreakStore();
+  const userName = onboardingData?.name || 'Star Child';
+  const mockData = useMemo(() => buildMockData(realRitual, userName, currentStreak), [realRitual, userName, currentStreak]);
 
   return (
     <RitualMockContext.Provider value={mockData}>
@@ -1113,7 +1127,10 @@ export default function RitualsScreen() {
   const [journalVisible, setJournalVisible] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const realRitual = useRealRitualContent();
-  const mockData = useMemo(() => buildMockData(realRitual), [realRitual]);
+  const { data: onboardingData } = useOnboardingStore();
+  const { currentStreak } = useStreakStore();
+  const userName = onboardingData?.name || 'Star Child';
+  const mockData = useMemo(() => buildMockData(realRitual, userName, currentStreak), [realRitual, userName, currentStreak]);
 
   const hour = new Date().getHours();
   const isMorning = hour < 12;
