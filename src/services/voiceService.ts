@@ -2,7 +2,7 @@
 // VEYa Voice Service — Ultra-Low Latency with gpt-4o-mini-tts
 // ============================================================================
 // Uses OpenAI Whisper for transcription
-// Uses gpt-4o-mini-tts with "coral" voice (best quality + emotional control)
+// Uses gpt-4o-mini-tts with "onyx" voice (best quality + emotional control)
 // Optimized for minimal delay
 // ============================================================================
 
@@ -206,7 +206,7 @@ export async function getAstrologyResponse(
 }
 
 // ---------------------------------------------------------------------------
-// Text-to-Speech (gpt-4o-mini-tts with coral voice - BEST QUALITY!)
+// Text-to-Speech (gpt-4o-mini-tts with onyx voice - BEST QUALITY!)
 // ---------------------------------------------------------------------------
 
 export async function speakText(text: string): Promise<void> {

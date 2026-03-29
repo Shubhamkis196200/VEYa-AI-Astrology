@@ -75,7 +75,7 @@ export async function callRealtimeVoice(
       model: 'gpt-4o-audio-preview',
       modalities: ['text', 'audio'],
       audio: {
-        voice: 'ballad',  // Most expressive, human-like voice
+        voice: 'onyx',  // Most expressive, human-like voice
         format: 'mp3',
       },
       messages,
