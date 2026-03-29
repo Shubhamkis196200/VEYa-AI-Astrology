@@ -618,10 +618,11 @@ export function getMonthEvents(year: number, month: number): MonthEvent[] {
   }
 
   // Sort by date
-  return events.sort((a, b) => a.date.getTime() - b.date.getTime());
+  const result = events.sort((a, b) => a.date.getTime() - b.date.getTime());
+  _astroCache[cacheKey] = result;
+  return result;
   } catch (error) {
     console.warn('[AstroEngine] getMonthEvents failed:', error);
-    // Return empty array as safe fallback
     return [];
   }
 }
@@ -792,7 +793,7 @@ export function getPlanetaryHours(
   // Find current hour
   const currentHour = hours.find(h => h.isCurrent) || hours[0];
 
-  return {
+  const result: PlanetaryHoursData = {
     currentHour,
     todayHours: hours,
     sunrise,
@@ -800,6 +801,8 @@ export function getPlanetaryHours(
     dayRuler: dayRuler.name,
     dayRulerSymbol: dayRuler.symbol,
   };
+  _astroCache[cacheKey] = result;
+  return result;
   } catch (error) {
     console.warn('[AstroEngine] getPlanetaryHours failed:', error);
     // Return safe fallback
@@ -928,15 +931,16 @@ export function getRetrogradeData(date: Date = new Date()): RetrogradeData {
     message = `${currentRetrogrades.length} planets retrograde. Major review period — patience is key.`;
   }
 
-  return {
+  const result: RetrogradeData = {
     currentRetrogrades,
     upcomingRetrogrades: upcomingRetrogrades.slice(0, 3),
     retrogradeCount: currentRetrogrades.length,
     message,
   };
+  _astroCache[cacheKey] = result;
+  return result;
   } catch (error) {
     console.warn('[AstroEngine] getRetrogradeData failed:', error);
-    // Return safe fallback
     return {
       currentRetrogrades: [],
       upcomingRetrogrades: [],
