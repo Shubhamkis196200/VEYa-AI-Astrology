@@ -1,11 +1,13 @@
 // ============================================================================
 // VeYaVoiceMode — Full-screen voice control + navigation AI
 // ============================================================================
+// - WebSocket Realtime API primary path (streaming, <1s first response)
+// - Fallback: gpt-4o-audio-preview single call (~2-3s)
+// - Last-resort fallback: Whisper → GPT → TTS
 // - Multi-turn conversation with real astrology context
 // - Voice navigation: "show my chart", "pull tarot", etc.
 // - Continuous listen mode toggle
 // - User-isolated: ONLY reads from onboardingStore (no global/shared state)
-// - Clean orb UI — no particles, no SVG, no Three.js
 // ============================================================================
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -31,6 +33,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 
 import { useOnboardingStore } from '../../stores/onboardingStore';
@@ -47,6 +50,11 @@ import {
   playAudioBase64,
   stopRealtimeAudio,
 } from '../../services/realtimeVoice';
+import {
+  createRealtimeSession,
+  stopRealtimePlayback,
+  type RealtimeSession,
+} from '../../services/realtimeWebSocket';
 import {
   executeVoiceAction,
   getNavigationResponse,
@@ -81,7 +89,7 @@ const STATUS_CONFIG: Record<VoiceStatus, { label: string; color: string }> = {
 };
 
 // ---------------------------------------------------------------------------
-// Build system prompt with user context + navigation capabilities
+// Build full system prompt (for fallback paths)
 // ---------------------------------------------------------------------------
 
 function buildSystemPrompt(user: {
@@ -126,6 +134,22 @@ Respond as if speaking out loud. Natural speech, not written text. Keep it under
 }
 
 // ---------------------------------------------------------------------------
+// Build short realtime prompt (<300 chars for WebSocket API)
+// ---------------------------------------------------------------------------
+
+function buildRealtimePrompt(user: {
+  name: string;
+  sunSign: string;
+  moonSign: string;
+  risingSign: string;
+  transitSummary: string;
+}): string {
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const transits = user.transitSummary.slice(0, 80);
+  return `VEYa astrologer speaking to ${user.name}. Sun ${user.sunSign}, Moon ${user.moonSign}, Rising ${user.risingSign}. ${transits} Today: ${today}. Warm, mystical. 1-2 poetic sentences only.`.slice(0, 300);
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -166,15 +190,129 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   const [lastResponse, setLastResponse] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [continuousListen, setContinuousListen] = useState(false);
+  const [isSessionConnected, setIsSessionConnected] = useState(false);
 
   const recordingRef = useRef<Audio.Recording | null>(null);
-  const continuousRef = useRef(false); // track in async code without stale closure
+  const continuousRef = useRef(false);
+  const realtimeSessionRef = useRef<RealtimeSession | null>(null);
+  // Accumulate transcript/response for conversation push on onDone
+  const pendingTranscriptRef = useRef('');
+  const pendingResponseRef = useRef('');
+  // Stable ref to handleStartRecording for use inside callbacks
+  const handleStartRecordingRef = useRef<() => void>(() => {});
   const scrollRef = useRef<ScrollView>(null);
 
   // Keep continuousRef in sync
   useEffect(() => {
     continuousRef.current = continuousListen;
   }, [continuousListen]);
+
+  // ---------------------------------------------------------------------------
+  // Pre-connect WebSocket Realtime session on mount
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    let mounted = true;
+
+    const prompt = buildRealtimePrompt({
+      name: userName,
+      sunSign,
+      moonSign,
+      risingSign,
+      transitSummary,
+    });
+
+    createRealtimeSession(prompt, {
+      onTranscript: (text) => {
+        if (!mounted) return;
+        pendingTranscriptRef.current = text;
+        setLastTranscript(text);
+
+        // Check for navigation intent on transcript
+        const intent = parseVoiceIntent(text);
+        if (intent.type !== 'answer' && intent.type !== 'unknown') {
+          realtimeSessionRef.current?.interrupt();
+          stopRealtimePlayback();
+          const navResponse = getNavigationResponse(intent, userName);
+          pendingResponseRef.current = navResponse;
+          setLastResponse(navResponse);
+          setConversation((prev) => [
+            ...prev,
+            { role: 'user', content: text },
+            { role: 'assistant', content: navResponse },
+          ]);
+          pendingTranscriptRef.current = '';
+          pendingResponseRef.current = '';
+
+          setStatus('speaking');
+          speakText(navResponse)
+            .catch(() => {})
+            .finally(() => {
+              if (!mounted) return;
+              setStatus('idle');
+              const navigated = executeVoiceAction(intent);
+              if (navigated) onClose();
+            });
+        }
+      },
+      onResponseText: (text) => {
+        if (!mounted) return;
+        pendingResponseRef.current = text;
+        setLastResponse(text);
+      },
+      onAudioChunk: () => {
+        if (!mounted) return;
+        // Audio is played by realtimeWebSocket.ts — just update UI
+        setStatus((prev) => (prev === 'processing' ? 'speaking' : prev));
+      },
+      onDone: () => {
+        if (!mounted) return;
+        const t = pendingTranscriptRef.current;
+        const r = pendingResponseRef.current;
+        if (t || r) {
+          setConversation((prev) => [
+            ...prev,
+            ...(t ? [{ role: 'user' as const, content: t }] : []),
+            ...(r ? [{ role: 'assistant' as const, content: r }] : []),
+          ]);
+        }
+        pendingTranscriptRef.current = '';
+        pendingResponseRef.current = '';
+        setStatus('idle');
+        if (continuousRef.current) {
+          setTimeout(() => handleStartRecordingRef.current(), 500);
+        }
+      },
+      onError: (err) => {
+        if (!mounted) return;
+        console.warn('[VeYaVoice] WS error:', err.slice(0, 80));
+        setIsSessionConnected(false);
+        // Don't surface WS errors to user — fall back silently
+        setStatus('idle');
+      },
+    })
+      .then((session) => {
+        if (!mounted) {
+          session.disconnect();
+          return;
+        }
+        realtimeSessionRef.current = session;
+        setIsSessionConnected(true);
+      })
+      .catch((err: unknown) => {
+        if (!mounted) return;
+        console.warn('[VeYaVoice] WS connect failed:', String(err).slice(0, 80));
+        setIsSessionConnected(false);
+      });
+
+    return () => {
+      mounted = false;
+      realtimeSessionRef.current?.disconnect();
+      realtimeSessionRef.current = null;
+      stopRealtimePlayback();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // connect once on mount — user data from store is synchronously available
 
   // ---------------------------------------------------------------------------
   // Animations
@@ -244,11 +382,9 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   const handleStartRecording = useCallback(async () => {
     setError(null);
     try {
-      // First check current status
       const currentPerm = await Audio.getPermissionsAsync();
-      
+
       if (currentPerm.status === 'denied') {
-        // Already denied — must go to Settings
         Alert.alert(
           'Microphone Access Needed',
           'VEYa needs microphone access to hear you.\n\nGo to: Settings → Apps → Expo Go → Permissions → Microphone → Allow\n\nThen come back and try again.',
@@ -259,11 +395,10 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         );
         return;
       }
-      
+
       if (currentPerm.status !== 'granted') {
-        // Not yet asked — request it
-        const { status } = await Audio.requestPermissionsAsync();
-        if (status !== 'granted') {
+        const { status: newStatus } = await Audio.requestPermissionsAsync();
+        if (newStatus !== 'granted') {
           Alert.alert(
             'Microphone Access Needed',
             'Please allow microphone access when prompted, or go to Settings to enable it.',
@@ -299,6 +434,11 @@ export default function VeYaVoiceMode({ onClose }: Props) {
     }
   }, []);
 
+  // Keep stable ref for use in async callbacks
+  useEffect(() => {
+    handleStartRecordingRef.current = handleStartRecording;
+  }, [handleStartRecording]);
+
   const handleStopAndProcess = useCallback(async () => {
     if (!recordingRef.current) return;
 
@@ -309,6 +449,33 @@ export default function VeYaVoiceMode({ onClose }: Props) {
       const audioUri = await stopRecording(recordingRef.current);
       recordingRef.current = null;
 
+      // -----------------------------------------------------------------------
+      // PRIMARY PATH: WebSocket Realtime (streaming, <1s first response)
+      // -----------------------------------------------------------------------
+      const session = realtimeSessionRef.current;
+      if (session && session.isConnected) {
+        try {
+          const base64Audio = await FileSystem.readAsStringAsync(audioUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          // Reset pending state for new turn
+          pendingTranscriptRef.current = '';
+          pendingResponseRef.current = '';
+          session.sendAudio(base64Audio);
+          session.commitAudio();
+          // Response streams back via callbacks set up on mount
+          // status transitions: processing → speaking (on first audio chunk) → idle (on done)
+          return;
+        } catch (wsErr: unknown) {
+          const wsMsg = wsErr instanceof Error ? wsErr.message : String(wsErr);
+          console.warn('[VeYaVoice] WS send failed, falling back:', wsMsg.slice(0, 60));
+          // Fall through to gpt-4o-audio-preview
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // FALLBACK: gpt-4o-audio-preview single call (~2-3s)
+      // -----------------------------------------------------------------------
       const systemPrompt = buildSystemPrompt({
         name: userName,
         sunSign,
@@ -318,9 +485,6 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         transitSummary,
       });
 
-      // -----------------------------------------------------------------------
-      // PRIMARY PATH: gpt-4o-audio-preview single call (~2-3s)
-      // -----------------------------------------------------------------------
       let usedRealtimePipeline = false;
       let transcript = '';
       let responseText = '';
@@ -340,11 +504,9 @@ export default function VeYaVoiceMode({ onClose }: Props) {
 
         setLastTranscript(transcript);
 
-        // Check navigation intent on the returned transcript
         const intent = parseVoiceIntent(transcript);
 
         if (intent.type !== 'answer' && intent.type !== 'unknown') {
-          // Navigation: play the AI's audio (it says "Opening your chart…") + navigate
           const displayResponse = responseText || getNavigationResponse(intent, userName);
           setLastResponse(displayResponse);
           setConversation((prev) => [
@@ -362,7 +524,6 @@ export default function VeYaVoiceMode({ onClose }: Props) {
           return;
         }
 
-        // Conversational answer
         setLastResponse(responseText);
         setConversation((prev) => [
           ...prev,
@@ -377,13 +538,12 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         if (continuousRef.current) setTimeout(handleStartRecording, 500);
         return;
       } catch (realtimeErr: unknown) {
-        // Realtime pipeline failed — fall through to legacy pipeline
         const rtMsg = realtimeErr instanceof Error ? realtimeErr.message : String(realtimeErr);
-        console.warn('[VeYaVoice] realtime pipeline failed, falling back:', rtMsg.slice(0, 80));
+        console.warn('[VeYaVoice] gpt-4o-audio fallback failed, using Whisper:', rtMsg.slice(0, 80));
       }
 
       // -----------------------------------------------------------------------
-      // FALLBACK: Whisper → GPT → TTS (6-10s, always works)
+      // LAST RESORT: Whisper → GPT → TTS (6-10s, always works)
       // -----------------------------------------------------------------------
       if (!usedRealtimePipeline || !transcript) {
         transcript = await transcribeAudio(audioUri);
@@ -484,8 +644,11 @@ export default function VeYaVoiceMode({ onClose }: Props) {
     } else if (status === 'listening') {
       handleStopAndProcess();
     } else if (status === 'speaking') {
+      // Interrupt streaming audio from WebSocket
+      realtimeSessionRef.current?.interrupt();
       stopSpeaking();
       stopRealtimeAudio();
+      stopRealtimePlayback();
       setStatus('idle');
     }
   }, [status, handleStartRecording, handleStopAndProcess]);
@@ -497,7 +660,10 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   const handleClose = useCallback(async () => {
     continuousRef.current = false;
     setContinuousListen(false);
-    await Promise.all([stopSpeaking(), stopRealtimeAudio()]);
+    // Stop WebSocket session and all audio
+    realtimeSessionRef.current?.disconnect();
+    realtimeSessionRef.current = null;
+    await Promise.all([stopSpeaking(), stopRealtimeAudio(), stopRealtimePlayback()]);
     if (recordingRef.current) {
       try {
         await stopRecording(recordingRef.current);
@@ -540,7 +706,10 @@ export default function VeYaVoiceMode({ onClose }: Props) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>VEYa</Text>
-        <Text style={styles.subtitle}>{userName} · {sunSign} ☉</Text>
+        <Text style={styles.subtitle}>
+          {userName} · {sunSign} ☉
+          {isSessionConnected ? ' · ⚡' : ''}
+        </Text>
       </View>
 
       {/* Orb */}
@@ -712,7 +881,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: 'Inter-Regular',
     fontSize: 13,
-    color: 'rgba(255,255,255,0.5)', // soft white — not alarming red
+    color: 'rgba(255,255,255,0.5)',
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 32,
