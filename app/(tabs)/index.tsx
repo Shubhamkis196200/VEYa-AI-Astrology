@@ -25,7 +25,7 @@ import type { ZodiacSign } from '@/types';
 import OneInsightCard from '@/components/home/OneInsightCard';
 import DoAndDontCard from '@/components/home/DoAndDontCard';
 import CosmicWeatherWidget from '@/components/home/CosmicWeatherWidget';
-import VoiceInterface from '@/components/voice/VoiceInterface';
+import VeYaVoiceMode from '@/components/voice/VeYaVoiceMode';
 import { getMoonPhase } from '@/services/astroEngine';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
@@ -113,7 +113,7 @@ export default function TodayScreen() {
       <StatusBar style="dark" />
 
       <Modal visible={showVoice} animationType="slide" presentationStyle="fullScreen" transparent={false}>
-        <VoiceInterface onClose={() => setShowVoice(false)} />
+        <VeYaVoiceMode onClose={() => setShowVoice(false)} />
       </Modal>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

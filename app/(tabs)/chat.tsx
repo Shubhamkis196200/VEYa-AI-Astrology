@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useChatStore, type DisplayMessage } from '../../src/stores/chatStore';
 import { useOnboardingStore } from '../../src/stores/onboardingStore';
 import {
@@ -30,6 +31,7 @@ import {
   stopSpeaking,
   getVoiceState,
 } from '../../src/services/voiceService';
+import VeYaVoiceMode from '../../src/components/voice/VeYaVoiceMode';
 import type { Audio } from 'expo-av';
 import type { UserProfile } from '../../src/types';
 import { colors as themeColors } from '@/theme/colors';
@@ -133,6 +135,9 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const { messages, isLoading, sendMessage, clearChat } = useChatStore();
   const onboardingData = useOnboardingStore((s) => s.data);
+
+  // Voice mode modal
+  const [showVoiceMode, setShowVoiceMode] = useState(false);
 
   // Voice state
   const [isVoiceRecording, setIsVoiceRecording] = useState(false);
@@ -245,16 +250,26 @@ export default function ChatScreen() {
     >
       <StatusBar style="dark" />
 
+      <Modal visible={showVoiceMode} animationType="slide" presentationStyle="fullScreen" transparent={false}>
+        <VeYaVoiceMode onClose={() => setShowVoiceMode(false)} />
+      </Modal>
+
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Talk to VEYa</Text>
           <Text style={styles.headerSubtitle}>Your AI Astrologer</Text>
         </View>
-        {messages.length > 0 && (
-          <Pressable onPress={clearChat} style={styles.clearBtn} hitSlop={12}>
-            <Text style={styles.clearBtnText}>New Chat</Text>
+        <View style={styles.headerActions}>
+          <Pressable onPress={() => setShowVoiceMode(true)} style={styles.voiceModeBtn} hitSlop={12}>
+            <Ionicons name="mic" size={18} color="#A78BFA" />
+            <Text style={styles.voiceModeBtnText}>Voice</Text>
           </Pressable>
-        )}
+          {messages.length > 0 && (
+            <Pressable onPress={clearChat} style={styles.clearBtn} hitSlop={12}>
+              <Text style={styles.clearBtnText}>New Chat</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
 
       {messages.length === 0 && !isLoading ? (
@@ -369,6 +384,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   headerTitle: { fontSize: 22, fontFamily: 'PlayfairDisplay-Bold', color: COLORS.textPrimary },
   headerSubtitle: { fontSize: 13, fontFamily: 'Inter-Regular', color: COLORS.textMuted, marginTop: 2 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  voiceModeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: 'rgba(124,58,237,0.12)', borderWidth: 1, borderColor: 'rgba(167,139,250,0.25)' },
+  voiceModeBtnText: { fontSize: 12, fontFamily: 'Inter-Medium', color: '#A78BFA' },
   clearBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: COLORS.goldLight, borderWidth: 1, borderColor: COLORS.goldBorder },
   clearBtnText: { fontSize: 12, fontFamily: 'Inter-Medium', color: COLORS.gold },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
