@@ -18,6 +18,14 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import BirthChartScreen from '@/screens/explore/BirthChartScreen';
+import CompatibilityScreen from '@/screens/explore/CompatibilityScreen';
+import TarotScreen from '@/screens/explore/TarotScreen';
+import MoonScreen from '@/screens/explore/MoonScreen';
+import TransitsScreen from '@/screens/explore/TransitsScreen';
+import PlanetaryHoursScreen from '@/screens/explore/PlanetaryHoursScreen';
+import RetrogradeScreen from '@/screens/explore/RetrogradeScreen';
+import CosmicYearScreen from '@/screens/explore/CosmicYearScreen';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PADDING = 16;
@@ -80,6 +88,20 @@ function GridCard({ card, onPress }: { card: FeatureCard; onPress: () => void })
 // FEATURE MODAL (placeholder)
 // ─────────────────────────────────────────────────────────────
 
+function renderScreen(id: string, onClose: () => void): React.ReactElement | null {
+  switch (id) {
+    case 'chart':    return <BirthChartScreen onClose={onClose} />;
+    case 'compat':   return <CompatibilityScreen onClose={onClose} />;
+    case 'tarot':    return <TarotScreen onClose={onClose} />;
+    case 'moon':     return <MoonScreen onClose={onClose} />;
+    case 'transits': return <TransitsScreen onClose={onClose} />;
+    case 'hours':    return <PlanetaryHoursScreen onClose={onClose} />;
+    case 'retro':    return <RetrogradeScreen onClose={onClose} />;
+    case 'year':     return <CosmicYearScreen onClose={onClose} />;
+    default:         return null;
+  }
+}
+
 function FeatureModal({
   card,
   onClose,
@@ -89,6 +111,11 @@ function FeatureModal({
 }) {
   if (!card) return null;
 
+  // CompatibilityScreen renders its own Modal internally — skip outer wrapper
+  if (card.id === 'compat') {
+    return <CompatibilityScreen onClose={onClose} />;
+  }
+
   return (
     <Modal
       visible={true}
@@ -96,21 +123,7 @@ function FeatureModal({
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.modalRoot}>
-        <View style={styles.modalHeader}>
-          <Pressable onPress={onClose} style={styles.modalCloseBtn} hitSlop={12}>
-            <Ionicons name="close" size={22} color="#1A1625" />
-          </Pressable>
-          <Text style={styles.modalHeaderTitle}>{card.title}</Text>
-          <View style={{ width: 38 }} />
-        </View>
-
-        <View style={styles.modalBody}>
-          <Text style={styles.modalEmoji}>{card.emoji}</Text>
-          <Text style={styles.modalFeatureName}>{card.title}</Text>
-          <Text style={styles.modalComingSoon}>Full feature coming soon</Text>
-        </View>
-      </SafeAreaView>
+      {renderScreen(card.id, onClose)}
     </Modal>
   );
 }

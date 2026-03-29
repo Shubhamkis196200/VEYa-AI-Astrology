@@ -8,6 +8,7 @@ import {
   TextInput,
   Pressable,
   FlatList,
+  ScrollView,
   StyleSheet,
   Platform,
   KeyboardAvoidingView,
@@ -310,14 +311,24 @@ export default function ChatScreen() {
             </Text>
           </View>
           
-          {/* Suggested Questions */}
+          {/* Suggested Questions — horizontal chips */}
           <View style={styles.suggestions}>
             <Text style={styles.suggestionsTitle}>Try asking:</Text>
-            {SUGGESTED.slice(0, 4).map((s, i) => (
-              <Pressable key={i} onPress={() => handleSend(s.replace(/^[^\w]*/, ''))} style={({ pressed }) => [styles.suggestion, pressed && styles.suggestionPressed]}>
-                <Text style={styles.suggestionText}>{s}</Text>
-              </Pressable>
-            ))}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsScroll}
+            >
+              {SUGGESTED.map((s, i) => (
+                <Pressable
+                  key={i}
+                  onPress={() => handleSend(s.replace(/^[^\w]*/, ''))}
+                  style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
+                >
+                  <Text style={styles.chipText}>{s}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
           </View>
           
           {/* Voice Feature Hint */}
@@ -412,6 +423,17 @@ const styles = StyleSheet.create({
   suggestion: { backgroundColor: COLORS.white, borderRadius: 16, paddingHorizontal: 18, paddingVertical: 14, marginBottom: 10, borderWidth: 1, borderColor: COLORS.goldBorder },
   suggestionPressed: { backgroundColor: COLORS.goldLight },
   suggestionText: { fontSize: 15, fontFamily: 'Inter-Medium', color: COLORS.textPrimary },
+  chipsScroll: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
+  chip: {
+    backgroundColor: 'rgba(139,92,246,0.1)',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.2)',
+  },
+  chipPressed: { backgroundColor: 'rgba(139,92,246,0.18)' },
+  chipText: { fontSize: 13, fontFamily: 'Inter-Medium', color: COLORS.primary },
   voiceHint: { marginTop: 16, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: COLORS.primaryLight, borderRadius: 20 },
   voiceHintText: { fontSize: 13, fontFamily: 'Inter-Medium', color: COLORS.primary },
   messageList: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
