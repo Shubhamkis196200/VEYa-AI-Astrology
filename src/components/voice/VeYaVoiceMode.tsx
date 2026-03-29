@@ -281,7 +281,8 @@ export default function VeYaVoiceMode({ onClose }: Props) {
           ]
         );
       } else {
-        setError('Could not access microphone. Tap to try again.');
+        console.error('[VeYaVoice] mic error:', msg.slice(0, 80));
+        setError("Couldn't access the microphone. Tap to try again. 🎙️");
       }
       setStatus('idle');
     }
@@ -371,13 +372,16 @@ export default function VeYaVoiceMode({ onClose }: Props) {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('401') || msg.includes('invalid_api_key') || msg.includes('Incorrect API key')) {
-        setError('OpenAI API key expired. Please update the key in settings.');
+        // Never show API key errors to users — log for developer only
+        console.error('[VeYaVoice] API key issue:', msg.slice(0, 50));
+        setError("VEYa is taking a break. Try again in a moment. ✨");
       } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('Network')) {
-        setError('No internet connection. Check your network and try again.');
+        setError('No internet connection. Check your network. 🌐');
       } else if (msg.includes('Whisper') || msg.includes('transcri')) {
-        setError('Voice transcription failed. Speak clearly and try again.');
+        setError("Couldn't quite hear that. Speak clearly and try again. 🎙️");
       } else {
-        setError('Something went wrong. Please try again.');
+        console.error('[VeYaVoice] error:', msg.slice(0, 80));
+        setError("VEYa needs a moment. Tap to try again. ✨");
       }
       setStatus('idle');
     }
@@ -637,7 +641,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: 'Inter-Regular',
     fontSize: 13,
-    color: '#F87171',
+    color: 'rgba(255,255,255,0.5)', // soft white — not alarming red
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 32,
