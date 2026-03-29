@@ -9,6 +9,17 @@
 import * as Astronomy from 'astronomy-engine';
 
 // ---------------------------------------------------------------------------
+// MODULE-LEVEL CACHE — Keyed by date string (YYYY-MM-DD)
+// Prevents re-running expensive 412KB astronomical calculations on every
+// component render. Same day = instant return. Critical for performance.
+// ---------------------------------------------------------------------------
+const _astroCache: Record<string, unknown> = {};
+
+function getCacheKey(prefix: string, date: Date): string {
+  return `${prefix}_${date.toISOString().split('T')[0]}`;
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -173,8 +184,10 @@ function isRetrograde(body: Astronomy.Body, date: Date): boolean {
  * Get current positions of all planets
  */
 export function getCurrentTransits(date: Date = new Date()): PlanetPosition[] {
+  const cacheKey = getCacheKey('transits', date);
+  if (_astroCache[cacheKey]) return _astroCache[cacheKey] as PlanetPosition[];
   try {
-    return ASTRONOMY_BODIES.map(({ name, body }) => {
+    const result = ASTRONOMY_BODIES.map(({ name, body }) => {
       const longitude = getEclipticLongitude(body, date);
       const sign = getZodiacSign(longitude);
       const signDeg = getSignDegree(longitude);
@@ -192,6 +205,8 @@ export function getCurrentTransits(date: Date = new Date()): PlanetPosition[] {
         symbol: PLANET_SYMBOLS[name] || '⭐',
       };
     });
+    _astroCache[cacheKey] = result;
+    return result;
   } catch (error) {
     console.warn('[astroEngine] getCurrentTransits failed:', error);
     return [];
@@ -202,6 +217,8 @@ export function getCurrentTransits(date: Date = new Date()): PlanetPosition[] {
  * Get current moon phase with full details
  */
 export function getMoonPhase(date: Date = new Date()): MoonPhaseInfo {
+  const cacheKey = getCacheKey('moonphase', date);
+  if (_astroCache[cacheKey]) return _astroCache[cacheKey] as MoonPhaseInfo;
   try {
     const time = Astronomy.MakeTime(date);
 
@@ -230,7 +247,7 @@ export function getMoonPhase(date: Date = new Date()): MoonPhaseInfo {
     const nextNewDate = nextNew ? nextNew.date : new Date(date.getTime() + 15 * 86400000);
     const daysUntilNew = (nextNewDate.getTime() - date.getTime()) / 86400000;
 
-    return {
+    const result: MoonPhaseInfo = {
       phaseName,
       illumination: illum.phase_fraction,
       phaseAngle,
@@ -243,6 +260,8 @@ export function getMoonPhase(date: Date = new Date()): MoonPhaseInfo {
       nextNewMoonDate: nextNewDate,
       emoji,
     };
+    _astroCache[cacheKey] = result;
+    return result;
   } catch (error) {
     console.warn('[astroEngine] getMoonPhase failed:', error);
     return {
@@ -503,6 +522,8 @@ function getMoonSignEnergy(sign: string): string {
  * Get monthly events for the transit calendar
  */
 export function getMonthEvents(year: number, month: number): MonthEvent[] {
+  const cacheKey = `monthevents_${year}_${month}`;
+  if (_astroCache[cacheKey]) return _astroCache[cacheKey] as MonthEvent[];
   try {
     const events: MonthEvent[] = [];
     const startDate = new Date(year, month - 1, 1);
@@ -681,9 +702,11 @@ const DAY_RULERS = [
  */
 export function getPlanetaryHours(
   date: Date = new Date(),
-  latitude: number = 40.7128, // Default: NYC
+  latitude: number = 40.7128,
   longitude: number = -74.0060
 ): PlanetaryHoursData {
+  const cacheKey = getCacheKey('planethours', date);
+  if (_astroCache[cacheKey]) return _astroCache[cacheKey] as PlanetaryHoursData;
   try {
     const time = Astronomy.MakeTime(date);
     const observer: Astronomy.Observer = {
@@ -828,6 +851,8 @@ export interface RetrogradeData {
  * Get comprehensive retrograde information
  */
 export function getRetrogradeData(date: Date = new Date()): RetrogradeData {
+  const cacheKey = getCacheKey('retrograde', date);
+  if (_astroCache[cacheKey]) return _astroCache[cacheKey] as RetrogradeData;
   try {
     const planets = getCurrentTransits(date);
     const currentRetrogrades: RetrogradeInfo[] = [];
