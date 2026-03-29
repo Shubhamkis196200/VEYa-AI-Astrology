@@ -43,6 +43,11 @@ import {
   transcribeAudio,
 } from '../../services/voiceService';
 import {
+  callRealtimeVoice,
+  playAudioBase64,
+  stopRealtimeAudio,
+} from '../../services/realtimeVoice';
+import {
   executeVoiceAction,
   getNavigationResponse,
   parseVoiceIntent,
@@ -116,7 +121,8 @@ APP NAVIGATION — when user wants to:
 - Moon phase → say "Here's your moon."
 - Transits → say "Showing today's planets."
 
-Today's date: ${dateStr}. Only know about ${user.name} — never reference other users.`;
+Today's date: ${dateStr}. Only know about ${user.name} — never reference other users.
+Respond as if speaking out loud. Natural speech, not written text. Keep it under 2 sentences.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -303,44 +309,6 @@ export default function VeYaVoiceMode({ onClose }: Props) {
       const audioUri = await stopRecording(recordingRef.current);
       recordingRef.current = null;
 
-      const transcribedText = await transcribeAudio(audioUri);
-      if (!transcribedText.trim()) {
-        setError("Couldn't hear you. Try again.");
-        setStatus('idle');
-        if (continuousRef.current) {
-          setTimeout(handleStartRecording, 500);
-        }
-        return;
-      }
-
-      setLastTranscript(transcribedText);
-
-      // Detect navigation intent first
-      const intent = parseVoiceIntent(transcribedText);
-
-      if (intent.type !== 'answer' && intent.type !== 'unknown') {
-        // Navigation command
-        const navResponse = getNavigationResponse(intent, userName);
-        setLastResponse(navResponse);
-        setConversation((prev) => [
-          ...prev,
-          { role: 'user', content: transcribedText },
-          { role: 'assistant', content: navResponse },
-        ]);
-
-        setStatus('speaking');
-        await speakText(navResponse);
-        setStatus('idle');
-
-        // Execute navigation — close voice mode after navigating
-        const navigated = executeVoiceAction(intent);
-        if (navigated) {
-          onClose();
-        }
-        return;
-      }
-
-      // Conversational answer
       const systemPrompt = buildSystemPrompt({
         name: userName,
         sunSign,
@@ -350,15 +318,116 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         transitSummary,
       });
 
-      // Build conversation history for GPT (last 6 turns)
-      const historyForGPT = conversation.slice(-6);
+      // -----------------------------------------------------------------------
+      // PRIMARY PATH: gpt-4o-audio-preview single call (~2-3s)
+      // -----------------------------------------------------------------------
+      let usedRealtimePipeline = false;
+      let transcript = '';
+      let responseText = '';
 
-      const aiReply = await getAstrologyResponse(transcribedText, { name: userName, sunSign, moonSign, risingSign, birthDate }, historyForGPT);
+      try {
+        const result = await callRealtimeVoice(audioUri, systemPrompt, conversation.slice(-4));
+        transcript = result.transcript;
+        responseText = result.responseText;
+        usedRealtimePipeline = true;
+
+        if (!transcript.trim()) {
+          setError("Couldn't hear you. Try again.");
+          setStatus('idle');
+          if (continuousRef.current) setTimeout(handleStartRecording, 500);
+          return;
+        }
+
+        setLastTranscript(transcript);
+
+        // Check navigation intent on the returned transcript
+        const intent = parseVoiceIntent(transcript);
+
+        if (intent.type !== 'answer' && intent.type !== 'unknown') {
+          // Navigation: play the AI's audio (it says "Opening your chart…") + navigate
+          const displayResponse = responseText || getNavigationResponse(intent, userName);
+          setLastResponse(displayResponse);
+          setConversation((prev) => [
+            ...prev,
+            { role: 'user', content: transcript },
+            { role: 'assistant', content: displayResponse },
+          ]);
+
+          setStatus('speaking');
+          await playAudioBase64(result.audioBase64);
+          setStatus('idle');
+
+          const navigated = executeVoiceAction(intent);
+          if (navigated) onClose();
+          return;
+        }
+
+        // Conversational answer
+        setLastResponse(responseText);
+        setConversation((prev) => [
+          ...prev,
+          { role: 'user', content: transcript },
+          { role: 'assistant', content: responseText },
+        ]);
+
+        setStatus('speaking');
+        await playAudioBase64(result.audioBase64);
+        setStatus('idle');
+
+        if (continuousRef.current) setTimeout(handleStartRecording, 500);
+        return;
+      } catch (realtimeErr: unknown) {
+        // Realtime pipeline failed — fall through to legacy pipeline
+        const rtMsg = realtimeErr instanceof Error ? realtimeErr.message : String(realtimeErr);
+        console.warn('[VeYaVoice] realtime pipeline failed, falling back:', rtMsg.slice(0, 80));
+      }
+
+      // -----------------------------------------------------------------------
+      // FALLBACK: Whisper → GPT → TTS (6-10s, always works)
+      // -----------------------------------------------------------------------
+      if (!usedRealtimePipeline || !transcript) {
+        transcript = await transcribeAudio(audioUri);
+      }
+
+      if (!transcript.trim()) {
+        setError("Couldn't hear you. Try again.");
+        setStatus('idle');
+        if (continuousRef.current) setTimeout(handleStartRecording, 500);
+        return;
+      }
+
+      setLastTranscript(transcript);
+
+      const intent = parseVoiceIntent(transcript);
+
+      if (intent.type !== 'answer' && intent.type !== 'unknown') {
+        const navResponse = getNavigationResponse(intent, userName);
+        setLastResponse(navResponse);
+        setConversation((prev) => [
+          ...prev,
+          { role: 'user', content: transcript },
+          { role: 'assistant', content: navResponse },
+        ]);
+
+        setStatus('speaking');
+        await speakText(navResponse);
+        setStatus('idle');
+
+        const navigated = executeVoiceAction(intent);
+        if (navigated) onClose();
+        return;
+      }
+
+      const aiReply = await getAstrologyResponse(
+        transcript,
+        { name: userName, sunSign, moonSign, risingSign, birthDate },
+        conversation.slice(-6),
+      );
 
       setLastResponse(aiReply);
       setConversation((prev) => [
         ...prev,
-        { role: 'user', content: transcribedText },
+        { role: 'user', content: transcript },
         { role: 'assistant', content: aiReply },
       ]);
 
@@ -370,14 +439,10 @@ export default function VeYaVoiceMode({ onClose }: Props) {
       }
       setStatus('idle');
 
-      // Continuous mode: restart recording after VEYa finishes speaking
-      if (continuousRef.current) {
-        setTimeout(handleStartRecording, 500);
-      }
+      if (continuousRef.current) setTimeout(handleStartRecording, 500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('401') || msg.includes('invalid_api_key') || msg.includes('Incorrect API key')) {
-        // Never show API key errors to users — log for developer only
         console.error('[VeYaVoice] API key issue:', msg.slice(0, 50));
         setError("VEYa is taking a break. Try again in a moment. ✨");
       } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('Network')) {
@@ -420,6 +485,7 @@ export default function VeYaVoiceMode({ onClose }: Props) {
       handleStopAndProcess();
     } else if (status === 'speaking') {
       stopSpeaking();
+      stopRealtimeAudio();
       setStatus('idle');
     }
   }, [status, handleStartRecording, handleStopAndProcess]);
@@ -431,7 +497,7 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   const handleClose = useCallback(async () => {
     continuousRef.current = false;
     setContinuousListen(false);
-    await stopSpeaking();
+    await Promise.all([stopSpeaking(), stopRealtimeAudio()]);
     if (recordingRef.current) {
       try {
         await stopRecording(recordingRef.current);
