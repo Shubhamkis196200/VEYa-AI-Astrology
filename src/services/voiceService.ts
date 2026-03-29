@@ -247,12 +247,12 @@ async function speakWithOpenAI(text: string): Promise<boolean> {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini-tts', // Best TTS model available
-        voice: 'nova', // Nova: most natural, human-like female voice (warm, clear, realistic)
+        model: 'gpt-4o-mini-tts', // Best TTS model
+        voice: 'ballad', // Most expressive, emotional storytelling voice — perfect for astrologer
         input: text,
-        instructions: 'You are VEYa, a warm and wise astrologer. Speak naturally and clearly, like a calm, caring person having a real conversation. Use a gentle, confident tone. Slight emotional warmth — not robotic, not over-enthusiastic. Like a trusted friend.',
+        instructions: 'You are VEYa, a wise and warm personal astrologer. Speak with gentle authority — intimate, like you truly know this person. Use natural pauses, subtle warmth, and a slightly mystical quality. Not robotic. Not over-enthusiastic. Like a trusted guide who sees the stars clearly.',
         response_format: 'mp3',
-        speed: 0.95, // Slightly slower = more natural, less rushed
+        speed: 0.92, // Slightly slower = more thoughtful, intimate, human
       }),
     });
 
