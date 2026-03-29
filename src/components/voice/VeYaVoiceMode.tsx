@@ -1,13 +1,11 @@
 // ============================================================================
 // VeYaVoiceMode — Full-screen voice control + navigation AI
 // ============================================================================
-// - WebSocket Realtime API primary path (streaming, <1s first response)
-// - Fallback: gpt-4o-audio-preview single call (~2-3s)
-// - Last-resort fallback: Whisper → GPT → TTS
-// - Multi-turn conversation with real astrology context
-// - Voice navigation: "show my chart", "pull tarot", etc.
-// - Continuous listen mode toggle
-// - User-isolated: ONLY reads from onboardingStore (no global/shared state)
+// Single voice path: record → sendVoiceMessage (gpt-4o-audio-preview) → play
+// Voice: onyx (deep male). No WebSocket complexity.
+// Multi-turn conversation with real astrology context.
+// Voice navigation: "show my chart", "pull tarot", etc.
+// User-isolated: ONLY reads from onboardingStore (no global/shared state)
 // ============================================================================
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -33,28 +31,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 
 import { useOnboardingStore } from '../../stores/onboardingStore';
-import {
-  getAstrologyResponse,
-  speakText,
-  startRecording,
-  stopRecording,
-  stopSpeaking,
-  transcribeAudio,
-} from '../../services/voiceService';
-import {
-  callRealtimeVoice,
-  playAudioBase64,
-  stopRealtimeAudio,
-} from '../../services/realtimeVoice';
-import {
-  createRealtimeSession,
-  stopRealtimePlayback,
-  type RealtimeSession,
-} from '../../services/realtimeWebSocket';
+import { startRecording, stopRecording } from '../../services/voiceService';
+import { playVoiceAudio, sendVoiceMessage, stopVoicePlayback } from '../../services/realtimeVoice';
 import {
   executeVoiceAction,
   getNavigationResponse,
@@ -89,7 +70,7 @@ const STATUS_CONFIG: Record<VoiceStatus, { label: string; color: string }> = {
 };
 
 // ---------------------------------------------------------------------------
-// Build full system prompt (for fallback paths)
+// Build full system prompt
 // ---------------------------------------------------------------------------
 
 function buildSystemPrompt(user: {
@@ -134,22 +115,6 @@ Respond as if speaking out loud. Natural speech, not written text. Keep it under
 }
 
 // ---------------------------------------------------------------------------
-// Build short realtime prompt (<300 chars for WebSocket API)
-// ---------------------------------------------------------------------------
-
-function buildRealtimePrompt(user: {
-  name: string;
-  sunSign: string;
-  moonSign: string;
-  risingSign: string;
-  transitSummary: string;
-}): string {
-  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  const transits = user.transitSummary.slice(0, 80);
-  return `VEYa astrologer speaking to ${user.name}. Sun ${user.sunSign}, Moon ${user.moonSign}, Rising ${user.risingSign}. ${transits} Today: ${today}. Warm, mystical. 1-2 poetic sentences only.`.slice(0, 300);
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -190,14 +155,9 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   const [lastResponse, setLastResponse] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [continuousListen, setContinuousListen] = useState(false);
-  const [isSessionConnected, setIsSessionConnected] = useState(false);
 
   const recordingRef = useRef<Audio.Recording | null>(null);
   const continuousRef = useRef(false);
-  const realtimeSessionRef = useRef<RealtimeSession | null>(null);
-  // Accumulate transcript/response for conversation push on onDone
-  const pendingTranscriptRef = useRef('');
-  const pendingResponseRef = useRef('');
   // Stable ref to handleStartRecording for use inside callbacks
   const handleStartRecordingRef = useRef<() => void>(() => {});
   const scrollRef = useRef<ScrollView>(null);
@@ -206,113 +166,6 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   useEffect(() => {
     continuousRef.current = continuousListen;
   }, [continuousListen]);
-
-  // ---------------------------------------------------------------------------
-  // Pre-connect WebSocket Realtime session on mount
-  // ---------------------------------------------------------------------------
-
-  useEffect(() => {
-    let mounted = true;
-
-    const prompt = buildRealtimePrompt({
-      name: userName,
-      sunSign,
-      moonSign,
-      risingSign,
-      transitSummary,
-    });
-
-    createRealtimeSession(prompt, {
-      onTranscript: (text) => {
-        if (!mounted) return;
-        pendingTranscriptRef.current = text;
-        setLastTranscript(text);
-
-        // Check for navigation intent on transcript
-        const intent = parseVoiceIntent(text);
-        if (intent.type !== 'answer' && intent.type !== 'unknown') {
-          realtimeSessionRef.current?.interrupt();
-          stopRealtimePlayback();
-          const navResponse = getNavigationResponse(intent, userName);
-          pendingResponseRef.current = navResponse;
-          setLastResponse(navResponse);
-          setConversation((prev) => [
-            ...prev,
-            { role: 'user', content: text },
-            { role: 'assistant', content: navResponse },
-          ]);
-          pendingTranscriptRef.current = '';
-          pendingResponseRef.current = '';
-
-          setStatus('speaking');
-          speakText(navResponse)
-            .catch(() => {})
-            .finally(() => {
-              if (!mounted) return;
-              setStatus('idle');
-              const navigated = executeVoiceAction(intent);
-              if (navigated) onClose();
-            });
-        }
-      },
-      onResponseText: (text) => {
-        if (!mounted) return;
-        pendingResponseRef.current = text;
-        setLastResponse(text);
-      },
-      onAudioChunk: () => {
-        if (!mounted) return;
-        // Audio is played by realtimeWebSocket.ts — just update UI
-        setStatus((prev) => (prev === 'processing' ? 'speaking' : prev));
-      },
-      onDone: () => {
-        if (!mounted) return;
-        const t = pendingTranscriptRef.current;
-        const r = pendingResponseRef.current;
-        if (t || r) {
-          setConversation((prev) => [
-            ...prev,
-            ...(t ? [{ role: 'user' as const, content: t }] : []),
-            ...(r ? [{ role: 'assistant' as const, content: r }] : []),
-          ]);
-        }
-        pendingTranscriptRef.current = '';
-        pendingResponseRef.current = '';
-        setStatus('idle');
-        if (continuousRef.current) {
-          setTimeout(() => handleStartRecordingRef.current(), 500);
-        }
-      },
-      onError: (err) => {
-        if (!mounted) return;
-        console.warn('[VeYaVoice] WS error:', err.slice(0, 80));
-        setIsSessionConnected(false);
-        // Don't surface WS errors to user — fall back silently
-        setStatus('idle');
-      },
-    })
-      .then((session) => {
-        if (!mounted) {
-          session.disconnect();
-          return;
-        }
-        realtimeSessionRef.current = session;
-        setIsSessionConnected(true);
-      })
-      .catch((err: unknown) => {
-        if (!mounted) return;
-        console.warn('[VeYaVoice] WS connect failed:', String(err).slice(0, 80));
-        setIsSessionConnected(false);
-      });
-
-    return () => {
-      mounted = false;
-      realtimeSessionRef.current?.disconnect();
-      realtimeSessionRef.current = null;
-      stopRealtimePlayback();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // connect once on mount — user data from store is synchronously available
 
   // ---------------------------------------------------------------------------
   // Animations
@@ -449,33 +302,6 @@ export default function VeYaVoiceMode({ onClose }: Props) {
       const audioUri = await stopRecording(recordingRef.current);
       recordingRef.current = null;
 
-      // -----------------------------------------------------------------------
-      // PRIMARY PATH: WebSocket Realtime (streaming, <1s first response)
-      // -----------------------------------------------------------------------
-      const session = realtimeSessionRef.current;
-      if (session && session.isConnected) {
-        try {
-          const base64Audio = await FileSystem.readAsStringAsync(audioUri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          // Reset pending state for new turn
-          pendingTranscriptRef.current = '';
-          pendingResponseRef.current = '';
-          session.sendAudio(base64Audio);
-          session.commitAudio();
-          // Response streams back via callbacks set up on mount
-          // status transitions: processing → speaking (on first audio chunk) → idle (on done)
-          return;
-        } catch (wsErr: unknown) {
-          const wsMsg = wsErr instanceof Error ? wsErr.message : String(wsErr);
-          console.warn('[VeYaVoice] WS send failed, falling back:', wsMsg.slice(0, 60));
-          // Fall through to gpt-4o-audio-preview
-        }
-      }
-
-      // -----------------------------------------------------------------------
-      // FALLBACK: gpt-4o-audio-preview single call (~2-3s)
-      // -----------------------------------------------------------------------
       const systemPrompt = buildSystemPrompt({
         name: userName,
         sunSign,
@@ -485,74 +311,15 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         transitSummary,
       });
 
-      let usedRealtimePipeline = false;
-      let transcript = '';
-      let responseText = '';
+      const result = await sendVoiceMessage(audioUri, systemPrompt, conversation.slice(-4));
 
-      try {
-        const result = await callRealtimeVoice(audioUri, systemPrompt, conversation.slice(-4));
-        transcript = result.transcript;
-        responseText = result.responseText;
-        usedRealtimePipeline = true;
-
-        if (!transcript.trim()) {
-          setError("Couldn't hear you. Try again.");
-          setStatus('idle');
-          if (continuousRef.current) setTimeout(handleStartRecording, 500);
-          return;
-        }
-
-        setLastTranscript(transcript);
-
-        const intent = parseVoiceIntent(transcript);
-
-        if (intent.type !== 'answer' && intent.type !== 'unknown') {
-          const displayResponse = responseText || getNavigationResponse(intent, userName);
-          setLastResponse(displayResponse);
-          setConversation((prev) => [
-            ...prev,
-            { role: 'user', content: transcript },
-            { role: 'assistant', content: displayResponse },
-          ]);
-
-          setStatus('speaking');
-          await playAudioBase64(result.audioBase64);
-          setStatus('idle');
-
-          const navigated = executeVoiceAction(intent);
-          if (navigated) onClose();
-          return;
-        }
-
-        setLastResponse(responseText);
-        setConversation((prev) => [
-          ...prev,
-          { role: 'user', content: transcript },
-          { role: 'assistant', content: responseText },
-        ]);
-
-        setStatus('speaking');
-        await playAudioBase64(result.audioBase64);
-        setStatus('idle');
-
-        if (continuousRef.current) setTimeout(handleStartRecording, 500);
-        return;
-      } catch (realtimeErr: unknown) {
-        const rtMsg = realtimeErr instanceof Error ? realtimeErr.message : String(realtimeErr);
-        console.warn('[VeYaVoice] gpt-4o-audio fallback failed, using Whisper:', rtMsg.slice(0, 80));
-      }
-
-      // -----------------------------------------------------------------------
-      // LAST RESORT: Whisper → GPT → TTS (6-10s, always works)
-      // -----------------------------------------------------------------------
-      if (!usedRealtimePipeline || !transcript) {
-        transcript = await transcribeAudio(audioUri);
-      }
+      const transcript = result.transcript;
+      const responseText = result.responseText;
 
       if (!transcript.trim()) {
         setError("Couldn't hear you. Try again.");
         setStatus('idle');
-        if (continuousRef.current) setTimeout(handleStartRecording, 500);
+        if (continuousRef.current) setTimeout(() => handleStartRecordingRef.current(), 500);
         return;
       }
 
@@ -561,16 +328,16 @@ export default function VeYaVoiceMode({ onClose }: Props) {
       const intent = parseVoiceIntent(transcript);
 
       if (intent.type !== 'answer' && intent.type !== 'unknown') {
-        const navResponse = getNavigationResponse(intent, userName);
-        setLastResponse(navResponse);
+        const displayResponse = responseText || getNavigationResponse(intent, userName);
+        setLastResponse(displayResponse);
         setConversation((prev) => [
           ...prev,
           { role: 'user', content: transcript },
-          { role: 'assistant', content: navResponse },
+          { role: 'assistant', content: displayResponse },
         ]);
 
         setStatus('speaking');
-        await speakText(navResponse);
+        await playVoiceAudio(result.audioBase64);
         setStatus('idle');
 
         const navigated = executeVoiceAction(intent);
@@ -578,28 +345,18 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         return;
       }
 
-      const aiReply = await getAstrologyResponse(
-        transcript,
-        { name: userName, sunSign, moonSign, risingSign, birthDate },
-        conversation.slice(-6),
-      );
-
-      setLastResponse(aiReply);
+      setLastResponse(responseText);
       setConversation((prev) => [
         ...prev,
         { role: 'user', content: transcript },
-        { role: 'assistant', content: aiReply },
+        { role: 'assistant', content: responseText },
       ]);
 
       setStatus('speaking');
-      try {
-        await speakText(aiReply);
-      } catch {
-        // TTS failed — text is shown anyway
-      }
+      await playVoiceAudio(result.audioBase64);
       setStatus('idle');
 
-      if (continuousRef.current) setTimeout(handleStartRecording, 500);
+      if (continuousRef.current) setTimeout(() => handleStartRecordingRef.current(), 500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('401') || msg.includes('invalid_api_key') || msg.includes('Incorrect API key')) {
@@ -607,8 +364,6 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         setError("VEYa is taking a break. Try again in a moment. ✨");
       } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('Network')) {
         setError('No internet connection. Check your network. 🌐');
-      } else if (msg.includes('Whisper') || msg.includes('transcri')) {
-        setError("Couldn't quite hear that. Speak clearly and try again. 🎙️");
       } else {
         console.error('[VeYaVoice] error:', msg.slice(0, 80));
         setError("VEYa needs a moment. Tap to try again. ✨");
@@ -624,7 +379,6 @@ export default function VeYaVoiceMode({ onClose }: Props) {
     birthDate,
     transitSummary,
     onClose,
-    handleStartRecording,
   ]);
 
   // Scroll to bottom when conversation updates
@@ -644,11 +398,7 @@ export default function VeYaVoiceMode({ onClose }: Props) {
     } else if (status === 'listening') {
       handleStopAndProcess();
     } else if (status === 'speaking') {
-      // Interrupt streaming audio from WebSocket
-      realtimeSessionRef.current?.interrupt();
-      stopSpeaking();
-      stopRealtimeAudio();
-      stopRealtimePlayback();
+      stopVoicePlayback();
       setStatus('idle');
     }
   }, [status, handleStartRecording, handleStopAndProcess]);
@@ -660,10 +410,7 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   const handleClose = useCallback(async () => {
     continuousRef.current = false;
     setContinuousListen(false);
-    // Stop WebSocket session and all audio
-    realtimeSessionRef.current?.disconnect();
-    realtimeSessionRef.current = null;
-    await Promise.all([stopSpeaking(), stopRealtimeAudio(), stopRealtimePlayback()]);
+    await stopVoicePlayback();
     if (recordingRef.current) {
       try {
         await stopRecording(recordingRef.current);
@@ -708,7 +455,6 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         <Text style={styles.title}>VEYa</Text>
         <Text style={styles.subtitle}>
           {userName} · {sunSign} ☉
-          {isSessionConnected ? ' · ⚡' : ''}
         </Text>
       </View>
 
