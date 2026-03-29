@@ -33,6 +33,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentTransits, getMoonPhase } from '@/services/astroEngine';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePathname } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
@@ -145,8 +146,11 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const insets = useSafeAreaInsets();
-  // Position button above tab bar (tab bar ~62px) + safe area bottom + extra gap
-  const buttonBottom = 62 + insets.bottom + 16;
+  const pathname = usePathname();
+  // Hide on Chat tab — it has its own input bar and the button blocks it
+  const isOnChat = pathname?.includes('/chat');
+  // Position well above tab bar: tabBar(62) + safeArea + chat input height(72) + generous gap
+  const buttonBottom = 62 + insets.bottom + 80;
   
   // Safe memoized moon phase - computed once, not in render
   const [moonInfo, setMoonInfo] = useState({ moonSign: 'Calculating...', phaseName: 'Moon' });
@@ -251,8 +255,8 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
 
   return (
     <>
-      {/* Floating Button */}
-      <AnimatedPressable
+      {/* Floating Button — hidden on Chat tab (has its own input bar) */}
+      {!isOnChat && <AnimatedPressable
         onPress={handlePress}
         style={[styles.floatingButton, { bottom: buttonBottom }, style, buttonStyle]}
       >
@@ -265,7 +269,7 @@ export default function MomentCaptureButton({ style }: MomentCaptureButtonProps)
         >
           <Text style={styles.buttonIcon}>✨</Text>
         </LinearGradient>
-      </AnimatedPressable>
+      </AnimatedPressable>}
 
       {/* Capture Modal */}
       <Modal
