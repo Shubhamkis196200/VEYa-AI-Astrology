@@ -17,7 +17,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.adlytica.veya"
+      "bundleIdentifier": "com.adlytica.veya",
+      "jsEngine": "hermes"
     },
     "android": {
       "adaptiveIcon": {
@@ -26,7 +27,8 @@
       },
       "package": "com.adlytica.veya",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "jsEngine": "hermes"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -50,6 +52,7 @@
     "platforms": [
       "ios",
       "android"
-    ]
+    ],
+    "jsEngine": "hermes"
   }
 }
