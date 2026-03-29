@@ -23,7 +23,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withDelay,
-  withRepeat,
   withSequence,
   withSpring,
   interpolate,
@@ -145,37 +144,6 @@ async function hapticMedium() {
 // ─────────────────────────────────────────────────────────────
 // COMPONENT: What's Here Section (Feature Discovery)
 // ─────────────────────────────────────────────────────────────
-
-function WhatsHereSection() {
-  return (
-    <Animated.View entering={FadeInDown.duration(500).delay(200)}>
-      <View style={[styles.card, styles.whatsHereCard]}>
-        <Text style={styles.whatsHereTitle}>👤 Your Profile</Text>
-        <Text style={styles.whatsHereDesc}>
-          This is your cosmic home — view your chart, track your stats, reflect in your journal, and customize your VEYa experience.
-        </Text>
-        <View style={styles.whatsHereFeatures}>
-          <View style={styles.whatsHereFeatureItem}>
-            <Text style={styles.whatsHereFeatureEmoji}>📊</Text>
-            <Text style={styles.whatsHereFeatureLabel}>Stats</Text>
-          </View>
-          <View style={styles.whatsHereFeatureItem}>
-            <Text style={styles.whatsHereFeatureEmoji}>⭐</Text>
-            <Text style={styles.whatsHereFeatureLabel}>Chart</Text>
-          </View>
-          <View style={styles.whatsHereFeatureItem}>
-            <Text style={styles.whatsHereFeatureEmoji}>✍️</Text>
-            <Text style={styles.whatsHereFeatureLabel}>Journal</Text>
-          </View>
-          <View style={styles.whatsHereFeatureItem}>
-            <Text style={styles.whatsHereFeatureEmoji}>⚙️</Text>
-            <Text style={styles.whatsHereFeatureLabel}>Settings</Text>
-          </View>
-        </View>
-      </View>
-    </Animated.View>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────
 // COMPONENT: Profile Header
@@ -681,74 +649,6 @@ function SettingsSection({ focusAreas }: { focusAreas: string[] }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// STARDUST PARTICLES
-// ─────────────────────────────────────────────────────────────
-
-interface ParticleConfig {
-  cx: number; cy: number; r: number; opacity: number;
-  delay: number; duration: number; driftX: number; driftY: number; color: string;
-}
-
-function generateParticles(count: number): ParticleConfig[] {
-  const particles: ParticleConfig[] = [];
-  const tones = ['rgba(212, 165, 71, 0.3)', 'rgba(139, 92, 246, 0.15)', 'rgba(232, 120, 138, 0.12)'];
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      cx: Math.random() * SCREEN_WIDTH, cy: Math.random() * 200,
-      r: Math.random() * 1.4 + 0.4, opacity: Math.random() * 0.2 + 0.05,
-      delay: Math.random() * 4000, duration: Math.random() * 8000 + 6000,
-      driftX: (Math.random() - 0.5) * 15, driftY: (Math.random() - 0.5) * 10,
-      color: tones[Math.floor(Math.random() * tones.length)],
-    });
-  }
-  return particles;
-}
-
-const PARTICLES = generateParticles(8);
-
-function StardustParticle({ config }: { config: ParticleConfig }) {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const opacity = useSharedValue(0);
-
-  useEffect(() => {
-    translateX.value = withDelay(config.delay, withRepeat(
-      withSequence(
-        withTiming(config.driftX, { duration: config.duration, easing: Easing.inOut(Easing.sin) }),
-        withTiming(-config.driftX * 0.6, { duration: config.duration * 0.8, easing: Easing.inOut(Easing.sin) })
-      ), -1, true
-    ));
-    translateY.value = withDelay(config.delay, withRepeat(
-      withSequence(
-        withTiming(config.driftY, { duration: config.duration * 1.1, easing: Easing.inOut(Easing.sin) }),
-        withTiming(-config.driftY * 0.5, { duration: config.duration * 0.9, easing: Easing.inOut(Easing.sin) })
-      ), -1, true
-    ));
-    opacity.value = withDelay(config.delay, withRepeat(
-      withSequence(
-        withTiming(config.opacity, { duration: config.duration * 0.5, easing: Easing.inOut(Easing.ease) }),
-        withTiming(config.opacity * 0.15, { duration: config.duration * 0.5, easing: Easing.inOut(Easing.ease) })
-      ), -1, true
-    ));
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[{
-        position: 'absolute', left: config.cx, top: config.cy,
-        width: config.r * 2, height: config.r * 2,
-        borderRadius: config.r, backgroundColor: config.color,
-      }, animatedStyle]}
-    />
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
 // MAIN: ProfileScreen
 // ─────────────────────────────────────────────────────────────
 
@@ -773,9 +673,6 @@ export default function ProfileScreen() {
         locations={[0, 0.4, 1]}
         style={StyleSheet.absoluteFillObject}
       />
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-        {PARTICLES.map((p, i) => <StardustParticle key={i} config={p} />)}
-      </View>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.md }]}

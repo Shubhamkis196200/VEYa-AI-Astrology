@@ -1112,8 +1112,13 @@ export function RitualsContentSection() {
 export default function RitualsScreen() {
   const insets = useSafeAreaInsets();
   const [journalVisible, setJournalVisible] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const realRitual = useRealRitualContent();
   const mockData = useMemo(() => buildMockData(realRitual), [realRitual]);
+
+  const hour = new Date().getHours();
+  const isMorning = hour < 12;
+  const isEvening = hour >= 17;
 
   return (
     <RitualMockContext.Provider value={mockData}>
@@ -1124,7 +1129,6 @@ export default function RitualsScreen() {
           locations={[0, 0.4, 1]}
           style={StyleSheet.absoluteFillObject}
         />
-        {/* Particles removed for performance */}
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.md }]}
@@ -1133,18 +1137,38 @@ export default function RitualsScreen() {
         >
           <MorningRitualFlow />
           <PracticeHeader />
-          <MoonPhaseDetailsCard />
-          <PlanetaryHoursCard />
-          <RetrogradeTrackerCard />
-          <DailyWeeklyRitualsCard />
-          <MorningRitualCard />
-          <EveningRitualCard />
+
+          {/* Time-aware ritual cards */}
+          {!isMorning && !isEvening && (
+            <Text style={styles.afternoonHeader}>Afternoon Check-in</Text>
+          )}
+          {(isMorning || (!isMorning && !isEvening)) && <MorningRitualCard />}
+          {(isEvening || (!isMorning && !isEvening)) && <EveningRitualCard />}
+
+          {/* More Practices collapsible */}
+          <Pressable
+            onPress={() => setShowMore(v => !v)}
+            style={styles.morePracticesRow}
+          >
+            <Text style={styles.morePracticesLabel}>
+              More Practices {showMore ? '▾' : '▸'}
+            </Text>
+          </Pressable>
+          {showMore && (
+            <>
+              <MoonPhaseDetailsCard />
+              <PlanetaryHoursCard />
+              <RetrogradeTrackerCard />
+              <DailyWeeklyRitualsCard />
+            </>
+          )}
+
           <CosmicJournalSection onWrite={() => setJournalVisible(true)} />
           <InsightsCard />
           <View style={{ height: 40 }} />
         </ScrollView>
-        <JournalModal 
-          visible={journalVisible} 
+        <JournalModal
+          visible={journalVisible}
           onClose={() => setJournalVisible(false)}
           prompt={realRitual.journalPrompt}
         />
@@ -1167,6 +1191,22 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.heading3,
     color: colors.textPrimary,
     marginBottom: spacing.md,
+  },
+  afternoonHeader: {
+    fontFamily: typography.fonts.displaySemiBold,
+    fontSize: typography.sizes.heading3,
+    color: colors.textPrimary,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  morePracticesRow: {
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
+  },
+  morePracticesLabel: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: typography.sizes.body,
+    color: colors.primary,
   },
 
   // Morning ritual flow
