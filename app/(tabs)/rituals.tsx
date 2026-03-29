@@ -356,7 +356,6 @@ function JournalModal({
 // MORNING RITUAL FLOW (new)
 // ─────────────────────────────────────────────────────────────
 
-const DEMO_USER_ID = 'demo-user-001';
 const MORNING_RITUAL_TYPE = 'morning_ritual';
 
 function getTodayDateString(): string {

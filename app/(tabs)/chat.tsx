@@ -55,43 +55,6 @@ const COLORS = {
   aiBubbleBorder: 'rgba(212, 165, 71, 0.12)',
 };
 
-// Feature Discovery: Suggested Questions organized by category
-const SUGGESTED_CATEGORIES = [
-  {
-    title: 'Daily Guidance',
-    emoji: '☀️',
-    questions: [
-      "What does today hold for me?",
-      "What should I focus on this week?",
-    ],
-  },
-  {
-    title: 'Love & Relationships',
-    emoji: '💕',
-    questions: [
-      "Tell me about my love life",
-      "What's my compatibility with Libra?",
-    ],
-  },
-  {
-    title: 'Career & Purpose',
-    emoji: '🚀',
-    questions: [
-      "Career guidance please",
-      "What are my natural talents?",
-    ],
-  },
-  {
-    title: 'Self Discovery',
-    emoji: '✨',
-    questions: [
-      "Explain my birth chart",
-      "Tell me about my rising sign",
-    ],
-  },
-];
-
-// Flat list for quick access
 const SUGGESTED = [
   '✨ What does today hold for me?',
   '💜 Tell me about my love life',

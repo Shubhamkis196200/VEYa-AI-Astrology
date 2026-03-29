@@ -23,7 +23,6 @@ import { useStreakStore } from '@/stores/streakStore';
 import { useUserStore } from '@/stores/userStore';
 import type { ZodiacSign } from '@/types';
 import OneInsightCard from '@/components/home/OneInsightCard';
-import EnergyMeter from '@/components/home/EnergyMeter';
 import DoAndDontCard from '@/components/home/DoAndDontCard';
 import CosmicWeatherWidget from '@/components/home/CosmicWeatherWidget';
 import VoiceInterface from '@/components/voice/VoiceInterface';

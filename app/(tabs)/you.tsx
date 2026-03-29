@@ -27,8 +27,6 @@ import Animated, {
   withSpring,
   interpolate,
   Easing,
-  FadeIn,
-  FadeInDown,
 } from 'react-native-reanimated';
 import Svg, {
   Circle,
@@ -186,7 +184,7 @@ function ProfileHeader({ userName, sunSign, moonSign, risingSign }: ProfileHeade
   const AVATAR_BORDER_SIZE = 96;
 
   return (
-    <Animated.View entering={FadeIn.duration(800).delay(100)} style={styles.profileHeaderContainer}>
+    <Animated.View style={styles.profileHeaderContainer}>
       <View style={styles.avatarSection}>
         <View style={styles.avatarContainer}>
           <Animated.View style={[styles.avatarBorderRing, borderAnimatedStyle]}>
@@ -218,11 +216,11 @@ function ProfileHeader({ userName, sunSign, moonSign, risingSign }: ProfileHeade
         </View>
       </View>
 
-      <Animated.Text entering={FadeInDown.duration(500).delay(300)} style={styles.profileName}>
+      <Animated.Text style={styles.profileName}>
         {userName || 'Cosmic Soul'}
       </Animated.Text>
 
-      <Animated.View entering={FadeInDown.duration(500).delay(400)} style={styles.bigThreeRow}>
+      <Animated.View style={styles.bigThreeRow}>
         <View style={styles.bigThreeBadge}>
           <Text style={styles.bigThreeSymbol}>☉</Text>
           <Text style={styles.bigThreeSign}>{sunSign || 'Unknown'}</Text>
@@ -239,7 +237,7 @@ function ProfileHeader({ userName, sunSign, moonSign, risingSign }: ProfileHeade
         </View>
       </Animated.View>
 
-      <Animated.Text entering={FadeInDown.duration(400).delay(500)} style={styles.memberSince}>
+      <Animated.Text style={styles.memberSince}>
         Welcome to VEYa ✨
       </Animated.Text>
 
@@ -258,12 +256,11 @@ function ProfileHeader({ userName, sunSign, moonSign, risingSign }: ProfileHeade
 
 function CosmicStatsCard() {
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(600)}>
-      <View style={[styles.card, styles.statsCard]}>
+    <View style={[styles.card, styles.statsCard]}>
         <Text style={styles.statsTitle}>Your Cosmic Stats</Text>
         <View style={styles.statsGrid}>
           {MOCK_COSMIC.stats.map((stat, index) => (
-            <Animated.View key={stat.id} entering={FadeInDown.duration(400).delay(700 + index * 80)} style={styles.statItem}>
+            <Animated.View key={stat.id} style={styles.statItem}>
               <View style={styles.statIconCircle}>
                 <Text style={styles.statIcon}>{stat.icon}</Text>
               </View>
@@ -272,8 +269,7 @@ function CosmicStatsCard() {
             </Animated.View>
           ))}
         </View>
-      </View>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -300,8 +296,7 @@ function MyChartSummary({ birthDate, birthPlace, sunSign, moonSign, risingSign }
   ];
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(900)}>
-      <View style={[styles.card, styles.chartCard]}>
+    <View style={[styles.card, styles.chartCard]}>
         <View style={styles.chartHeader}>
           <Text style={styles.chartTitle}>My Chart</Text>
           <Pressable onPress={() => hapticLight()} style={styles.editLink}>
@@ -333,7 +328,6 @@ function MyChartSummary({ birthDate, birthPlace, sunSign, moonSign, risingSign }
           </View>
         </View>
       </View>
-    </Animated.View>
   );
 }
 
@@ -353,7 +347,7 @@ function JournalSection() {
   const recentEntries = entries.slice(0, 3);
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(900)} style={styles.sectionBlock}>
+    <Animated.View style={styles.sectionBlock}>
       <View style={styles.sectionHeaderRow}>
         <Text style={styles.sectionTitle}>Journal</Text>
         <Pressable onPress={() => router.push('/(tabs)/rituals')} style={styles.sectionActionPill}>
@@ -397,7 +391,7 @@ function AchievementsSection() {
   }, []);
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(1050)} style={styles.sectionBlock}>
+    <Animated.View style={styles.sectionBlock}>
       <Text style={styles.sectionTitle}>Achievement Badges</Text>
       <View style={styles.progressCard}>
         <View style={styles.progressRow}>
@@ -470,8 +464,7 @@ function SubscriptionCard() {
   }));
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(1100)}>
-      <Animated.View style={[styles.card, styles.subscriptionCard, shimmerStyle]}>
+    <Animated.View style={[styles.card, styles.subscriptionCard, shimmerStyle]}>
         <LinearGradient
           colors={['rgba(212, 165, 71, 0.3)', 'rgba(139, 92, 246, 0.15)', 'rgba(212, 165, 71, 0.2)']}
           start={{ x: 0, y: 0 }}
@@ -520,7 +513,6 @@ function SubscriptionCard() {
           </AnimatedPressable>
         </View>
       </Animated.View>
-    </Animated.View>
   );
 }
 
@@ -536,7 +528,7 @@ function SettingsSection({ focusAreas }: { focusAreas: string[] }) {
   const displayFocusAreas = focusAreas.length > 0 ? focusAreas.join(', ') : 'Love & Relationships, Career, Personal Growth';
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(1300)} style={styles.settingsSection}>
+    <Animated.View style={styles.settingsSection}>
       <Text style={styles.settingsSectionTitle}>Settings</Text>
 
       <View style={styles.settingsCard}>
