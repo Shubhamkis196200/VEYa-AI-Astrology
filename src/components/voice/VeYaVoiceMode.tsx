@@ -369,7 +369,16 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         setTimeout(handleStartRecording, 500);
       }
     } catch (err: unknown) {
-      setError('Something went wrong. Please try again.');
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('401') || msg.includes('invalid_api_key') || msg.includes('Incorrect API key')) {
+        setError('OpenAI API key expired. Please update the key in settings.');
+      } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('Network')) {
+        setError('No internet connection. Check your network and try again.');
+      } else if (msg.includes('Whisper') || msg.includes('transcri')) {
+        setError('Voice transcription failed. Speak clearly and try again.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
       setStatus('idle');
     }
   }, [
