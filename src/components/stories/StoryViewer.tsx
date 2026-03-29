@@ -17,7 +17,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withRepeat,
   interpolate,
   Extrapolate,
   runOnJS,
@@ -44,11 +43,7 @@ function Particle({ size, left, top, delay }: { size: number; left: number; top:
   const float = useSharedValue(0);
 
   useEffect(() => {
-    float.value = withRepeat(
-      withTiming(1, { duration: 6000 }),
-      -1,
-      true
-    );
+    float.value = withTiming(1, { duration: 3000 });
   }, [float]);
 
   const animatedStyle = useAnimatedStyle(() => ({

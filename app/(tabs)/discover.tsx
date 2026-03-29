@@ -36,17 +36,10 @@ import Animated, {
   useAnimatedProps,
   withTiming,
   withDelay,
-  withRepeat,
   withSequence,
   withSpring,
   interpolate,
   Easing,
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-  FadeInRight,
-  SlideInRight,
-  cancelAnimation,
   type SharedValue,
 } from 'react-native-reanimated';
 import Svg, {
@@ -227,80 +220,7 @@ const MOCK = {
 // Local alias for convenience
 const PLANETS = DEFAULT_PLANETS;
 
-// ─────────────────────────────────────────────────────────────
-// STARDUST PARTICLES
-// ─────────────────────────────────────────────────────────────
-
-interface ParticleConfig {
-  cx: number; cy: number; r: number; opacity: number;
-  delay: number; duration: number; driftX: number; driftY: number; color: string;
-}
-
-function generateParticles(count: number): ParticleConfig[] {
-  const particles: ParticleConfig[] = [];
-  const tones = [
-    'rgba(212, 165, 71, 0.3)', 'rgba(139, 92, 246, 0.15)',
-    'rgba(212, 165, 71, 0.2)', 'rgba(196, 181, 224, 0.2)',
-  ];
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      cx: Math.random() * SCREEN_WIDTH, cy: Math.random() * 200,
-      r: Math.random() * 1.6 + 0.4, opacity: Math.random() * 0.25 + 0.06,
-      delay: Math.random() * 4000, duration: Math.random() * 8000 + 6000,
-      driftX: (Math.random() - 0.5) * 18, driftY: (Math.random() - 0.5) * 12,
-      color: tones[Math.floor(Math.random() * tones.length)],
-    });
-  }
-  return particles;
-}
-
-const PARTICLES = generateParticles(4); // Reduced from 10 to 4 for performance
-
-function StardustParticle({ config }: { config: ParticleConfig }) {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const opacity = useSharedValue(0);
-
-  useEffect(() => {
-    translateX.value = withDelay(config.delay, withRepeat(
-      withSequence(
-        withTiming(config.driftX, { duration: config.duration, easing: Easing.inOut(Easing.sin) }),
-        withTiming(-config.driftX * 0.6, { duration: config.duration * 0.8, easing: Easing.inOut(Easing.sin) })
-      ), -1, true));
-    translateY.value = withDelay(config.delay, withRepeat(
-      withSequence(
-        withTiming(config.driftY, { duration: config.duration * 1.1, easing: Easing.inOut(Easing.sin) }),
-        withTiming(-config.driftY * 0.5, { duration: config.duration * 0.9, easing: Easing.inOut(Easing.sin) })
-      ), -1, true));
-    opacity.value = withDelay(config.delay, withRepeat(
-      withSequence(
-        withTiming(config.opacity, { duration: config.duration * 0.5 }),
-        withTiming(config.opacity * 0.15, { duration: config.duration * 0.5 })
-      ), -1, true));
-    
-    // CRITICAL: Cancel animations on unmount to prevent memory leaks and CPU drain
-    return () => {
-      cancelAnimation(translateX);
-      cancelAnimation(translateY);
-      cancelAnimation(opacity);
-    };
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[{
-        position: 'absolute', left: config.cx, top: config.cy,
-        width: config.r * 2, height: config.r * 2,
-        borderRadius: config.r, backgroundColor: config.color,
-      }, animatedStyle]}
-    />
-  );
-}
+// Particles removed for performance
 
 // ═══════════════════════════════════════════════════════════════
 // SECTION 1: HEADER WITH FEATURE DISCOVERY
@@ -308,7 +228,7 @@ function StardustParticle({ config }: { config: ParticleConfig }) {
 
 function ExploreHeader() {
   return (
-    <Animated.View entering={FadeIn.duration(700).delay(100)} style={styles.headerContainer}>
+    <Animated.View style={styles.headerContainer}>
       <Text style={styles.headerTitle}>Discover</Text>
       <Text style={styles.headerSubtext}>Uncover your cosmic story</Text>
       
@@ -373,7 +293,7 @@ function BigThreePills({ data }: { data: { name: string; sunSign?: string; moonS
   return (
     <View style={styles.bigThreePillsRow}>
       {bigThree.map((item, index) => (
-        <Animated.View key={item.label} entering={FadeInUp.duration(400).delay(800 + index * 120)}>
+        <Animated.View key={item.label}>
           <View style={styles.bigThreePill}>
             <Text style={styles.bigThreePillSymbol}>{item.symbol}</Text>
             <Text style={styles.bigThreePillSign}>{item.sign}</Text>
@@ -389,7 +309,7 @@ function MyBirthChartSection() {
   const { data } = useOnboardingStore();
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(200)} style={styles.sectionContainer}>
+    <Animated.View style={styles.sectionContainer}>
       <Text style={styles.sectionLabel}>MY BIRTH CHART</Text>
       <Text style={styles.sectionTitle}>Your Cosmic Blueprint</Text>
       <Pressable onPress={() => { hapticMedium(); setShowFullChart(true); }} style={styles.chartCard}>
@@ -400,7 +320,7 @@ function MyBirthChartSection() {
         >
           <MiniNatalChart />
           <BigThreePills data={data} />
-          <Animated.View entering={FadeIn.duration(400).delay(1200)} style={styles.viewFullChartRow}>
+          <Animated.View style={styles.viewFullChartRow}>
             <Text style={styles.viewFullChartText}>View Full Chart</Text>
             <Text style={styles.viewFullChartArrow}> →</Text>
           </Animated.View>
@@ -662,7 +582,7 @@ function CompatibilitySection({ onStart }: { onStart: () => void }) {
   const cardStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(400)} style={styles.sectionContainer}>
+    <Animated.View style={styles.sectionContainer}>
       <Text style={styles.sectionLabel}>COMPATIBILITY</Text>
       <Text style={styles.sectionTitle}>Check Your Chemistry</Text>
       <AnimatedPressable onPressIn={handlePressIn} onPressOut={handlePressOut}
@@ -857,7 +777,7 @@ function TarotSection() {
   const dailyIsReversed = revealedCard ? isCardReversed(revealedCard.id, 0) : false;
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(600)} style={styles.sectionContainer}>
+    <Animated.View style={styles.sectionContainer}>
       <Text style={styles.sectionLabel}>TAROT</Text>
       <Text style={styles.sectionTitle}>Daily Card Pull</Text>
       <View style={styles.tarotCardContainer}>
@@ -890,7 +810,7 @@ function TarotSection() {
                   </LinearGradient>
                 </Pressable>
                 {aiReading && (
-                  <Animated.View entering={FadeInDown.duration(400)} style={styles.tarotAiReadingCard}>
+                  <Animated.View style={styles.tarotAiReadingCard}>
                     <Text style={styles.tarotAiReadingText}>{aiReading}</Text>
                   </Animated.View>
                 )}
@@ -1026,7 +946,7 @@ function MoonTrackerSection() {
   const isNearFullMoon = daysUntilFull <= 2;
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(800)} style={styles.sectionContainer}>
+    <Animated.View style={styles.sectionContainer}>
       <Text style={styles.sectionLabel}>MOON TRACKER</Text>
       <Text style={styles.sectionTitle}>Current Phase</Text>
       <View style={[styles.card, styles.moonCard]}>
@@ -1146,7 +1066,7 @@ function TransitCalendarSection() {
   };
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(1000)} style={styles.sectionContainer}>
+    <Animated.View style={styles.sectionContainer}>
       <Text style={styles.sectionLabel}>TRANSIT CALENDAR</Text>
       <Text style={styles.sectionTitle}>{monthNames[month - 1]} {year}</Text>
       <View style={[styles.card, styles.calendarCard]}>
@@ -1244,7 +1164,7 @@ function PlanetaryHoursSection() {
   };
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(1100)} style={styles.sectionContainer}>
+    <Animated.View style={styles.sectionContainer}>
       <Text style={styles.sectionLabel}>PLANETARY HOURS</Text>
       <Text style={styles.sectionTitle}>Cosmic Timing</Text>
       <View style={[styles.card, styles.planetaryHoursCard]}>
@@ -1293,7 +1213,7 @@ function PlanetaryHoursSection() {
 
         {/* Full Schedule */}
         {showFullSchedule && (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.fullScheduleContainer}>
+          <Animated.View style={styles.fullScheduleContainer}>
             <View style={styles.scheduleSection}>
               <Text style={styles.scheduleSectionLabel}>☀️ Day Hours</Text>
               <View style={styles.scheduleGrid}>
@@ -1390,7 +1310,7 @@ function RetrogradeTrackerSection() {
 
   if (isLoading) {
     return (
-      <Animated.View entering={FadeInDown.duration(600).delay(1200)} style={styles.sectionContainer}>
+      <Animated.View style={styles.sectionContainer}>
         <Text style={styles.sectionLabel}>RETROGRADE TRACKER</Text>
         <Text style={styles.sectionTitle}>Loading...</Text>
       </Animated.View>
@@ -1402,7 +1322,7 @@ function RetrogradeTrackerSection() {
   const { currentRetrogrades, upcomingRetrogrades, retrogradeCount, message } = retroData;
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(1200)} style={styles.sectionContainer}>
+    <Animated.View style={styles.sectionContainer}>
       <Text style={styles.sectionLabel}>RETROGRADE TRACKER</Text>
       <Text style={styles.sectionTitle}>Planetary Stations</Text>
       <View style={[styles.card, styles.retrogradeCard]}>
@@ -1522,9 +1442,7 @@ export default function ExploreTab() {
         locations={[0, 0.4, 1]}
         style={StyleSheet.absoluteFillObject}
       />
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-        {PARTICLES.map((p, i) => (<StardustParticle key={i} config={p} />))}
-      </View>
+      {/* Particles removed for performance */}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.md }]}
@@ -1569,7 +1487,7 @@ export default function ExploreTab() {
 
         {/* Soul Connections Section */}
         <Text style={styles.majorSectionHeader}>Connect</Text>
-        <Animated.View entering={FadeInDown.duration(600).delay(1000)} style={styles.sectionContainer}>
+        <Animated.View style={styles.sectionContainer}>
           <Text style={styles.sectionLabel}>SOUL CONNECTIONS</Text>
           <Text style={styles.sectionTitle}>Your Cosmic Circle</Text>
           <SoulConnectionScreen />
@@ -1577,7 +1495,7 @@ export default function ExploreTab() {
 
         {/* Cosmic Year Section */}
         <Text style={styles.majorSectionHeader}>Plan Ahead</Text>
-        <Animated.View entering={FadeInDown.duration(600).delay(1200)} style={styles.sectionContainer}>
+        <Animated.View style={styles.sectionContainer}>
           <Text style={styles.sectionLabel}>YOUR COSMIC YEAR</Text>
           <Text style={styles.sectionTitle}>2026 at a Glance</Text>
           <CosmicYearTimeline />
@@ -1585,7 +1503,7 @@ export default function ExploreTab() {
 
         {/* Soundscapes Section */}
         <Text style={styles.majorSectionHeader}>Relax</Text>
-        <Animated.View entering={FadeInDown.duration(600).delay(1400)} style={styles.sectionContainer}>
+        <Animated.View style={styles.sectionContainer}>
           <SoundscapePlayer />
         </Animated.View>
 

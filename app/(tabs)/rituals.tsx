@@ -24,14 +24,10 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withDelay,
   withSequence,
   withSpring,
   interpolate,
   Easing,
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
   runOnJS,
 } from 'react-native-reanimated';
 // Haptics loaded dynamically (Expo Go safe)
@@ -559,7 +555,7 @@ function MorningRitualFlow() {
       </View>
 
       {completedToday && (
-        <Animated.View entering={FadeInUp.duration(600)} style={styles.completeBanner}>
+        <Animated.View style={styles.completeBanner}>
           <Text style={styles.completeText}>🌞 Ritual complete — you’re aligned for the day</Text>
         </Animated.View>
       )}
@@ -591,18 +587,18 @@ function PracticeHeader() {
   }));
 
   return (
-    <Animated.View entering={FadeIn.duration(800).delay(100)} style={styles.headerContainer}>
+    <Animated.View style={styles.headerContainer}>
       <View style={styles.headerTitleRow}>
-        <Animated.Text entering={FadeInDown.duration(500).delay(200)} style={styles.headerTitle}>
+        <Animated.Text style={styles.headerTitle}>
           Your Practice
         </Animated.Text>
-        <Animated.View entering={FadeInDown.duration(500).delay(400)} style={styles.streakBadge}>
+        <Animated.View style={styles.streakBadge}>
           <Animated.Text style={[styles.streakFlame, flameAnimatedStyle]}>🔥</Animated.Text>
           <Text style={styles.streakText}>{MOCK.streakCount} day streak</Text>
         </Animated.View>
       </View>
 
-      <Animated.View entering={FadeInDown.duration(500).delay(500)} style={styles.streakDotsRow}>
+      <Animated.View style={styles.streakDotsRow}>
         {MOCK.streakDays.map((completed, index) => (
           <View key={index} style={styles.streakDayColumn}>
             <View style={[
@@ -645,7 +641,7 @@ function MorningRitualCard() {
   }));
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(600)}>
+    <Animated.View>
       <AnimatedPressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -726,7 +722,7 @@ function EveningRitualCard() {
   const statusLabel = isComplete ? 'Complete ✓' : isLocked ? `Available at ${MOCK.eveningRitual.availableAt}` : 'Ready';
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(800)}>
+    <Animated.View>
       <AnimatedPressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -813,7 +809,7 @@ function CosmicJournalSection({ onWrite }: { onWrite: () => void }) {
   }));
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(1000)} style={styles.journalSection}>
+    <Animated.View style={styles.journalSection}>
       <Text style={styles.sectionTitle}>Cosmic Journal</Text>
 
       <View style={[styles.card, styles.journalPromptCard]}>
@@ -847,7 +843,7 @@ function CosmicJournalSection({ onWrite }: { onWrite: () => void }) {
           <Text style={styles.emptyEntriesText}>No entries yet — write your first reflection.</Text>
         )}
         {entries.slice(0, 3).map((entry, index) => (
-          <Animated.View key={entry.id} entering={FadeInDown.duration(400).delay(1200 + index * 100)}>
+          <Animated.View key={entry.id}>
             <Pressable onPress={() => hapticLight()} style={styles.recentEntryCard}>
               <View style={styles.recentEntryLeft}>
                 <Text style={styles.recentEntryMood}>{entry.mood}</Text>
@@ -909,7 +905,7 @@ function InsightsCard() {
     : ['Gathering your cosmic patterns...', 'Your journal reveals hidden rhythms', 'Insights will appear as you reflect'];
 
   return (
-    <Animated.View entering={FadeInDown.duration(600).delay(1400)}>
+    <Animated.View>
       <View style={[styles.card, styles.insightsCard]}>
         <LinearGradient
           colors={['rgba(201, 168, 76, 0.2)', 'rgba(139, 92, 246, 0.1)', 'rgba(201, 168, 76, 0.15)']}
@@ -939,80 +935,7 @@ function InsightsCard() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// STARDUST PARTICLES
-// ─────────────────────────────────────────────────────────────
-
-interface ParticleConfig {
-  cx: number; cy: number; r: number; opacity: number;
-  delay: number; duration: number; driftX: number; driftY: number; color: string;
-}
-
-function generateParticles(count: number): ParticleConfig[] {
-  const particles: ParticleConfig[] = [];
-  const tones = [
-    'rgba(212, 165, 71, 0.3)', 'rgba(179, 157, 219, 0.2)',
-    'rgba(139, 92, 246, 0.12)', 'rgba(244, 162, 97, 0.15)',
-  ];
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      cx: Math.random() * SCREEN_WIDTH, cy: Math.random() * 250,
-      r: Math.random() * 1.6 + 0.4, opacity: Math.random() * 0.25 + 0.06,
-      delay: Math.random() * 4000, duration: Math.random() * 8000 + 6000,
-      driftX: (Math.random() - 0.5) * 18, driftY: (Math.random() - 0.5) * 12,
-      color: tones[Math.floor(Math.random() * tones.length)],
-    });
-  }
-  return particles;
-}
-
-const PARTICLES = generateParticles(10);
-
-function StardustParticle({ config }: { config: ParticleConfig }) {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const opacity = useSharedValue(0);
-
-  useEffect(() => {
-    translateX.value = withDelay(
-      config.delay,
-      withSequence(
-        withTiming(config.driftX, { duration: config.duration, easing: Easing.inOut(Easing.sin) }),
-        withTiming(-config.driftX * 0.6, { duration: config.duration * 0.8, easing: Easing.inOut(Easing.sin) })
-      )
-    );
-    translateY.value = withDelay(
-      config.delay,
-      withSequence(
-        withTiming(config.driftY, { duration: config.duration * 1.1, easing: Easing.inOut(Easing.sin) }),
-        withTiming(-config.driftY * 0.5, { duration: config.duration * 0.9, easing: Easing.inOut(Easing.sin) })
-      )
-    );
-    opacity.value = withDelay(
-      config.delay,
-      withSequence(
-        withTiming(config.opacity, { duration: config.duration * 0.5, easing: Easing.inOut(Easing.ease) }),
-        withTiming(config.opacity * 0.15, { duration: config.duration * 0.5, easing: Easing.inOut(Easing.ease) })
-      )
-    );
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[{
-        position: 'absolute', left: config.cx, top: config.cy,
-        width: config.r * 2, height: config.r * 2,
-        borderRadius: config.r, backgroundColor: config.color,
-      }, animatedStyle]}
-    />
-  );
-}
-
+// Particles removed for performance
 
 // ─────────────────────────────────────────────────────────────
 // COMPONENTS: Lunar & Cosmic Tracking
@@ -1201,9 +1124,7 @@ export default function RitualsScreen() {
           locations={[0, 0.4, 1]}
           style={StyleSheet.absoluteFillObject}
         />
-        <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-          {PARTICLES.map((p, i) => <StardustParticle key={i} config={p} />)}
-        </View>
+        {/* Particles removed for performance */}
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.md }]}

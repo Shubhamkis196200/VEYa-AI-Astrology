@@ -20,6 +20,7 @@ import {
   Pressable,
   Modal,
   Dimensions,
+  InteractionManager,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,12 +29,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AstroStories from '@/components/stories/AstroStories';
 import { StoryViewer } from '@/components/stories/StoryViewer';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-  FadeInRight,
-} from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useReadingStore } from '@/stores/readingStore';
 import { useStreakStore } from '@/stores/streakStore';
@@ -87,7 +83,7 @@ interface QuickFeatureProps {
 
 function QuickFeatureCard({ icon, label, sublabel, gradient, onPress, delay = 0 }: QuickFeatureProps) {
   return (
-    <Animated.View entering={FadeInUp.duration(400).delay(delay)} style={styles.quickFeatureWrapper}>
+    <Animated.View style={styles.quickFeatureWrapper}>
       <Pressable onPress={onPress} style={({ pressed }) => [styles.quickFeatureCard, { opacity: pressed ? 0.9 : 1 }]}>
         <LinearGradient
           colors={gradient}
@@ -158,7 +154,7 @@ function FeatureHub({ onOpenVoice, moonPhase }: FeatureHubProps) {
   };
 
   return (
-    <Animated.View entering={FadeIn.duration(500).delay(200)} style={styles.featureHub}>
+    <Animated.View style={styles.featureHub}>
       <SectionHeader
         icon="✨"
         title="Explore VEYa"
@@ -272,7 +268,7 @@ function QuickAction({ icon, label, onPress, color = '#8B5CF6' }: QuickActionPro
 
 function QuickActionsBar({ onOpenVoice }: { onOpenVoice: () => void }) {
   return (
-    <Animated.View entering={FadeInRight.duration(400).delay(100)} style={styles.quickActionsBar}>
+    <Animated.View style={styles.quickActionsBar}>
       <QuickAction
         icon="mic"
         label="Voice"
@@ -336,24 +332,26 @@ export default function TodayScreen() {
   }, [showDeferred]);
 
   useEffect(() => {
-    (async () => {
+    const task = InteractionManager.runAfterInteractions(async () => {
       try {
         await ensureGeneratedReading(sunSign);
       } catch (e) {
         console.warn('[Reading] error', e);
       }
-    })();
+    });
+    return () => task.cancel();
   }, [ensureGeneratedReading, sunSign]);
 
   useEffect(() => {
-    (async () => {
+    const task = InteractionManager.runAfterInteractions(async () => {
       try {
         await loadStreak(userId);
         await performCheckIn(userId);
       } catch {
         // Silent fail
       }
-    })();
+    });
+    return () => task.cancel();
   }, [loadStreak, performCheckIn, userId]);
 
   const greeting = useMemo(() => getGreeting(), []);
@@ -377,7 +375,7 @@ export default function TodayScreen() {
         {/* ─────────────────────────────────────────────────────────── */}
         {/* HEADER SECTION */}
         {/* ─────────────────────────────────────────────────────────── */}
-        <Animated.View entering={FadeIn.duration(500)}>
+        <Animated.View>
           <Text style={styles.greeting}>{greeting}, {data?.name || 'Star Child'} ☉</Text>
           <Text style={styles.subtitle}>{dateDisplay} · {sunSign}</Text>
         </Animated.View>
@@ -510,7 +508,7 @@ export default function TodayScreen() {
         {/* HERO SECTION — Talk to VEYa CTA — deferred */}
         {/* ─────────────────────────────────────────────────────────── */}
         {showDeferred && (
-          <Animated.View entering={FadeInDown.duration(500).delay(100)}>
+          <Animated.View>
             <Pressable onPress={handleOpenVoice} style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
               <LinearGradient
                 colors={['#8B5CF6', '#6D28D9', '#5B21B6']}
