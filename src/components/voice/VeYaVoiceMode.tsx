@@ -11,6 +11,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -231,12 +233,26 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   const handleStartRecording = useCallback(async () => {
     setError(null);
     try {
+      // Request permission explicitly before starting
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        // Guide user to settings instead of just showing error
+        Alert.alert(
+          'Microphone Permission Required',
+          'VEYa needs microphone access to hear you. Please go to Settings → Apps → VEYa (or Expo Go) → Permissions → Microphone → Allow.',
+          [
+            { text: 'Cancel', style: 'cancel', onPress: () => setStatus('idle') },
+            { text: 'Open Settings', onPress: () => { Linking.openSettings(); setStatus('idle'); } },
+          ]
+        );
+        return;
+      }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setStatus('listening');
       const recording = await startRecording();
       recordingRef.current = recording;
     } catch (err: unknown) {
-      setError('Could not access microphone. Check permissions.');
+      setError('Could not access microphone. Check permissions in Settings.');
       setStatus('idle');
     }
   }, []);

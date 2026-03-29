@@ -4,8 +4,8 @@ import { Slot, SplashScreen, useRouter, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, View, Text, ScrollView, Pressable, Modal, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../src/lib/supabase';
@@ -13,7 +13,7 @@ import { useUserStore } from '../src/stores/userStore';
 import { useOnboardingStore } from '../src/stores/onboardingStore';
 import { requestPermissions, scheduleMorningNotification } from '../src/services/notificationService';
 import AchievementToast from '../src/components/shared/AchievementToast';
-import MomentCaptureButton from '../src/components/shared/MomentCaptureButton';
+import VeYaVoiceMode from '../src/components/voice/VeYaVoiceMode';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -61,6 +61,34 @@ class ErrorBoundary extends React.Component<
     }
     return this.props.children;
   }
+}
+
+// ---------------------------------------------------------------------------
+// GlobalVoiceButton — small floating mic pill above the tab bar
+// Sits just above nav bar, doesn't overlap content
+// ---------------------------------------------------------------------------
+function GlobalVoiceButton() {
+  const [showVoice, setShowVoice] = useState(false);
+  const insets = useSafeAreaInsets();
+  // Position just above tab bar: tabBar height ~62px + safe area
+  const bottomPos = 62 + insets.bottom + 8;
+
+  return (
+    <>
+      <Pressable
+        onPress={() => setShowVoice(true)}
+        style={[styles.voicePill, { bottom: bottomPos }]}
+        hitSlop={8}
+      >
+        <Text style={styles.voicePillMic}>🎙️</Text>
+        <Text style={styles.voicePillText}>VEYa</Text>
+      </Pressable>
+
+      <Modal visible={showVoice} animationType="slide" presentationStyle="fullScreen">
+        <VeYaVoiceMode onClose={() => setShowVoice(false)} />
+      </Modal>
+    </>
+  );
 }
 
 export default function RootLayout() {
@@ -196,8 +224,8 @@ export default function RootLayout() {
           <Slot />
           {/* Global Achievement Toast */}
           <AchievementToast />
-          {/* MomentCaptureButton disabled for demo — re-enable after performance optimization */}
-          {/* {onboardingCompleted && <MomentCaptureButton />} */}
+          {/* Global floating VeYa voice button — small pill above tab bar */}
+          {onboardingCompleted && <GlobalVoiceButton />}
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
@@ -209,4 +237,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FDFBF7',
   },
+  // Global floating voice pill — above tab bar, non-intrusive
+  voicePill: {
+    position: 'absolute',
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#8B5CF6',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    zIndex: 50, // below tab bar touches, above content
+    ...Platform.select({
+      ios: { shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 },
+      android: { elevation: 4 },
+    }),
+  },
+  voicePillMic: { fontSize: 14 },
+  voicePillText: { fontSize: 12, fontFamily: 'Inter-SemiBold', color: '#FFFFFF', letterSpacing: 0.3 },
 });
