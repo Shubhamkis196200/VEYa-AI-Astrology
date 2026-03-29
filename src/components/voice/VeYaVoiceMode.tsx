@@ -1,18 +1,11 @@
 // ============================================================================
-// VeYaVoiceMode — Full-screen voice control + navigation AI
-// ============================================================================
-// Single voice path: record → sendVoiceMessage (gpt-4o-audio-preview) → play
-// Voice: onyx (deep male). No WebSocket complexity.
-// Multi-turn conversation with real astrology context.
-// Voice navigation: "show my chart", "pull tarot", etc.
-// User-isolated: ONLY reads from onboardingStore (no global/shared state)
+// VeYaVoiceMode — Clean voice AI using voiceEngine.ts
+// Pipeline: Record → Whisper (transcribe) → GPT-4o-mini → TTS onyx
 // ============================================================================
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -31,88 +24,60 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import * as Haptics from 'expo-haptics';
 
 import { useOnboardingStore } from '../../stores/onboardingStore';
-import { startRecording, stopRecording } from '../../services/voiceService';
-import { playVoiceAudio, sendVoiceMessage, stopVoicePlayback } from '../../services/realtimeVoice';
 import {
+  startRecording,
+  stopRecording,
+  transcribe,
+  getAIResponse,
+  speak,
+  stopSpeaking,
+} from '../../services/voiceEngine';
+import {
+  parseVoiceIntent,
   executeVoiceAction,
   getNavigationResponse,
-  parseVoiceIntent,
 } from '../../services/voiceNavigation';
-import { getDailyTransitSummary } from '../../services/astroEngine';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type VoiceStatus = 'idle' | 'listening' | 'processing' | 'speaking';
-
-interface ConversationMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
+type Phase = 'idle' | 'recording' | 'thinking' | 'speaking';
 
 interface Props {
   onClose: () => void;
 }
 
 // ---------------------------------------------------------------------------
-// Status config
+// Status labels
 // ---------------------------------------------------------------------------
 
-const STATUS_CONFIG: Record<VoiceStatus, { label: string; color: string }> = {
-  idle: { label: 'Tap the orb to speak', color: '#8B5CF6' },
-  listening: { label: 'Listening...', color: '#3B82F6' },
-  processing: { label: 'Thinking...', color: '#6D28D9' },
-  speaking: { label: 'VEYa is speaking...', color: '#D4A547' },
+const STATUS_LABEL: Record<Phase, string> = {
+  idle: 'Tap to speak',
+  recording: 'Listening...',
+  thinking: 'Thinking...',
+  speaking: 'Speaking...',
+};
+
+const ORB_COLOR: Record<Phase, string> = {
+  idle: '#8B5CF6',
+  recording: '#3B82F6',
+  thinking: '#6D28D9',
+  speaking: '#D4A547',
 };
 
 // ---------------------------------------------------------------------------
-// Build full system prompt
+// Static stars
 // ---------------------------------------------------------------------------
 
-function buildSystemPrompt(user: {
-  name: string;
-  sunSign: string;
-  moonSign: string;
-  risingSign: string;
-  birthDate: string;
-  transitSummary: string;
-}): string {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  return `You are VEYa, a wise and intimate AI astrologer speaking directly to ${user.name}.
-You know ${user.name}'s birth chart deeply: Sun in ${user.sunSign}, Moon in ${user.moonSign}, Rising ${user.risingSign}.
-Birth date: ${user.birthDate || 'unknown'}. Today: ${dateStr}. Live transits: ${user.transitSummary}.
-
-YOUR VOICE: Warm, mystical, intimate. Like a trusted oracle who truly knows this person.
-Speak in flowing, poetic sentences. Use their name sparingly but meaningfully.
-Never sound robotic or list-like. Respond as if you are speaking, not writing.
-
-RESPONSE LENGTH: 1-2 sentences only. Short, powerful, personal. Quality over quantity.
-Example good response: "The Moon in your Capricorn is calling you to anchor your ambitions tonight, ${user.name} — Saturn is watching, and it approves."
-Example bad response: "As a Capricorn sun, you are ambitious. You also have strong work ethic. Today is good for you."
-
-APP NAVIGATION — when user wants to:
-- See birth chart → say "Opening your birth chart, ${user.name}."
-- Pull tarot → say "Let's pull your card."
-- Check compatibility → say "Checking your compatibility."
-- Start ritual → say "Opening your ritual."
-- Write journal → say "Your journal awaits."
-- Moon phase → say "Here's your moon."
-- Transits → say "Showing today's planets."
-
-Today's date: ${dateStr}. Only know about ${user.name} — never reference other users.
-Respond as if speaking out loud. Natural speech, not written text. Keep it under 2 sentences.`;
-}
+const STARS = Array.from({ length: 28 }, (_, i) => ({
+  x: (i * 37 + 11) % 97,
+  y: (i * 53 + 7) % 95,
+  size: (i % 3) + 1,
+  opacity: (i % 5) * 0.1 + 0.15,
+}));
 
 // ---------------------------------------------------------------------------
 // Component
@@ -121,51 +86,30 @@ Respond as if speaking out loud. Natural speech, not written text. Keep it under
 export default function VeYaVoiceMode({ onClose }: Props) {
   const { data } = useOnboardingStore();
 
-  // User data — ONLY from onboardingStore (user-isolated)
-  const userName = data?.name || 'friend';
+  const name = data?.name || 'friend';
   const sunSign = data?.sunSign || 'unknown';
   const moonSign = data?.moonSign || 'unknown';
   const risingSign = data?.risingSign || 'unknown';
-  const birthDate =
-    data?.birthDate instanceof Date
-      ? data.birthDate.toISOString().split('T')[0]
-      : typeof data?.birthDate === 'string'
-      ? data.birthDate
-      : '';
 
-  // Transit summary (computed once on mount)
-  const [transitSummary, setTransitSummary] = useState('');
-  useEffect(() => {
-    try {
-      const summary = getDailyTransitSummary(new Date());
-      const topPlanets = summary.planets
-        .slice(0, 4)
-        .map((p) => `${p.name} in ${p.sign}${p.retrograde ? ' Rx' : ''}`)
-        .join(', ');
-      setTransitSummary(`${summary.cosmicWeather || ''} Key planets: ${topPlanets}.`.trim());
-    } catch {
-      setTransitSummary('');
-    }
-  }, []);
+  const systemPrompt = `You are VEYa, a cosmic AI assistant for ${name} (${sunSign} sun, ${moonSign} moon, ${risingSign} rising).\nRespond in 1-2 sentences max. Warm, direct, personal. You can navigate the app when asked.`;
 
-  // Conversation state
-  const [status, setStatus] = useState<VoiceStatus>('idle');
-  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
-  const [lastTranscript, setLastTranscript] = useState<string | null>(null);
-  const [lastResponse, setLastResponse] = useState<string | null>(null);
+  // State
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [transcript, setTranscript] = useState('');
+  const [response, setResponse] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [continuousListen, setContinuousListen] = useState(false);
+  const [keepListening, setKeepListening] = useState(false);
+  const [conversation, setConversation] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
 
+  // Refs
   const recordingRef = useRef<Audio.Recording | null>(null);
-  const continuousRef = useRef(false);
-  // Stable ref to handleStartRecording for use inside callbacks
-  const handleStartRecordingRef = useRef<() => void>(() => {});
+  const keepListeningRef = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  // Keep continuousRef in sync
+  // Keep ref in sync
   useEffect(() => {
-    continuousRef.current = continuousListen;
-  }, [continuousListen]);
+    keepListeningRef.current = keepListening;
+  }, [keepListening]);
 
   // ---------------------------------------------------------------------------
   // Animations
@@ -175,7 +119,7 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   const glowOpacity = useSharedValue(0.3);
 
   useEffect(() => {
-    if (status === 'idle') {
+    if (phase === 'idle') {
       pulseScale.value = withRepeat(
         withSequence(
           withTiming(1.06, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
@@ -189,24 +133,21 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         -1,
         true,
       );
-    } else if (status === 'listening') {
+    } else if (phase === 'recording') {
       pulseScale.value = withRepeat(
-        withSequence(
-          withTiming(1.18, { duration: 350 }),
-          withTiming(1, { duration: 350 }),
-        ),
+        withSequence(withTiming(1.18, { duration: 350 }), withTiming(1, { duration: 350 })),
         -1,
         true,
       );
       glowOpacity.value = withTiming(0.7);
-    } else if (status === 'processing') {
+    } else if (phase === 'thinking') {
       pulseScale.value = withRepeat(
         withTiming(1.1, { duration: 700, easing: Easing.inOut(Easing.ease) }),
         -1,
         true,
       );
       glowOpacity.value = withTiming(0.4);
-    } else if (status === 'speaking') {
+    } else if (phase === 'speaking') {
       pulseScale.value = withRepeat(
         withSequence(withTiming(1.09, { duration: 500 }), withTiming(1, { duration: 500 })),
         -1,
@@ -218,7 +159,7 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         true,
       );
     }
-  }, [status, pulseScale, glowOpacity]);
+  }, [phase, pulseScale, glowOpacity]);
 
   const orbStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
@@ -229,157 +170,104 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   }));
 
   // ---------------------------------------------------------------------------
-  // Core voice pipeline
+  // Stop and respond pipeline
   // ---------------------------------------------------------------------------
 
-  const handleStartRecording = useCallback(async () => {
-    setError(null);
+  const handleStopAndRespond = useCallback(async (rec: Audio.Recording) => {
+    setPhase('thinking');
     try {
-      const currentPerm = await Audio.getPermissionsAsync();
+      const uri = await stopRecording(rec);
+      const text = await transcribe(uri);
 
-      if (currentPerm.status === 'denied') {
-        Alert.alert(
-          'Microphone Access Needed',
-          'VEYa needs microphone access to hear you.\n\nGo to: Settings → Apps → Expo Go → Permissions → Microphone → Allow\n\nThen come back and try again.',
-          [
-            { text: 'Not Now', style: 'cancel', onPress: () => setStatus('idle') },
-            { text: 'Open Settings', onPress: () => { Linking.openSettings(); setStatus('idle'); } },
-          ]
-        );
+      if (!text) {
+        setError("Couldn't hear you clearly. Tap to try again.");
+        setPhase('idle');
         return;
       }
 
-      if (currentPerm.status !== 'granted') {
-        const { status: newStatus } = await Audio.requestPermissionsAsync();
-        if (newStatus !== 'granted') {
-          Alert.alert(
-            'Microphone Access Needed',
-            'Please allow microphone access when prompted, or go to Settings to enable it.',
-            [
-              { text: 'Cancel', style: 'cancel', onPress: () => setStatus('idle') },
-              { text: 'Open Settings', onPress: () => { Linking.openSettings(); setStatus('idle'); } },
-            ]
-          );
-          return;
-        }
-      }
+      setTranscript(text);
 
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setStatus('listening');
-      const recording = await startRecording();
-      recordingRef.current = recording;
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg === 'PERMISSION_DENIED' || msg.toLowerCase().includes('permission')) {
-        Alert.alert(
-          'Microphone Blocked',
-          'Go to Settings → Apps → Expo Go → Permissions → Microphone → Allow',
-          [
-            { text: 'Cancel', style: 'cancel', onPress: () => setStatus('idle') },
-            { text: 'Open Settings', onPress: () => { Linking.openSettings(); setStatus('idle'); } },
-          ]
-        );
-      } else {
-        console.error('[VeYaVoice] mic error:', msg.slice(0, 80));
-        setError("Couldn't access the microphone. Tap to try again. 🎙️");
-      }
-      setStatus('idle');
-    }
-  }, []);
-
-  // Keep stable ref for use in async callbacks
-  useEffect(() => {
-    handleStartRecordingRef.current = handleStartRecording;
-  }, [handleStartRecording]);
-
-  const handleStopAndProcess = useCallback(async () => {
-    if (!recordingRef.current) return;
-
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setStatus('processing');
-
-      const audioUri = await stopRecording(recordingRef.current);
-      recordingRef.current = null;
-
-      const systemPrompt = buildSystemPrompt({
-        name: userName,
-        sunSign,
-        moonSign,
-        risingSign,
-        birthDate,
-        transitSummary,
-      });
-
-      const result = await sendVoiceMessage(audioUri, systemPrompt, conversation.slice(-4));
-
-      const transcript = result.transcript;
-      const responseText = result.responseText;
-
-      if (!transcript.trim()) {
-        setError("Couldn't hear you. Try again.");
-        setStatus('idle');
-        if (continuousRef.current) setTimeout(() => handleStartRecordingRef.current(), 500);
-        return;
-      }
-
-      setLastTranscript(transcript);
-
-      const intent = parseVoiceIntent(transcript);
+      const intent = parseVoiceIntent(text);
 
       if (intent.type !== 'answer' && intent.type !== 'unknown') {
-        const displayResponse = responseText || getNavigationResponse(intent, userName);
-        setLastResponse(displayResponse);
-        setConversation((prev) => [
-          ...prev,
-          { role: 'user', content: transcript },
-          { role: 'assistant', content: displayResponse },
-        ]);
-
-        setStatus('speaking');
-        await playVoiceAudio(result.audioBase64);
-        setStatus('idle');
-
-        const navigated = executeVoiceAction(intent);
-        if (navigated) onClose();
+        const navResp = getNavigationResponse(intent, name);
+        setResponse(navResp);
+        setPhase('speaking');
+        await speak(navResp);
+        setPhase('idle');
+        executeVoiceAction(intent);
+        onClose();
         return;
       }
 
-      setLastResponse(responseText);
+      const reply = await getAIResponse(text, systemPrompt, conversation.slice(-6));
+      setResponse(reply);
       setConversation((prev) => [
         ...prev,
-        { role: 'user', content: transcript },
-        { role: 'assistant', content: responseText },
+        { role: 'user', content: text },
+        { role: 'assistant', content: reply },
       ]);
+      setPhase('speaking');
+      await speak(reply);
+      setPhase('idle');
 
-      setStatus('speaking');
-      await playVoiceAudio(result.audioBase64);
-      setStatus('idle');
-
-      if (continuousRef.current) setTimeout(() => handleStartRecordingRef.current(), 500);
+      if (keepListeningRef.current) {
+        setTimeout(() => handleOrbPress(), 800);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('401') || msg.includes('invalid_api_key') || msg.includes('Incorrect API key')) {
-        console.error('[VeYaVoice] API key issue:', msg.slice(0, 50));
-        setError("VEYa is taking a break. Try again in a moment. ✨");
-      } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('Network')) {
-        setError('No internet connection. Check your network. 🌐');
+      if (msg.includes('network') || msg.includes('fetch') || msg.includes('Network')) {
+        setError('No internet connection. Check your network.');
       } else {
         console.error('[VeYaVoice] error:', msg.slice(0, 80));
-        setError("VEYa needs a moment. Tap to try again. ✨");
+        setError('VEYa needs a moment. Tap to try again.');
       }
-      setStatus('idle');
+      setPhase('idle');
     }
-  }, [
-    conversation,
-    userName,
-    sunSign,
-    moonSign,
-    risingSign,
-    birthDate,
-    transitSummary,
-    onClose,
-  ]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation, name, systemPrompt, onClose]);
+
+  // ---------------------------------------------------------------------------
+  // Orb tap handler
+  // ---------------------------------------------------------------------------
+
+  const handleOrbPress = useCallback(async () => {
+    await stopSpeaking();
+    setError(null);
+
+    if (phase === 'idle' || phase === 'speaking') {
+      try {
+        const rec = await startRecording();
+        recordingRef.current = rec;
+        setPhase('recording');
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : '';
+        console.error('[VeYaVoice] mic error:', msg.slice(0, 80));
+        setError("Couldn't access the microphone. Tap to try again.");
+        setPhase('idle');
+      }
+    } else if (phase === 'recording') {
+      const rec = recordingRef.current;
+      recordingRef.current = null;
+      if (rec) {
+        await handleStopAndRespond(rec);
+      }
+    }
+  }, [phase, handleStopAndRespond]);
+
+  // ---------------------------------------------------------------------------
+  // Close handler
+  // ---------------------------------------------------------------------------
+
+  const handleClose = useCallback(async () => {
+    keepListeningRef.current = false;
+    await stopSpeaking();
+    if (recordingRef.current) {
+      try { await stopRecording(recordingRef.current); } catch { /* ignore */ }
+      recordingRef.current = null;
+    }
+    onClose();
+  }, [onClose]);
 
   // Scroll to bottom when conversation updates
   useEffect(() => {
@@ -389,44 +277,10 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   }, [conversation.length]);
 
   // ---------------------------------------------------------------------------
-  // Orb tap handler
-  // ---------------------------------------------------------------------------
-
-  const handleOrbPress = useCallback(() => {
-    if (status === 'idle') {
-      handleStartRecording();
-    } else if (status === 'listening') {
-      handleStopAndProcess();
-    } else if (status === 'speaking') {
-      stopVoicePlayback();
-      setStatus('idle');
-    }
-  }, [status, handleStartRecording, handleStopAndProcess]);
-
-  // ---------------------------------------------------------------------------
-  // Close handler
-  // ---------------------------------------------------------------------------
-
-  const handleClose = useCallback(async () => {
-    continuousRef.current = false;
-    setContinuousListen(false);
-    await stopVoicePlayback();
-    if (recordingRef.current) {
-      try {
-        await stopRecording(recordingRef.current);
-      } catch {
-        // ignore
-      }
-      recordingRef.current = null;
-    }
-    onClose();
-  }, [onClose]);
-
-  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
-  const cfg = STATUS_CONFIG[status];
+  const orbColor = ORB_COLOR[phase];
 
   return (
     <View style={styles.container}>
@@ -435,12 +289,15 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Static star dots */}
+      {/* Stars */}
       <View style={styles.starsLayer} pointerEvents="none">
         {STARS.map((s, i) => (
           <View
             key={i}
-            style={[styles.star, { left: `${s.x}%`, top: `${s.y}%`, width: s.size, height: s.size, opacity: s.opacity }]}
+            style={[
+              styles.star,
+              { left: `${s.x}%` as unknown as number, top: `${s.y}%` as unknown as number, width: s.size, height: s.size, opacity: s.opacity },
+            ]}
           />
         ))}
       </View>
@@ -454,21 +311,21 @@ export default function VeYaVoiceMode({ onClose }: Props) {
       <View style={styles.header}>
         <Text style={styles.title}>VEYa</Text>
         <Text style={styles.subtitle}>
-          {userName} · {sunSign} ☉
+          {name} · {sunSign} ☉
         </Text>
       </View>
 
       {/* Orb */}
       <View style={styles.orbArea}>
-        <Animated.View style={[styles.orbGlow, glowStyle, { backgroundColor: cfg.color }]} />
+        <Animated.View style={[styles.orbGlow, glowStyle, { backgroundColor: orbColor }]} />
         <Animated.View style={[styles.orbWrap, orbStyle]}>
           <Pressable onPress={handleOrbPress} style={styles.orbPressable}>
-            <LinearGradient colors={[cfg.color, '#4C1D95']} style={styles.orb}>
-              {status === 'processing' ? (
+            <LinearGradient colors={[orbColor, '#4C1D95']} style={styles.orb}>
+              {phase === 'thinking' ? (
                 <ActivityIndicator size="large" color="#FFF" />
-              ) : status === 'listening' ? (
+              ) : phase === 'recording' ? (
                 <Ionicons name="mic" size={48} color="#FFF" />
-              ) : status === 'speaking' ? (
+              ) : phase === 'speaking' ? (
                 <Ionicons name="volume-high" size={48} color="#FFF" />
               ) : (
                 <Ionicons name="mic-outline" size={48} color="#FFF" />
@@ -478,23 +335,28 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         </Animated.View>
       </View>
 
-      {/* Status label */}
-      <Text style={styles.statusLabel}>{cfg.label}</Text>
-      {status === 'listening' && (
+      {/* Status */}
+      <Text style={styles.statusLabel}>{STATUS_LABEL[phase]}</Text>
+      {phase === 'recording' && (
         <Text style={styles.tapHint}>Tap again when done</Text>
       )}
 
       {/* Error */}
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      {/* Conversation */}
+      {/* Transcript */}
+      {transcript ? (
+        <Text style={styles.transcriptText} numberOfLines={2}>{transcript}</Text>
+      ) : null}
+
+      {/* Response / conversation */}
       <ScrollView
         ref={scrollRef}
         style={styles.conversationScroll}
         contentContainerStyle={styles.conversationContent}
         showsVerticalScrollIndicator={false}
       >
-        {conversation.length === 0 && status === 'idle' && (
+        {conversation.length === 0 && phase === 'idle' && (
           <Text style={styles.hint}>
             Ask about your chart, today's energy, or say{'\n'}"show my chart" to navigate
           </Text>
@@ -502,10 +364,7 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         {conversation.map((msg, i) => (
           <View
             key={i}
-            style={[
-              styles.msgBubble,
-              msg.role === 'user' ? styles.userBubble : styles.aiBubble,
-            ]}
+            style={[styles.msgBubble, msg.role === 'user' ? styles.userBubble : styles.aiBubble]}
           >
             <Text style={[styles.msgText, msg.role === 'user' && styles.userMsgText]}>
               {msg.content}
@@ -514,30 +373,19 @@ export default function VeYaVoiceMode({ onClose }: Props) {
         ))}
       </ScrollView>
 
-      {/* Continuous listen toggle */}
+      {/* Keep listening toggle */}
       <View style={styles.continuousRow}>
         <Text style={styles.continuousLabel}>Keep listening</Text>
         <Switch
-          value={continuousListen}
-          onValueChange={setContinuousListen}
+          value={keepListening}
+          onValueChange={setKeepListening}
           trackColor={{ false: 'rgba(255,255,255,0.15)', true: '#7C3AED' }}
-          thumbColor={continuousListen ? '#A78BFA' : 'rgba(255,255,255,0.6)'}
+          thumbColor={keepListening ? '#A78BFA' : 'rgba(255,255,255,0.6)'}
         />
       </View>
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Static star positions (pre-seeded to avoid re-render jitter)
-// ---------------------------------------------------------------------------
-
-const STARS = Array.from({ length: 28 }, (_, i) => ({
-  x: ((i * 37 + 11) % 97),
-  y: ((i * 53 + 7) % 95),
-  size: (i % 3) + 1,
-  opacity: ((i % 5) * 0.1) + 0.15,
-}));
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -631,6 +479,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 32,
+  },
+  transcriptText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.35)',
+    textAlign: 'center',
+    marginTop: 6,
+    paddingHorizontal: 32,
+    fontStyle: 'italic',
   },
   conversationScroll: {
     flex: 1,
