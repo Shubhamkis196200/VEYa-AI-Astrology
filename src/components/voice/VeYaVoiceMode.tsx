@@ -233,26 +233,56 @@ export default function VeYaVoiceMode({ onClose }: Props) {
   const handleStartRecording = useCallback(async () => {
     setError(null);
     try {
-      // Request permission explicitly before starting
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        // Guide user to settings instead of just showing error
+      // First check current status
+      const currentPerm = await Audio.getPermissionsAsync();
+      
+      if (currentPerm.status === 'denied') {
+        // Already denied — must go to Settings
         Alert.alert(
-          'Microphone Permission Required',
-          'VEYa needs microphone access to hear you. Please go to Settings → Apps → VEYa (or Expo Go) → Permissions → Microphone → Allow.',
+          'Microphone Access Needed',
+          'VEYa needs microphone access to hear you.\n\nGo to: Settings → Apps → Expo Go → Permissions → Microphone → Allow\n\nThen come back and try again.',
           [
-            { text: 'Cancel', style: 'cancel', onPress: () => setStatus('idle') },
+            { text: 'Not Now', style: 'cancel', onPress: () => setStatus('idle') },
             { text: 'Open Settings', onPress: () => { Linking.openSettings(); setStatus('idle'); } },
           ]
         );
         return;
       }
+      
+      if (currentPerm.status !== 'granted') {
+        // Not yet asked — request it
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            'Microphone Access Needed',
+            'Please allow microphone access when prompted, or go to Settings to enable it.',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => setStatus('idle') },
+              { text: 'Open Settings', onPress: () => { Linking.openSettings(); setStatus('idle'); } },
+            ]
+          );
+          return;
+        }
+      }
+
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setStatus('listening');
       const recording = await startRecording();
       recordingRef.current = recording;
     } catch (err: unknown) {
-      setError('Could not access microphone. Check permissions in Settings.');
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'PERMISSION_DENIED' || msg.toLowerCase().includes('permission')) {
+        Alert.alert(
+          'Microphone Blocked',
+          'Go to Settings → Apps → Expo Go → Permissions → Microphone → Allow',
+          [
+            { text: 'Cancel', style: 'cancel', onPress: () => setStatus('idle') },
+            { text: 'Open Settings', onPress: () => { Linking.openSettings(); setStatus('idle'); } },
+          ]
+        );
+      } else {
+        setError('Could not access microphone. Tap to try again.');
+      }
       setStatus('idle');
     }
   }, []);

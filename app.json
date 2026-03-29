@@ -28,7 +28,10 @@
       "package": "com.adlytica.veya",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "jsEngine": "hermes"
+      "jsEngine": "hermes",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,7 +39,8 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-av"
     ],
     "owner": "shubham987654",
     "runtimeVersion": "1.0.0",

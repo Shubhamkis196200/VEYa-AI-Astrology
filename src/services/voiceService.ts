@@ -91,13 +91,26 @@ RULES:
 export async function startRecording(): Promise<Audio.Recording> {
   if (!OPENAI_API_KEY) throw new Error('API key missing');
 
-  const permission = await Audio.requestPermissionsAsync();
-  if (!permission.granted) throw new Error('Mic permission needed');
+  // Step 1: Set audio mode FIRST (required before permission on some Android versions)
+  try {
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: true,
+      playsInSilentModeIOS: true,
+    });
+  } catch (_) { /* continue even if this fails */ }
 
-  await Audio.setAudioModeAsync({
-    allowsRecordingIOS: true,
-    playsInSilentModeIOS: true,
-  });
+  // Step 2: Request permission — handle both success and graceful failure
+  try {
+    const permission = await Audio.requestPermissionsAsync();
+    if (!permission.granted && permission.status !== 'undetermined') {
+      throw new Error('PERMISSION_DENIED');
+    }
+  } catch (permErr: unknown) {
+    const msg = permErr instanceof Error ? permErr.message : '';
+    if (msg === 'PERMISSION_DENIED') throw permErr;
+    // If requestPermissionsAsync itself threw (SDK bug), try to proceed anyway
+    // The recording API will throw its own error if truly denied
+  }
 
   const recording = new Audio.Recording();
   await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
