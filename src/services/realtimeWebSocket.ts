@@ -68,7 +68,7 @@ export async function createRealtimeSession(
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'gpt-4o-realtime-preview-2024-12-17',
-      voice: 'shimmer',
+      voice: 'onyx',
       modalities: ['audio', 'text'],
       instructions: systemPrompt,
       input_audio_format: 'g711_ulaw', // More compatible than pcm16
@@ -103,7 +103,7 @@ export async function createRealtimeSession(
       type: 'session.update',
       session: {
         instructions: systemPrompt,
-        voice: 'shimmer',
+        voice: 'onyx',
         modalities: ['audio', 'text'],
         input_audio_format: 'g711_ulaw',
         output_audio_format: 'mp3',

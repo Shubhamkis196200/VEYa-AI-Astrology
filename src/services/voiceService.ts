@@ -248,7 +248,7 @@ async function speakWithOpenAI(text: string): Promise<boolean> {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini-tts', // Best TTS model
-        voice: 'shimmer', // Most expressive, emotional storytelling voice — perfect for astrologer
+        voice: 'onyx', // Most expressive, emotional storytelling voice — perfect for astrologer
         input: text,
         instructions: 'You are VEYa, a wise and warm personal astrologer. Speak with gentle authority — intimate, like you truly know this person. Use natural pauses, subtle warmth, and a slightly mystical quality. Not robotic. Not over-enthusiastic. Like a trusted guide who sees the stars clearly.',
         response_format: 'mp3',
